@@ -33,17 +33,14 @@ $pidText = (& $adb -s $serial shell pidof $Package).Trim()
 if (-not $pidText) {
     throw "Package $Package is not running. Open the precision tuner screen first."
 }
-$pid = ($pidText -split '\s+')[0]
+$processId = ($pidText -split '\s+')[0]
 
-$topOutput = & $adb -s $serial shell top -H -b -d 1 -n $Samples -p $pid -o 'PID,TID,%CPU,TIME+,CMDLINE'
+$topOutput = & $adb -s $serial shell top -H -b -d 1 -n $Samples -p $processId -o 'PID,TID,%CPU,TIME+,CMDLINE'
 if ($LASTEXITCODE -ne 0) {
     throw 'Android top failed.'
 }
 
 $rows = foreach ($line in $topOutput) {
-    if ($line -notmatch 'DartWorker') {
-        continue
-    }
     if ($line -match '^\s*(?<pid>\d+)\s+(?<tid>\d+)\s+(?<cpu>\d+(?:\.\d+)?)\s+\S+\s+(?<name>\S+)') {
         [pscustomobject]@{
             pid = [int]$Matches.pid
@@ -59,16 +56,25 @@ if (@($rows).Count -eq 0) {
 }
 
 $workers = foreach ($group in ($rows | Group-Object tid)) {
+    $threadPath = "/proc/$processId/task/$($group.Name)/comm"
+    $threadNameValue = & $adb -s $serial shell "if [ -r '$threadPath' ]; then cat '$threadPath'; fi"
+    if (-not $threadNameValue) {
+        continue
+    }
+    $threadName = $threadNameValue.Trim()
+    if ($threadName -ne 'DartWorker') {
+        continue
+    }
     $ordered = @($group.Group)
-    $usable = if ($ordered.Count -gt 1) { @($ordered | Select-Object -Skip 1) } else { @() }
-    if ($usable.Count -eq 0) {
+    $usable = if (@($ordered).Count -gt 1) { @($ordered | Select-Object -Skip 1) } else { @() }
+    if (@($usable).Count -eq 0) {
         continue
     }
     $values = @($usable | ForEach-Object { $_.cpuPercent })
     $mean = ($values | Measure-Object -Average).Average
     [pscustomobject]@{
         tid = [int]$group.Name
-        threadName = (& $adb -s $serial shell cat "/proc/$pid/task/$($group.Name)/comm" 2>$null).Trim()
+        threadName = $threadName
         samplesPercentOfOneCore = $values
         meanPercentOfOneCore = [math]::Round($mean, 3)
     }
@@ -88,7 +94,7 @@ $result = [ordered]@{
     deviceModel = $deviceModel
     androidRelease = $androidRelease
     package = $Package
-    processId = [int]$pid
+    processId = [int]$processId
     requestedIntervals = $Samples
     discardedFirstIntervalPerThread = $true
     workers = @($workers)
