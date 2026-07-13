@@ -10,5 +10,6 @@ abstract final class TunerDspConfig {
   static const int standardWindowSize = 4096;
   static const int lowTuningWindowSize = 8192;
   static const int hopSize = 1536;
+  static const int lowTuningHopSize = 2304;
   static const int ringBufferCapacity = 32768;
 }

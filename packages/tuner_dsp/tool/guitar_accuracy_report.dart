@@ -44,7 +44,7 @@ void main(List<String> arguments) {
     return;
   }
 
-  const detector = MpmDetector();
+  final detector = MpmDetector();
   final results = <Map<String, Object?>>[];
   var totalEstimateCount = 0;
   var totalOctaveErrors = 0;

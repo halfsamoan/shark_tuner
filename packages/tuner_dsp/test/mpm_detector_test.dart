@@ -8,7 +8,7 @@ import 'support/synthetic_pitch_corpus.dart';
 
 void main() {
   const sampleRate = TunerDspConfig.sampleRateHz;
-  const detector = MpmDetector();
+  final detector = MpmDetector();
 
   group('MpmDetector', () {
     for (final windowSamples in [

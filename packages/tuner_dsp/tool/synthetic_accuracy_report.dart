@@ -6,7 +6,7 @@ import 'package:tuner_dsp/tuner_dsp.dart';
 import '../test/support/synthetic_pitch_corpus.dart';
 
 void main() {
-  const detector = MpmDetector();
+  final detector = MpmDetector();
   const thresholds = SyntheticAccuracyThresholds();
   final results = [
     for (final windowSamples in [

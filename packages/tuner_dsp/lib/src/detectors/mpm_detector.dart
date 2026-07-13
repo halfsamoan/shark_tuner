@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:fftea/fftea.dart';
+
 import '../api/pitch_detector.dart';
 import '../api/pitch_estimate.dart';
 import '../config/tuner_dsp_config.dart';
@@ -29,15 +31,18 @@ final class MpmDetectorConfig {
   final double minimumRms;
 }
 
-/// Time-domain MPM detector used as the deterministic accuracy baseline.
+/// Clean-room MPM detector with FFT-accelerated autocorrelation.
 ///
 /// This implementation follows the normalized square difference function
-/// described in the MPM paper. It intentionally favors readability and a
-/// reviewable numerical baseline before FFT acceleration is introduced.
+/// described in the MPM paper. FFT plans and buffers are retained between
+/// frames so the default and low-tuning windows avoid quadratic work and
+/// repeated plan allocation.
 final class MpmDetector implements PitchDetector {
-  const MpmDetector({this.config = const MpmDetectorConfig()});
+  MpmDetector({this.config = const MpmDetectorConfig()});
 
   final MpmDetectorConfig config;
+  FFT? _fftPlan;
+  Float64x2List _fftBuffer = Float64x2List(0);
 
   @override
   PitchEstimate? detect(Float64List samples, {required double sampleRate}) {
@@ -54,10 +59,14 @@ final class MpmDetector implements PitchDetector {
     }
     final mean = sum / samples.length;
 
+    final centeredSamples = Float64List(samples.length);
+    final prefixEnergy = Float64List(samples.length + 1);
     var energy = 0.0;
-    for (final sample in samples) {
-      final centered = sample - mean;
+    for (var index = 0; index < samples.length; index++) {
+      final centered = samples[index] - mean;
+      centeredSamples[index] = centered;
       energy += centered * centered;
+      prefixEnergy[index + 1] = energy;
     }
     final rms = math.sqrt(energy / samples.length);
     if (rms < config.minimumRms) {
@@ -82,20 +91,15 @@ final class MpmDetector implements PitchDetector {
       samples.length - 1,
       maximumCandidateLag + 1,
     );
+    _calculateAutocorrelation(centeredSamples, calculationMaxLag);
     final nsdf = Float64List(calculationMaxLag + 1);
     for (var lag = 0; lag <= calculationMaxLag; lag++) {
-      var autocorrelation = 0.0;
-      var squaredMagnitude = 0.0;
       final overlap = samples.length - lag;
-      for (var index = 0; index < overlap; index++) {
-        final left = samples[index] - mean;
-        final right = samples[index + lag] - mean;
-        autocorrelation += left * right;
-        squaredMagnitude += left * left + right * right;
-      }
+      final squaredMagnitude =
+          prefixEnergy[overlap] + (prefixEnergy.last - prefixEnergy[lag]);
       nsdf[lag] = squaredMagnitude == 0
           ? 0
-          : (2 * autocorrelation / squaredMagnitude).clamp(-1.0, 1.0);
+          : (2 * _fftBuffer[lag].x / squaredMagnitude).clamp(-1.0, 1.0);
     }
 
     final peaks = _positiveLobeMaxima(
@@ -141,6 +145,33 @@ final class MpmDetector implements PitchDetector {
       clarity: refined.value.clamp(0.0, 1.0),
       periodSamples: refined.periodSamples,
     );
+  }
+
+  /// Linear autocorrelation via a zero-padded FFT.
+  ///
+  /// The zero padding prevents circular wrap for every requested lag. Scratch
+  /// buffers are retained by the detector to avoid per-frame GC pressure.
+  void _calculateAutocorrelation(Float64List centeredSamples, int maximumLag) {
+    var fftSize = 1;
+    final requiredSize = centeredSamples.length + maximumLag;
+    while (fftSize < requiredSize) {
+      fftSize <<= 1;
+    }
+    if (_fftBuffer.length != fftSize) {
+      _fftPlan = FFT(fftSize);
+      _fftBuffer = Float64x2List(fftSize);
+    } else {
+      _fftBuffer.fillRange(0, fftSize, Float64x2.zero());
+    }
+    for (var index = 0; index < centeredSamples.length; index++) {
+      _fftBuffer[index] = Float64x2(centeredSamples[index], 0);
+    }
+    _fftPlan!.inPlaceFft(_fftBuffer);
+    for (var index = 0; index < fftSize; index++) {
+      final value = _fftBuffer[index];
+      _fftBuffer[index] = Float64x2(value.x * value.x + value.y * value.y, 0);
+    }
+    _fftPlan!.inPlaceInverseFft(_fftBuffer);
   }
 
   static List<int> _positiveLobeMaxima(
