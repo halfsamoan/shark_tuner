@@ -27,6 +27,9 @@ Future<int> runCorpusPreparation(
   fixtures.addAll(
     await _prepareNsynth(options: options, sourceHashes: sourceHashes),
   );
+  fixtures.addAll(
+    await _prepareUserGuitar(options: options, sourceHashes: sourceHashes),
+  );
   fixtures.sort(
     (left, right) => (left['id'] as String).compareTo(right['id'] as String),
   );
@@ -61,6 +64,12 @@ Future<int> runCorpusPreparation(
         'title': 'NSynth Dataset test split',
         'license': 'CC BY 4.0',
         'sourceUrl': 'https://magenta.withgoogle.com/datasets/nsynth',
+      },
+      {
+        'id': 'user-guitar-samsung-sm-s926n-20260713-v1',
+        'title': 'User-provided acoustic guitar recording session',
+        'rights': 'project_provided_user_recording',
+        'referenceKind': 'uncalibrated_mobile_tuner_nominal_center',
       },
     ],
     'fixtureCount': fixtures.length,
@@ -257,6 +266,174 @@ Future<List<Map<String, Object?>>> _prepareGuitarTechs({
       } finally {
         reader.close();
       }
+    }
+  }
+  return fixtures;
+}
+
+Future<List<Map<String, Object?>>> _prepareUserGuitar({
+  required _CorpusOptions options,
+  required Map<String, String> sourceHashes,
+}) async {
+  final sessionFile = File(
+    _join(
+      options.sourceRoot.path,
+      'packages',
+      'tuner_dsp',
+      'tool',
+      'corpus',
+      'user_guitar_session_20260713.v1.json',
+    ),
+  );
+  _requireFiles([sessionFile]);
+  final session = jsonDecode(sessionFile.readAsStringSync());
+  if (session is! Map<String, dynamic> || session['schemaVersion'] != 1) {
+    throw const FormatException('Unsupported user guitar session schema.');
+  }
+  final sourceDirectory = Directory(
+    _joinParts([
+      options.sourceRoot.path,
+      ...(session['sourceDirectory'] as String).split('/'),
+    ]),
+  );
+  final recordings = (session['recordings'] as List)
+      .cast<Map<String, dynamic>>();
+  final fixtures = <Map<String, Object?>>[];
+  for (final recording in recordings) {
+    final sourceFile = File(
+      _joinParts([
+        sourceDirectory.path,
+        ...(recording['sourceFile'] as String).split('/'),
+      ]),
+    );
+    _requireFiles([sourceFile]);
+    final prefix = sourceFile.openRead(0, 12);
+    final prefixBytes = await prefix.fold<List<int>>(
+      <int>[],
+      (bytes, chunk) => bytes..addAll(chunk),
+    );
+    if (!isRiffWave(Uint8List.fromList(prefixBytes))) {
+      throw StateError(
+        '${sourceFile.path} is not RIFF/WAVE despite its source mapping.',
+      );
+    }
+    final reader = PcmWaveFileReader(sourceFile);
+    try {
+      final requiredRate = session['sourceSampleRateHz'] as int;
+      final requiredChannels = session['sourceChannelCount'] as int;
+      if (reader.sampleRateHz != requiredRate ||
+          reader.channelCount != requiredChannels ||
+          reader.bitsPerSample != 16) {
+        throw StateError(
+          '${sourceFile.path} must be mono PCM16 at $requiredRate Hz.',
+        );
+      }
+      final sourceSamples = reader.readSamples(0, reader.frameCount);
+      final sourceLevels = analyzePcmLevels(sourceSamples);
+      final attackFrame = findAttackSample(
+        sourceSamples,
+        sampleRateHz: reader.sampleRateHz,
+      );
+      final preRollSamples = (reader.sampleRateHz * 0.25).round();
+      final sourceClipStart = math.max(0, attackFrame - preRollSamples);
+      final sourceClipLength = (reader.sampleRateHz * 4.5).round();
+      if (sourceClipStart + sourceClipLength > sourceSamples.length) {
+        throw StateError(
+          '${sourceFile.path} is too short for a 4.5 second aligned excerpt.',
+        );
+      }
+      final sourceClip = Float64List.sublistView(
+        sourceSamples,
+        sourceClipStart,
+        sourceClipStart + sourceClipLength,
+      );
+      final outputSamples = resampleCubic(
+        sourceClip,
+        sourceRateHz: reader.sampleRateHz,
+        targetRateHz: 48000,
+      );
+      final outputLevels = analyzePcmLevels(outputSamples);
+      final relativeOutput = _forwardSlash(
+        _join('audio', 'user-guitar', recording['outputFile'] as String),
+      );
+      final outputFile = File(
+        _joinParts([
+          options.outputDirectory.path,
+          ...relativeOutput.split('/'),
+        ]),
+      );
+      outputFile.parent.createSync(recursive: true);
+      outputFile.writeAsBytesSync(
+        encodePcm16Wave(outputSamples, sampleRateHz: 48000),
+      );
+      final midiNote = recording['midiNote'] as int;
+      final sourceExtension = _fileExtension(sourceFile.path);
+      fixtures.add({
+        'id': recording['id'] as String,
+        'file': relativeOutput,
+        'corpusClass': 'user-guitar',
+        'dataset': session['id'] as String,
+        'license': 'project-provided',
+        'rights': session['rights'] as String,
+        'sourceFile': _relativeSource(options.sourceRoot, sourceFile),
+        'sourceSha256': await _cachedHash(sourceFile, sourceHashes),
+        'sourceExtension': sourceExtension,
+        'detectedSourceContainer': 'RIFF/WAVE',
+        'sourceExtensionMatchesContainer': sourceExtension == '.wav',
+        'sourceSampleRateHz': reader.sampleRateHz,
+        'sourceBitsPerSample': reader.bitsPerSample,
+        'sourceChannelCount': reader.channelCount,
+        'selectedChannel': 0,
+        'channelSelectionReason': 'mono_source',
+        'deviceModel': session['deviceModel'] as String,
+        'recordingApp': session['recordingApp'] as String,
+        'recordingAppPackage': session['recordingAppPackage'] as String,
+        'recordingAppVersion': session['recordingAppVersion'] as String,
+        'recordingAppUrl': session['recordingAppUrl'] as String,
+        'referenceTuner': session['referenceTuner'] as String,
+        'referenceTunerPackage': session['referenceTunerPackage'] as String,
+        'referenceTunerVersion': session['referenceTunerVersion'] as String,
+        'referenceTunerUrl': session['referenceTunerUrl'] as String,
+        'a4ReferenceHz': session['a4ReferenceHz'] as int,
+        'stringNumber': recording['stringNumber'] as int,
+        'noteName': recording['noteName'] as String,
+        'pickStrength': recording['pickStrength'] as String,
+        'offTuning': recording['offTuning'] as bool,
+        if (recording['annotatedFrequencyHz'] case final num value)
+          'annotatedFrequencyHz': value,
+        if (recording['sourceLabelCorrection'] case final String value)
+          'sourceLabelCorrection': value,
+        'nominalMidi': midiNote,
+        'nominalFrequencyHz': midiFrequencyHz(midiNote),
+        'referenceKind': session['referenceKind'] as String,
+        'outputSampleRateHz': 48000,
+        'outputBitsPerSample': 16,
+        'sourceAttackSeconds': attackFrame / reader.sampleRateHz,
+        'outputAttackMs':
+            (attackFrame - sourceClipStart) * 1000 / reader.sampleRateHz,
+        'stableStartMs': 600,
+        'stableEndMs': 4000,
+        'windowSamples': midiNote <= 40 ? 8192 : 4096,
+        'sourcePeakDbfs': sourceLevels.peakDbfs,
+        'sourceClippedSampleCount': sourceLevels.clippedSampleCount,
+        'sourceClippedSampleRate': sourceLevels.clippedSampleRate,
+        'clippingDetected': sourceLevels.clippedSampleCount > 0,
+        'outputPeakDbfsBeforeEncoding': outputLevels.peakDbfs,
+        'outputClippedSampleCountBeforeEncoding':
+            outputLevels.clippedSampleCount,
+        'transforms': [
+          'content_signature_riff_wave_v1',
+          'energy_attack_discovery_v1',
+          'clip_4500ms_attack_at_250ms',
+          'selected_channel_0',
+          'cubic_hermite_resample_v1',
+          'canonical_pcm_16_wave',
+          'no_amplitude_normalization',
+        ],
+        'outputSha256': await sha256File(outputFile),
+      });
+    } finally {
+      reader.close();
     }
   }
   return fixtures;
@@ -496,6 +673,12 @@ String _relativeSource(Directory root, File file) {
 }
 
 String _forwardSlash(String path) => path.replaceAll('\\', '/');
+
+String _fileExtension(String path) {
+  final separator = math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+  final dot = path.lastIndexOf('.');
+  return dot > separator ? path.substring(dot).toLowerCase() : '';
+}
 
 String _joinParts(Iterable<String> parts) => parts.join(Platform.pathSeparator);
 

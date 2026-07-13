@@ -39,6 +39,50 @@ final class DecodedPcmWave {
   final int sourceChannelCount;
 }
 
+final class PcmLevelStats {
+  const PcmLevelStats({
+    required this.clippedSampleCount,
+    required this.clippedSampleRate,
+    required this.peakDbfs,
+  });
+
+  final int clippedSampleCount;
+  final double clippedSampleRate;
+  final double peakDbfs;
+}
+
+bool isRiffWave(Uint8List bytes) =>
+    bytes.length >= 12 &&
+    ascii.decode(bytes.sublist(0, 4), allowInvalid: true) == 'RIFF' &&
+    ascii.decode(bytes.sublist(8, 12), allowInvalid: true) == 'WAVE';
+
+PcmLevelStats analyzePcmLevels(Float64List samples) {
+  if (samples.isEmpty) {
+    return const PcmLevelStats(
+      clippedSampleCount: 0,
+      clippedSampleRate: 0,
+      peakDbfs: double.negativeInfinity,
+    );
+  }
+  const clippingThreshold = 32767 / 32768;
+  var peak = 0.0;
+  var clippedSampleCount = 0;
+  for (final sample in samples) {
+    final magnitude = sample.abs();
+    peak = math.max(peak, magnitude);
+    if (magnitude >= clippingThreshold) {
+      clippedSampleCount++;
+    }
+  }
+  return PcmLevelStats(
+    clippedSampleCount: clippedSampleCount,
+    clippedSampleRate: clippedSampleCount / samples.length,
+    peakDbfs: peak == 0
+        ? double.negativeInfinity
+        : 20 * math.log(peak) / math.ln10,
+  );
+}
+
 List<MidiNote> parseMidiNotes(Uint8List bytes) {
   final reader = _ByteReader(bytes);
   if (reader.readAscii(4) != 'MThd') {
@@ -365,6 +409,46 @@ int alignAttackSample(
   return expectedSample.clamp(0, samples.length - 1);
 }
 
+int findAttackSample(Float64List samples, {required int sampleRateHz}) {
+  if (samples.isEmpty || sampleRateHz <= 0) {
+    return 0;
+  }
+  final halfWindow = math.max(2, (sampleRateHz * 0.005).round());
+  final hop = math.max(1, (sampleRateHz * 0.002).round());
+  if (samples.length <= halfWindow * 2) {
+    return 0;
+  }
+  final centers = <int>[];
+  final levels = <double>[];
+  for (
+    var center = halfWindow;
+    center < samples.length - halfWindow;
+    center += hop
+  ) {
+    var energy = 0.0;
+    for (
+      var index = center - halfWindow;
+      index < center + halfWindow;
+      index++
+    ) {
+      energy += samples[index] * samples[index];
+    }
+    centers.add(center);
+    levels.add(math.sqrt(energy / (halfWindow * 2)));
+  }
+  final sortedLevels = levels.toList()..sort();
+  final noiseFloor = sortedLevels[(sortedLevels.length * 0.2).floor()];
+  final peak = sortedLevels.last;
+  final threshold = math.max(1e-5, math.max(noiseFloor * 6, peak * 0.08));
+  for (var index = 0; index < levels.length; index++) {
+    if (levels[index] >= threshold &&
+        (index == 0 || levels[index - 1] < threshold)) {
+      return math.min(samples.length - 1, centers[index] + halfWindow);
+    }
+  }
+  return 0;
+}
+
 Uint8List encodePcm16Wave(Float64List samples, {required int sampleRateHz}) {
   if (sampleRateHz <= 0) {
     throw ArgumentError.value(sampleRateHz, 'sampleRateHz');
@@ -458,9 +542,7 @@ _WaveMetadata _parseWaveMetadata(
   Uint8List bytes, {
   bool allowDataOutsideBytes = false,
 }) {
-  if (bytes.length < 12 ||
-      ascii.decode(bytes.sublist(0, 4)) != 'RIFF' ||
-      ascii.decode(bytes.sublist(8, 12)) != 'WAVE') {
+  if (!isRiffWave(bytes)) {
     throw const FormatException('Expected a RIFF/WAVE file.');
   }
   final data = ByteData.sublistView(bytes);

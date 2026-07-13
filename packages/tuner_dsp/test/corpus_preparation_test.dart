@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
@@ -49,6 +50,22 @@ void main() {
       expect(wave.samples[0], closeTo(0.25, 1e-7));
       expect(wave.samples[1], closeTo(-0.25, 1e-7));
     });
+
+    test('identifies RIFF WAVE by content instead of filename extension', () {
+      final bytes = _pcmWave(
+        sampleRateHz: 44100,
+        bitsPerSample: 16,
+        channels: const [
+          [0, 1, -1],
+        ],
+      );
+
+      expect(isRiffWave(bytes), isTrue);
+      expect(
+        isRiffWave(Uint8List.fromList(ascii.encode('not audio'))),
+        isFalse,
+      );
+    });
   });
 
   test('cubic resampling preserves original samples at an integer ratio', () {
@@ -63,6 +80,38 @@ void main() {
     expect(output[3], closeTo(0.5, 1e-12));
     expect(output[6], closeTo(-0.25, 1e-12));
     expect(output[9], closeTo(1, 1e-12));
+  });
+
+  test('cubic resampling preserves a 440 Hz tone from 44.1 to 48 kHz', () {
+    const sourceRate = 44100;
+    const targetRate = 48000;
+    final input = Float64List(sourceRate);
+    for (var index = 0; index < input.length; index++) {
+      input[index] = math.sin(2 * math.pi * 440 * index / sourceRate) * 0.5;
+    }
+
+    final output = resampleCubic(
+      input,
+      sourceRateHz: sourceRate,
+      targetRateHz: targetRate,
+    );
+    var positiveCrossings = 0;
+    for (var index = 1; index < output.length; index++) {
+      if (output[index - 1] <= 0 && output[index] > 0) {
+        positiveCrossings++;
+      }
+    }
+
+    expect(output, hasLength(targetRate));
+    expect(positiveCrossings, 440);
+  });
+
+  test('level analysis reports full-scale clipping without normalization', () {
+    final levels = analyzePcmLevels(Float64List.fromList([0, 1, -1, 0.25]));
+
+    expect(levels.peakDbfs, closeTo(0, 1e-12));
+    expect(levels.clippedSampleCount, 2);
+    expect(levels.clippedSampleRate, 0.5);
   });
 
   test('attack alignment finds the energy rise around the MIDI onset', () {
@@ -80,6 +129,17 @@ void main() {
     );
 
     expect(aligned, inInclusiveRange(1025, 1035));
+  });
+
+  test('attack discovery finds an onset without a timestamp hint', () {
+    final samples = Float64List(2000);
+    for (var index = 1030; index < 1500; index++) {
+      samples[index] = index.isEven ? 0.8 : -0.8;
+    }
+
+    final attack = findAttackSample(samples, sampleRateHz: 1000);
+
+    expect(attack, inInclusiveRange(1025, 1035));
   });
 
   test(
