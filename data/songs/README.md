@@ -10,8 +10,10 @@
 - `tunings.v1.json`: 첫 후보군이 참조하는 정규화된 튜닝 정의.
 - `candidates.v1.json`: 검색·카포·7/8현 흐름을 위한 첫 20곡. 곡별 독립 URL 2개를 저장했지만 프로젝트 소유자의 사람 검토 전이므로 전부 `needs_human_review`이며 출시 자산이 아니다.
 - `song-candidates.schema.json`: 후보 데이터 계약. `verified`로 승격하려면 독립 출처가 최소 2개 필요하다.
+- `catalog.v1.json`: 2026-07-14 프로젝트 소유자가 전량 승인한 출시 카탈로그. 승인 역할·날짜·범위와 20곡의 `verified` 상태를 기록한다.
+- `song-catalog.schema.json`: 출시 카탈로그 계약. 전량 승인 메타데이터와 독립 출처를 강제한다.
 
 `researchConfidence`는 조사 당시의 메모일 뿐 출시 검증 상태가 아니다. `[V]`에서 옮긴 `web_verified`도 출처 URL·확인일·확인자를 저장하기 전에는 `verified`가 될 수 없다.
 
-2026-07-13 출처 감사의 교체 결정과 사람 승인 절차는
+2026-07-13 출처 감사의 교체 결정과 2026-07-14 승인 기록은
 `docs/song-curation-2026-07-13.md`에 기록한다.

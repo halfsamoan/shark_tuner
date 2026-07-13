@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  for (final filename in ['candidates.v1.json', 'tunings.v1.json']) {
+  for (final filename in ['catalog.v1.json', 'tunings.v1.json']) {
     test('bundled $filename exactly mirrors the canonical song data', () async {
       final bundled = await rootBundle.loadString('assets/songs/$filename');
       final canonical = await _workspaceFile(

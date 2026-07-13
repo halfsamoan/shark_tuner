@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:tuner_data/tuner_data.dart';
 
-const _songsAsset = 'assets/songs/candidates.v1.json';
+const _songsAsset = 'assets/songs/catalog.v1.json';
 const _tuningsAsset = 'assets/songs/tunings.v1.json';
 
 Future<SongCatalog> openBundledSongCatalog() async {

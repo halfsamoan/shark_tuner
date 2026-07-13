@@ -5,12 +5,16 @@ import 'package:tuner_data/tuner_data.dart';
 
 void main() {
   late String songsJson;
+  late String candidateSongsJson;
   late String tuningsJson;
   late SqliteSongCatalog catalog;
 
   setUpAll(() async {
-    songsJson = await _workspaceFile(
+    candidateSongsJson = await _workspaceFile(
       'data/songs/candidates.v1.json',
+    ).readAsString();
+    songsJson = await _workspaceFile(
+      'data/songs/catalog.v1.json',
     ).readAsString();
     tuningsJson = await _workspaceFile(
       'data/songs/tunings.v1.json',
@@ -29,12 +33,9 @@ void main() {
   });
 
   test('FTS5 searches title and artist with prefixes while offline', () async {
-    final metallica = await catalog.search('metal', includeUnverified: true);
-    final mixedFields = await catalog.search(
-      'foo ever',
-      includeUnverified: true,
-    );
-    final punctuation = await catalog.search('AC/DC', includeUnverified: true);
+    final metallica = await catalog.search('metal');
+    final mixedFields = await catalog.search('foo ever');
+    final punctuation = await catalog.search('AC/DC');
 
     expect(metallica.map((match) => match.song.title).toSet(), {
       'Enter Sandman',
@@ -48,19 +49,24 @@ void main() {
   });
 
   test('unverified candidates are hidden unless explicitly enabled', () async {
-    expect(await catalog.search('Metallica'), isEmpty);
-    expect(await catalog.getById('metallica-enter-sandman'), isNull);
-    expect(
-      await catalog.search('Metallica', includeUnverified: true),
-      hasLength(2),
+    final candidateCatalog = SqliteSongCatalog.inMemory(
+      songsDocumentJson: candidateSongsJson,
+      tuningsDocumentJson: tuningsJson,
     );
+    try {
+      expect(await candidateCatalog.search('Metallica'), isEmpty);
+      expect(await candidateCatalog.getById('metallica-enter-sandman'), isNull);
+      expect(
+        await candidateCatalog.search('Metallica', includeUnverified: true),
+        hasLength(2),
+      );
+    } finally {
+      await candidateCatalog.close();
+    }
   });
 
   test('a match owns the versioned tuning snapshot and capo fact', () async {
-    final match = await catalog.getById(
-      'the-beatles-here-comes-the-sun',
-      includeUnverified: true,
-    );
+    final match = await catalog.getById('the-beatles-here-comes-the-sun');
 
     expect(match, isNotNull);
     expect(match!.tuning.id, 'guitar-6-standard');
@@ -80,23 +86,13 @@ void main() {
   test(
     'compatible-song lookup respects tuning version and cents offset',
     () async {
-      final everlong = await catalog.getById(
-        'foo-fighters-everlong',
-        includeUnverified: true,
-      );
+      final everlong = await catalog.getById('foo-fighters-everlong');
       final sweetChild = await catalog.getById(
         'guns-n-roses-sweet-child-o-mine',
-        includeUnverified: true,
       );
 
-      final dropDSongs = await catalog.findPlayableWith(
-        everlong!.tuning,
-        includeUnverified: true,
-      );
-      final eFlatSongs = await catalog.findPlayableWith(
-        sweetChild!.tuning,
-        includeUnverified: true,
-      );
+      final dropDSongs = await catalog.findPlayableWith(everlong!.tuning);
+      final eFlatSongs = await catalog.findPlayableWith(sweetChild!.tuning);
 
       expect(dropDSongs.map((match) => match.song.title).toSet(), {
         'Everlong',

@@ -5,6 +5,7 @@ import 'package:test/test.dart';
 
 void main() {
   late Map<String, dynamic> candidates;
+  late Map<String, dynamic> releaseCatalog;
   late Map<String, dynamic> tuningDocument;
 
   setUpAll(() async {
@@ -13,6 +14,11 @@ void main() {
               await _workspaceFile(
                 'data/songs/candidates.v1.json',
               ).readAsString(),
+            )
+            as Map<String, dynamic>;
+    releaseCatalog =
+        jsonDecode(
+              await _workspaceFile('data/songs/catalog.v1.json').readAsString(),
             )
             as Map<String, dynamic>;
     tuningDocument =
@@ -37,6 +43,24 @@ void main() {
       songs.every((song) => song['researchConfidence'] == 'web_verified'),
       isTrue,
     );
+  });
+
+  test('project-owner approval promotes all 20 songs for release', () {
+    final songs = (releaseCatalog['songs'] as List)
+        .cast<Map<String, dynamic>>();
+    final approval = releaseCatalog['approval'] as Map<String, dynamic>;
+
+    expect(releaseCatalog['generatedFrom'], 'candidates.v1.json');
+    expect(releaseCatalog['shippingEligible'], isTrue);
+    expect(songs, hasLength(20));
+    expect(
+      songs.every((song) => song['verificationStatus'] == 'verified'),
+      isTrue,
+    );
+    expect(approval['approvedBy'], 'project-owner');
+    expect(approval['approvedAt'], '2026-07-14');
+    expect(approval['scope'], 'all_songs');
+    expect(approval['approvedSongCount'], songs.length);
   });
 
   test('every candidate has two distinct stored source URLs', () {
@@ -71,8 +95,33 @@ void main() {
     }
   });
 
+  test('every release song keeps two human-approved independent sources', () {
+    final songs = (releaseCatalog['songs'] as List)
+        .cast<Map<String, dynamic>>();
+
+    for (final song in songs) {
+      final sources = (song['sources'] as List).cast<Map<String, dynamic>>();
+      final urls = sources.map((source) => source['url'] as String).toSet();
+      final sourceHosts = urls.map((url) => Uri.parse(url).host).toSet();
+
+      expect(sources, hasLength(2), reason: song['id'] as String);
+      expect(urls, hasLength(2), reason: song['id'] as String);
+      expect(sourceHosts, hasLength(2), reason: song['id'] as String);
+      expect(
+        sources.every(
+          (source) =>
+              source['checkedBy'] ==
+              'Codex source audit; human review approved by project-owner',
+        ),
+        isTrue,
+        reason: song['id'] as String,
+      );
+    }
+  });
+
   test('every song references a versioned tuning in the local catalog', () {
-    final songs = (candidates['songs'] as List).cast<Map<String, dynamic>>();
+    final songs = (releaseCatalog['songs'] as List)
+        .cast<Map<String, dynamic>>();
     final tunings = (tuningDocument['tunings'] as List)
         .cast<Map<String, dynamic>>();
     final tuningKeys = {
@@ -103,7 +152,8 @@ void main() {
   });
 
   test('verified entries can never ship without two stored sources', () {
-    final songs = (candidates['songs'] as List).cast<Map<String, dynamic>>();
+    final songs = (releaseCatalog['songs'] as List)
+        .cast<Map<String, dynamic>>();
 
     for (final song in songs.where(
       (song) => song['verificationStatus'] == 'verified',
