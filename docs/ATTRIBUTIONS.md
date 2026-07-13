@@ -1,10 +1,15 @@
 # Third-party data attributions
 
 toauner does not vendor third-party source code from the datasets below. The
-small WAV fixtures under `packages/tuner_dsp/test/fixtures/public/` are
-modified excerpts used only for DSP regression analysis. Each output's source
-path, source SHA-256, transforms, and output SHA-256 are recorded in the
-adjacent provenance manifest.
+Guitar-TECHS and NSynth WAV fixtures under
+`packages/tuner_dsp/test/fixtures/public/` are modified excerpts used only for
+DSP regression analysis. Each output's source path, source SHA-256, transforms,
+and output SHA-256 are recorded in the adjacent provenance manifest.
+
+The same fixture directory also contains 19 project-provided user recordings.
+They are not derived from either public dataset, are not marked CC BY, and use
+the rights value `project_provided_user_recording`. Their capture and reference
+method is documented in `docs/user-guitar-corpus-2026-07-13.md`.
 
 ## Guitar-TECHS
 
