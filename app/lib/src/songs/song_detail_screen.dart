@@ -124,8 +124,8 @@ class SongDetailScreen extends StatelessWidget {
         ),
       ),
       bottomNavigationBar: InstrumentStatusBar(
-        state: 'setup loaded',
-        detail: '${tuning.strings.length} strings · $cents',
+        state: '곡 설정 준비됨',
+        detail: '${tuning.strings.length}현 │ $cents',
       ),
     );
   }

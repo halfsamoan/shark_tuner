@@ -31,7 +31,6 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   var _manualTarget = false;
   late final TunerEngine _engine;
   late final StreamSubscription<LiveTunerState> _engineSubscription;
-  late final Future<List<SongTuningMatch>> _compatibleSongs;
   late final Stopwatch _tuneUpStopwatch;
   late final TuneUpProgressTracker _tuneUpTracker;
   late LiveTunerState _liveState;
@@ -48,10 +47,6 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
       ),
     );
     _engineSubscription = _engine.states.listen(_handleEngineState);
-    _compatibleSongs = widget.catalog.findPlayableWith(
-      widget.match.tuning,
-      includeUnverified: widget.includeUnverifiedSongs,
-    );
     unawaited(_engine.start(widget.match.tuning));
   }
 
@@ -115,6 +110,20 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     await _engine.start(widget.match.tuning);
   }
 
+  void _showDiagnostics() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: InstrumentColors.chrome,
+      isScrollControlled: true,
+      builder: (context) => _DiagnosticsSheet(
+        state: _liveState,
+        tuning: widget.match.tuning,
+        song: widget.match.song,
+        progress: _tuneUpTracker.state,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final song = widget.match.song;
@@ -122,226 +131,260 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     return Scaffold(
       appBar: const InstrumentHeaderBar(section: '정밀 튜너', showBack: true),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
-          children: [
-            Container(
-              height: 34,
-              alignment: Alignment.centerLeft,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              decoration: BoxDecoration(
-                color: InstrumentColors.chrome,
-                border: Border.all(color: InstrumentColors.line),
-              ),
-              child: Text(
-                '${song.title.toUpperCase()}  /  ${tuning.name.toUpperCase()}  /  ${_offsetLabel(tuning.centsOffset)}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: InstrumentColors.muted,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
+          child: Column(
+            children: [
+              Container(
+                height: 34,
+                alignment: Alignment.centerLeft,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: InstrumentColors.chrome,
+                  border: Border.all(color: InstrumentColors.line),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${song.title.toUpperCase()}  /  ${tuning.name.toUpperCase()}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: InstrumentColors.muted,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    if (widget.includeUnverifiedSongs)
+                      TextButton(
+                        key: const Key('dev-diagnostics'),
+                        onPressed: _showDiagnostics,
+                        style: TextButton.styleFrom(
+                          minimumSize: const Size(0, 30),
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: const Text(
+                          'DEV·진단',
+                          style: TextStyle(fontSize: 9),
+                        ),
+                      ),
+                  ],
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  for (
-                    var index = 0;
-                    index < tuning.strings.length;
-                    index++
-                  ) ...[
-                    TuningNoteCell(
-                      label: tuning.strings[index].label,
-                      stringNumber: tuning.strings[index].stringNumber,
-                      active: _selectedIndex == index,
-                      onTap: () => _toggleTarget(index),
-                    ),
-                    if (index != tuning.strings.length - 1)
-                      const SizedBox(width: 8),
+              const SizedBox(height: 12),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (
+                      var index = 0;
+                      index < tuning.strings.length;
+                      index++
+                    ) ...[
+                      TuningNoteCell(
+                        label: tuning.strings[index].label,
+                        stringNumber: tuning.strings[index].stringNumber,
+                        active: _selectedIndex == index,
+                        onTap: () => _toggleTarget(index),
+                      ),
+                      if (index != tuning.strings.length - 1)
+                        const SizedBox(width: 8),
+                    ],
                   ],
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${_liveState.target?.label ?? _selected.label} · ${_selected.stringNumber}번 줄 · ${_manualTarget ? '직접 선택' : '자동 인식'}',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.labelSmall,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                _formatMeasuredCents(_liveState.cents),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _liveState.locked
+                      ? InstrumentColors.accent
+                      : InstrumentColors.text,
+                  fontSize: 62,
+                  height: 1.05,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -2,
+                ),
+              ),
+              Text(
+                _signalDescription(_liveState),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _liveState.locked
+                      ? InstrumentColors.accent
+                      : InstrumentColors.muted,
+                  fontSize: 11,
+                ),
+              ),
+              const SizedBox(height: 14),
+              PitchTape(
+                cents: _liveState.cents,
+                locked: _liveState.locked,
+                status: _tapeStatus(_liveState),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Text(
+                    _liveState.frequencyHz == null
+                        ? '— Hz'
+                        : '${_liveState.frequencyHz!.toStringAsFixed(2)} Hz',
+                    style: const TextStyle(
+                      color: InstrumentColors.text,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const Spacer(),
+                  Flexible(
+                    child: Text(
+                      '목표 ${_targetHz.toStringAsFixed(2)} Hz',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                      style: const TextStyle(
+                        color: InstrumentColors.muted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
                 ],
               ),
-            ),
-            const SizedBox(height: 34),
-            Text(
-              'STRING ${_selected.stringNumber}  ·  ${_manualTarget ? 'MANUAL' : 'AUTO'} TARGET',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.labelSmall,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              _liveState.target?.label ?? _selected.label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: InstrumentColors.text,
-                fontSize: 62,
-                height: 1.05,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -2,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              _formatMeasuredCents(_liveState.cents),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: _liveState.locked
-                    ? InstrumentColors.accent
-                    : InstrumentColors.text,
-                fontSize: 30,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            Text(
-              _signalDescription(_liveState),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: _liveState.locked
-                    ? InstrumentColors.accent
-                    : InstrumentColors.muted,
-                fontSize: 11,
-              ),
-            ),
-            const SizedBox(height: 22),
-            PitchTape(
-              cents: _liveState.cents,
-              locked: _liveState.locked,
-              status: _tapeStatus(_liveState),
-            ),
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                Text(
-                  _liveState.frequencyHz == null
-                      ? '— Hz'
-                      : '${_liveState.frequencyHz!.toStringAsFixed(2)} Hz',
-                  style: const TextStyle(
-                    color: InstrumentColors.text,
-                    fontSize: 18,
+              const Spacer(),
+              if (_liveState.status == LiveTunerStatus.permissionDenied ||
+                  _liveState.status == LiveTunerStatus.unavailable) ...[
+                _InputErrorNotice(
+                  permissionDenied:
+                      _liveState.status == LiveTunerStatus.permissionDenied,
+                  onRetry: _retryInput,
+                ),
+                const SizedBox(height: 8),
+              ],
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: InstrumentColors.panel,
+                  border: Border.all(color: InstrumentColors.line),
+                ),
+                child: Text(
+                  tuning.centsOffset == 0
+                      ? '현을 한 번 튕기면 측정을 시작합니다.'
+                      : '곡 기준 ${_offsetLabel(tuning.centsOffset)} 적용',
+                  style: TextStyle(
+                    color: tuning.centsOffset == 0
+                        ? InstrumentColors.muted
+                        : InstrumentColors.accent,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const Spacer(),
-                Text(
-                  'TARGET ${_targetHz.toStringAsFixed(2)} Hz',
-                  style: const TextStyle(
-                    color: InstrumentColors.muted,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            const Divider(height: 1),
-            const SizedBox(height: 16),
-            DefinitionRow(label: '입력', value: _inputDescription(_liveState)),
-            DefinitionRow(
-              label: '분석',
-              value:
-                  '${_liveState.actualSampleRate ?? 48000} Hz · '
-                  '${_liveState.windowSamples ?? (_selected.midiNote < 40 ? 8192 : 4096)} samples',
-            ),
-            DefinitionRow(
-              label: 'DSP',
-              value: _liveState.processingDuration == null
-                  ? 'isolate 준비'
-                  : '${(_liveState.processingDuration!.inMicroseconds / 1000).toStringAsFixed(2)} ms · isolate',
-            ),
-            DefinitionRow(
-              label: '첫 응답',
-              value: _liveState.pluckToFirstValidLatency == null
-                  ? '픽 어택 대기'
-                  : '${(_liveState.pluckToFirstValidLatency!.inMicroseconds / 1000).toStringAsFixed(1)} ms · PCM 기준',
-            ),
-            DefinitionRow(
-              label: '응답 p95',
-              value: _liveState.pluckToDisplayP95Latency == null
-                  ? '표본 대기 · 매번 현을 뮤트한 뒤 피킹'
-                  : '${(_liveState.pluckToDisplayP95Latency!.inMicroseconds / 1000).toStringAsFixed(1)} ms · n=${_liveState.pluckLatencySampleCount}',
-              valueColor: _liveState.pluckToDisplayP95Latency == null
-                  ? InstrumentColors.text
-                  : _liveState.pluckToDisplayP95Latency!.inMilliseconds <= 150
-                  ? InstrumentColors.accent
-                  : InstrumentColors.danger,
-            ),
-            DefinitionRow(
-              label: '튜닝 진행',
-              value: _tuneUpProgressLabel(_tuneUpTracker.state),
-              valueColor: _tuneUpTracker.state.isComplete
-                  ? InstrumentColors.accent
-                  : InstrumentColors.text,
-            ),
-            DefinitionRow(
-              label: '곡 오프셋',
-              value: _offsetLabel(tuning.centsOffset),
-              valueColor: tuning.centsOffset == 0
-                  ? InstrumentColors.text
-                  : InstrumentColors.accent,
-            ),
-            DefinitionRow(
-              label: '카포',
-              value: song.capoFret == 0
-                  ? '튜닝 후 장착 없음'
-                  : '튜닝 후 ${song.capoFret} 프렛에 장착',
-            ),
-            const SizedBox(height: 18),
-            if (_liveState.status == LiveTunerStatus.permissionDenied ||
-                _liveState.status == LiveTunerStatus.unavailable) ...[
-              _InputErrorNotice(
-                permissionDenied:
-                    _liveState.status == LiveTunerStatus.permissionDenied,
-                onRetry: _retryInput,
               ),
-              const SizedBox(height: 18),
-            ],
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              decoration: BoxDecoration(
-                color: InstrumentColors.panel,
-                border: Border.all(color: InstrumentColors.line),
-              ),
-              child: Text(
-                tuning.centsOffset == 0
-                    ? '현을 한 번 튕기면 측정을 시작합니다.'
-                    : '곡 기준 ${_offsetLabel(tuning.centsOffset)} 적용',
+              const SizedBox(height: 8),
+              Text(
+                '튜닝 진행 ${_tuneUpTracker.state.lockedStringCount}/${_tuneUpTracker.state.expectedStringCount}',
                 style: TextStyle(
-                  color: tuning.centsOffset == 0
-                      ? InstrumentColors.muted
-                      : InstrumentColors.accent,
+                  color: _tuneUpTracker.state.isComplete
+                      ? InstrumentColors.accent
+                      : InstrumentColors.muted,
                   fontSize: 11,
-                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ),
-            const SizedBox(height: 18),
-            FutureBuilder<List<SongTuningMatch>>(
-              future: _compatibleSongs,
-              builder: (context, snapshot) {
-                final count = snapshot.data?.length;
-                if (count == null) {
-                  return const SizedBox.shrink();
-                }
-                return Text(
-                  '이 설정으로 바로 연주 가능한 곡 $count개',
-                  style: const TextStyle(
-                    color: InstrumentColors.muted,
-                    fontSize: 10,
-                  ),
-                );
-              },
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: InstrumentStatusBar(
         state: _statusBarState(_liveState),
-        detail: _statusBarDetail(_liveState),
+        detail:
+            '${tuning.name.toUpperCase()} │ A4 ${tuning.referenceA4Hz.toStringAsFixed(0)}',
         active: _liveState.status == LiveTunerStatus.listening,
+      ),
+    );
+  }
+}
+
+class _DiagnosticsSheet extends StatelessWidget {
+  const _DiagnosticsSheet({
+    required this.state,
+    required this.tuning,
+    required this.song,
+    required this.progress,
+  });
+
+  final LiveTunerState state;
+  final TuningDefinition tuning;
+  final SongTuningRecord song;
+  final TuneUpProgressState progress;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const InstrumentSectionLabel(
+              'DEV·실기기 진단',
+              color: InstrumentColors.amber,
+            ),
+            const SizedBox(height: 10),
+            DefinitionRow(label: 'DEV·입력', value: _inputDescription(state)),
+            DefinitionRow(
+              label: 'DEV·분석',
+              value:
+                  '${state.actualSampleRate ?? 48000} Hz · '
+                  '${state.windowSamples ?? 4096} samples',
+            ),
+            DefinitionRow(
+              label: 'DEV·DSP',
+              value: state.processingDuration == null
+                  ? 'isolate 준비'
+                  : '${(state.processingDuration!.inMicroseconds / 1000).toStringAsFixed(2)} ms · isolate',
+            ),
+            DefinitionRow(
+              label: 'DEV·첫 응답',
+              value: state.pluckToFirstValidLatency == null
+                  ? '픽 어택 대기'
+                  : '${(state.pluckToFirstValidLatency!.inMicroseconds / 1000).toStringAsFixed(1)} ms · PCM 기준',
+            ),
+            DefinitionRow(
+              label: 'DEV·응답 p95',
+              value: state.pluckToDisplayP95Latency == null
+                  ? '표본 대기 · 매번 현을 뮤트한 뒤 피킹'
+                  : '${(state.pluckToDisplayP95Latency!.inMicroseconds / 1000).toStringAsFixed(1)} ms · n=${state.pluckLatencySampleCount}',
+              valueColor: state.pluckToDisplayP95Latency == null
+                  ? InstrumentColors.text
+                  : state.pluckToDisplayP95Latency!.inMilliseconds <= 150
+                  ? InstrumentColors.accent
+                  : InstrumentColors.danger,
+            ),
+            DefinitionRow(
+              label: 'DEV·튜닝 진행',
+              value: _tuneUpProgressLabel(progress),
+            ),
+            DefinitionRow(
+              label: 'DEV·곡 설정',
+              value:
+                  '${tuning.id}@${tuning.version} · ${_offsetLabel(tuning.centsOffset)} · capo ${song.capoFret}',
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -431,22 +474,13 @@ String _inputDescription(LiveTunerState state) {
 
 String _statusBarState(LiveTunerState state) {
   return switch (state.status) {
-    LiveTunerStatus.idle => 'DSP idle',
-    LiveTunerStatus.probingInput => 'input probe',
-    LiveTunerStatus.permissionDenied => 'permission required',
-    LiveTunerStatus.unavailable => 'input unavailable',
-    LiveTunerStatus.listening when state.locked => 'in tune',
-    LiveTunerStatus.listening => 'listening',
+    LiveTunerStatus.idle => '준비 중',
+    LiveTunerStatus.probingInput => '입력 확인 중',
+    LiveTunerStatus.permissionDenied => '마이크 권한 필요',
+    LiveTunerStatus.unavailable => '마이크 확인 필요',
+    LiveTunerStatus.listening when state.locked => '인튠',
+    LiveTunerStatus.listening => '듣는 중',
   };
-}
-
-String _statusBarDetail(LiveTunerState state) {
-  final sampleRate = state.actualSampleRate;
-  final source = state.selectedSource?.name;
-  if (sampleRate == null || source == null) {
-    return 'mic · MPM';
-  }
-  return '${sampleRate ~/ 1000} kHz · $source';
 }
 
 String _offsetLabel(double cents) {

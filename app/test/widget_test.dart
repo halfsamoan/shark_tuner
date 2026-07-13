@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:toauner_app/main.dart';
 import 'package:toauner_app/src/app/instrument_theme.dart';
 import 'package:toauner_app/src/tuner/live_tuner_engine.dart';
+import 'package:toauner_app/src/tuner/precision_tuner_screen.dart';
+import 'package:toauner_app/src/ui/instrument_widgets.dart';
 import 'package:tuner_data/tuner_data.dart';
 import 'package:tuner_domain/tuner_domain.dart';
 
@@ -50,10 +52,65 @@ void main() {
     expect(find.textContaining('ERUPTION'), findsOneWidget);
     expect(find.text('E♭2'), findsWidgets);
     expect(find.text('0.0'), findsOneWidget);
-    await tester.drag(find.byType(ListView), const Offset(0, -500));
-    await _pumpFrames(tester);
     expect(find.textContaining('78.69 Hz'), findsNWidgets(2));
     expect(find.text('곡 기준 +20 cents 적용'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+  });
+
+  testWidgets('release tuner hides telemetry and never scrolls vertically', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final catalog = _FakeSongCatalog(
+      currentMatch: _FakeSongCatalog.verifiedMatch,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildInstrumentTheme(),
+        home: PrecisionTunerScreen(
+          match: _FakeSongCatalog.verifiedMatch,
+          catalog: catalog,
+          tunerEngineFactory: _FakeTunerEngine.new,
+          includeUnverifiedSongs: false,
+        ),
+      ),
+    );
+    await _pumpFrames(tester);
+
+    for (final internalCopy in [
+      'FTS5',
+      'UNPROCESSED',
+      'VOICE_RECOGNITION',
+      'DSP',
+      'isolate',
+      'samples',
+      'DEVELOPMENT',
+      '사람 검증 필요',
+    ]) {
+      expect(find.textContaining(internalCopy), findsNothing);
+    }
+    final statusBar = tester.widget<InstrumentStatusBar>(
+      find.byType(InstrumentStatusBar),
+    );
+    expect(statusBar.state, '인튠');
+    expect(find.byKey(const Key('dev-diagnostics')), findsNothing);
+
+    final scrollables = tester.widgetList<Scrollable>(find.byType(Scrollable));
+    expect(scrollables, isNotEmpty);
+    expect(
+      scrollables.every(
+        (scrollable) =>
+            scrollable.axisDirection == AxisDirection.left ||
+            scrollable.axisDirection == AxisDirection.right,
+      ),
+      isTrue,
+    );
 
     await tester.pumpWidget(const SizedBox.shrink());
     await _pumpFrames(tester);
@@ -110,6 +167,11 @@ Future<void> _pumpFrames(WidgetTester tester) async {
 }
 
 final class _FakeSongCatalog implements SongCatalog {
+  _FakeSongCatalog({SongTuningMatch? currentMatch})
+    : currentMatch = currentMatch ?? match;
+
+  final SongTuningMatch currentMatch;
+
   static final match = SongTuningMatch(
     song: SongTuningRecord(
       id: 'eruption-van-halen',
@@ -138,6 +200,34 @@ final class _FakeSongCatalog implements SongCatalog {
     ),
   );
 
+  static final verifiedMatch = SongTuningMatch(
+    song: SongTuningRecord(
+      id: 'eruption-van-halen-verified',
+      title: 'Eruption',
+      artist: 'Van Halen',
+      tuningId: 'eb-standard',
+      tuningVersion: 1,
+      verificationStatus: SongVerificationStatus.verified,
+      researchConfidence: SongResearchConfidence.webVerified,
+      sources: [
+        SongMetadataSource(
+          label: 'Source A',
+          uri: Uri.parse('https://example.com/a'),
+          checkedAt: DateTime.utc(2026, 7, 14),
+          checkedBy: 'project-owner',
+        ),
+        SongMetadataSource(
+          label: 'Source B',
+          uri: Uri.parse('https://example.org/b'),
+          checkedAt: DateTime.utc(2026, 7, 14),
+          checkedBy: 'project-owner',
+        ),
+      ],
+      centsOffset: 20,
+    ),
+    tuning: match.tuning,
+  );
+
   @override
   Future<void> close() async {}
 
@@ -146,7 +236,7 @@ final class _FakeSongCatalog implements SongCatalog {
     TuningDefinition tuning, {
     bool includeUnverified = false,
   }) async {
-    return [match];
+    return [currentMatch];
   }
 
   @override
@@ -154,7 +244,7 @@ final class _FakeSongCatalog implements SongCatalog {
     String id, {
     bool includeUnverified = false,
   }) async {
-    return id == match.song.id ? match : null;
+    return id == currentMatch.song.id ? currentMatch : null;
   }
 
   @override
@@ -166,9 +256,9 @@ final class _FakeSongCatalog implements SongCatalog {
     if (normalized.isEmpty) {
       return const [];
     }
-    if (match.song.title.toLowerCase().contains(normalized) ||
-        match.song.artist.toLowerCase().contains(normalized)) {
-      return [match];
+    if (currentMatch.song.title.toLowerCase().contains(normalized) ||
+        currentMatch.song.artist.toLowerCase().contains(normalized)) {
+      return [currentMatch];
     }
     return const [];
   }

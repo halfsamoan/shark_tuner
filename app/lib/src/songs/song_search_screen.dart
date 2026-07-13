@@ -135,9 +135,7 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            InstrumentSectionLabel(
-              'Results  ${_results.length}  /  ${widget.includeUnverifiedSongs ? 'development' : 'verified'} catalog',
-            ),
+            InstrumentSectionLabel('검색 결과  ${_results.length}곡'),
             const SizedBox(height: 10),
             if (_loading) const LinearProgressIndicator(minHeight: 2),
             if (_error != null) _CatalogError(onRetry: () => _load()),
@@ -163,7 +161,7 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
             if (widget.includeUnverifiedSongs) ...[
               const SizedBox(height: 16),
               const Text(
-                '●  미검증 곡은 개발 빌드에서만 표시',
+                'DEV·검토 전 후보까지 표시',
                 style: TextStyle(
                   color: InstrumentColors.amber,
                   fontSize: 10,
@@ -175,8 +173,12 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
         ),
       ),
       bottomNavigationBar: InstrumentStatusBar(
-        state: _loading ? 'catalog loading' : 'catalog ready',
-        detail: 'FTS5 · local',
+        state: _loading
+            ? '곡 준비 중'
+            : widget.includeUnverifiedSongs
+            ? 'DEV·곡 찾기 준비됨'
+            : '곡 찾기 준비됨',
+        detail: '${_results.length}곡 │ 오프라인',
         active: !_loading && _error == null,
       ),
     );
