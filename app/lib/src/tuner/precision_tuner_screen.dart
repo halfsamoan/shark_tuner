@@ -238,6 +238,12 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                   : '${(_liveState.processingDuration!.inMicroseconds / 1000).toStringAsFixed(2)} ms · isolate',
             ),
             DefinitionRow(
+              label: '첫 응답',
+              value: _liveState.pluckToFirstValidLatency == null
+                  ? '픽 어택 대기'
+                  : '${(_liveState.pluckToFirstValidLatency!.inMicroseconds / 1000).toStringAsFixed(1)} ms · PCM 기준',
+            ),
+            DefinitionRow(
               label: '곡 오프셋',
               value: _offsetLabel(tuning.centsOffset),
               valueColor: tuning.centsOffset == 0

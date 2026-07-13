@@ -10,6 +10,8 @@ abstract final class TunerDspConfig {
   static const int standardWindowSize = 4096;
   static const int lowTuningWindowSize = 8192;
   static const int hopSize = 1536;
-  static const int lowTuningHopSize = 2304;
+  // Exactly 20 analysis updates per second at 48 kHz. This preserves the
+  // documented UI cadence floor while reducing the measured 8192-path load.
+  static const int lowTuningHopSize = 2400;
   static const int ringBufferCapacity = 32768;
 }

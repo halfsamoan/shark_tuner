@@ -30,6 +30,7 @@ final class LiveTunerState {
     this.windowSamples,
     this.hopSamples,
     this.processingDuration,
+    this.pluckToFirstValidLatency,
     this.error,
   });
 
@@ -48,6 +49,7 @@ final class LiveTunerState {
   final int? windowSamples;
   final int? hopSamples;
   final Duration? processingDuration;
+  final Duration? pluckToFirstValidLatency;
   final Object? error;
 
   LiveTunerState copyWith({
@@ -64,6 +66,7 @@ final class LiveTunerState {
     int? windowSamples,
     int? hopSamples,
     Duration? processingDuration,
+    Duration? pluckToFirstValidLatency,
     Object? error,
     bool clearPitch = false,
     bool clearError = false,
@@ -82,6 +85,8 @@ final class LiveTunerState {
       windowSamples: windowSamples ?? this.windowSamples,
       hopSamples: hopSamples ?? this.hopSamples,
       processingDuration: processingDuration ?? this.processingDuration,
+      pluckToFirstValidLatency:
+          pluckToFirstValidLatency ?? this.pluckToFirstValidLatency,
       error: clearError ? null : error ?? this.error,
     );
   }
@@ -154,6 +159,13 @@ final class IsolateTunerEngine implements TunerEngine {
         sampleRate: session.actualSampleRate,
         windowSamples: windowSamples,
         hopSamples: hopSamples,
+        targetFrequenciesHz: [
+          for (final target in tuning.strings)
+            target.targetFrequencyHz(
+              referenceA4Hz: tuning.referenceA4Hz,
+              centsOffset: tuning.centsOffset,
+            ),
+        ],
       );
       _emit(
         _current.copyWith(
@@ -219,6 +231,7 @@ final class IsolateTunerEngine implements TunerEngine {
     final frequencyHz = frame['frequencyHz'] as double?;
     final rmsDb = frame['rmsDb'] as double?;
     final processingMicros = frame['processingMicros'] as int?;
+    final pluckLatencyMicros = frame['pluckToFirstValidMicros'] as int?;
     if (frequencyHz == null) {
       _lockTracker.reset();
       _emit(
@@ -227,6 +240,9 @@ final class IsolateTunerEngine implements TunerEngine {
           processingDuration: processingMicros == null
               ? null
               : Duration(microseconds: processingMicros),
+          pluckToFirstValidLatency: pluckLatencyMicros == null
+              ? null
+              : Duration(microseconds: pluckLatencyMicros),
           clearPitch: true,
         ),
       );
@@ -252,6 +268,9 @@ final class IsolateTunerEngine implements TunerEngine {
           processingDuration: processingMicros == null
               ? null
               : Duration(microseconds: processingMicros),
+          pluckToFirstValidLatency: pluckLatencyMicros == null
+              ? null
+              : Duration(microseconds: pluckLatencyMicros),
           clearPitch: true,
         ),
       );
@@ -274,6 +293,9 @@ final class IsolateTunerEngine implements TunerEngine {
         processingDuration: processingMicros == null
             ? null
             : Duration(microseconds: processingMicros),
+        pluckToFirstValidLatency: pluckLatencyMicros == null
+            ? null
+            : Duration(microseconds: pluckLatencyMicros),
       ),
     );
   }
@@ -397,12 +419,14 @@ final class _DspIsolate {
     required int sampleRate,
     required int windowSamples,
     required int hopSamples,
+    required List<double> targetFrequenciesHz,
   }) {
     _commands.send({
       'type': 'configure',
       'sampleRate': sampleRate,
       'windowSamples': windowSamples,
       'hopSamples': hopSamples,
+      'targetFrequenciesHz': targetFrequenciesHz,
     });
   }
 
@@ -434,13 +458,14 @@ void _dspIsolateMain(Map<String, Object> bootstrap) {
   readyPort.send(commands.sendPort);
 
   SampleRingBuffer? ring;
-  EstimateStabilizer? stabilizer;
+  PitchTrackingPipeline? pitchPipeline;
   int? sampleRate;
   int? windowSamples;
   var hopSamples = TunerDspConfig.hopSize;
   var samplesUntilAnalysis = 0;
   var processedSamples = 0;
   int? pendingLowByte;
+  int? pluckToFirstValidMicros;
   final detector = MpmDetector();
 
   void analyzeFrame() {
@@ -461,16 +486,35 @@ void _dspIsolateMain(Map<String, Object> bootstrap) {
       samples,
       sampleRate: activeSampleRate.toDouble(),
     );
-    final stable = stabilizer!.add(raw);
+    final tracked = pitchPipeline!.process(raw);
+    final stable = tracked.stabilized;
+    if (stable != null && pluckToFirstValidMicros == null) {
+      final history = activeRing.copyLatest(activeRing.length);
+      final onset = detectSignalOnsetSample(
+        history,
+        sampleRateHz: activeSampleRate,
+      );
+      if (onset != null) {
+        final historyStart = processedSamples - history.length;
+        final latencySamples = processedSamples - (historyStart + onset);
+        pluckToFirstValidMicros =
+            (latencySamples * Duration.microsecondsPerSecond) ~/
+            activeSampleRate;
+      }
+    }
     stopwatch.stop();
     framePort.send(<String, Object?>{
       'frequencyHz': stable?.frequencyHz,
       'clarity': stable?.clarity ?? raw?.clarity,
+      'rawFrequencyHz': raw?.frequencyHz,
+      'confidenceAccepted': tracked.confidenceAccepted,
+      'octaveCorrection': tracked.octaveSanity?.kind.name,
       'rmsDb': rmsDb,
       'audioPositionMicros':
           (processedSamples * Duration.microsecondsPerSecond) ~/
           activeSampleRate,
       'processingMicros': stopwatch.elapsedMicroseconds,
+      'pluckToFirstValidMicros': pluckToFirstValidMicros,
     });
   }
 
@@ -495,10 +539,14 @@ void _dspIsolateMain(Map<String, Object> bootstrap) {
         windowSamples = command['windowSamples']! as int;
         hopSamples = command['hopSamples']! as int;
         ring = SampleRingBuffer(TunerDspConfig.ringBufferCapacity);
-        stabilizer = EstimateStabilizer();
+        pitchPipeline = PitchTrackingPipeline(
+          targetFrequenciesHz: (command['targetFrequenciesHz']! as List)
+              .cast<double>(),
+        );
         samplesUntilAnalysis = windowSamples!;
         processedSamples = 0;
         pendingLowByte = null;
+        pluckToFirstValidMicros = null;
       case 'audio':
         if (ring == null) {
           return;

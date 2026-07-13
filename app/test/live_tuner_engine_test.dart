@@ -29,6 +29,11 @@ void main() {
       expect(state.selectedSource, AudioInputSource.unprocessed);
       expect(state.windowSamples, 4096);
       expect(state.hopSamples, 1536);
+      expect(state.pluckToFirstValidLatency, isNotNull);
+      expect(
+        state.pluckToFirstValidLatency! + state.processingDuration!,
+        lessThan(const Duration(milliseconds: 150)),
+      );
 
       await engine.dispose();
       expect(capture.disposed, isTrue);
@@ -50,9 +55,38 @@ void main() {
     await engine.start(lowTuning);
 
     expect(engine.current.windowSamples, 8192);
-    expect(engine.current.hopSamples, 2304);
+    expect(engine.current.hopSamples, 2400);
     await engine.dispose();
   });
+
+  test(
+    'corrects a detector 2f result before it reaches UI selection',
+    () async {
+      final capture = _FakeAudioCapture(
+        stream: Stream.fromIterable(_sineChunks(frequencyHz: 220)),
+      );
+      final engine = IsolateTunerEngine(audioCapture: capture);
+      final tuning = TuningDefinition(
+        id: 'single-a2',
+        version: 1,
+        name: 'A2 only',
+        strings: const [
+          TuningString(stringNumber: 5, midiNote: 45, label: 'A2'),
+        ],
+      );
+      final stableState = engine.states.firstWhere(
+        (state) => state.frequencyHz != null,
+      );
+
+      await engine.start(tuning);
+      final state = await stableState.timeout(const Duration(seconds: 5));
+
+      expect(state.frequencyHz, closeTo(110, 0.1));
+      expect(state.target?.stringNumber, 5);
+      expect(state.cents, closeTo(0, 1));
+      await engine.dispose();
+    },
+  );
 
   test('maps microphone denial to an explicit non-listening state', () async {
     final capture = _FakeAudioCapture(
