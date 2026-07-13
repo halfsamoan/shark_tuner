@@ -11,7 +11,9 @@ void main() {
     'runs PCM capture and MPM stabilization outside the UI isolate',
     () async {
       final capture = _FakeAudioCapture(
-        stream: Stream.fromIterable(_sineChunks(frequencyHz: 110)),
+        stream: Stream.fromIterable(
+          _sineChunks(frequencyHz: 110, leadingSilenceSamples: 4800),
+        ),
       );
       final engine = IsolateTunerEngine(audioCapture: capture);
       final stableState = engine.states.firstWhere(
@@ -125,7 +127,10 @@ void main() {
   });
 }
 
-List<Uint8List> _sineChunks({required double frequencyHz}) {
+List<Uint8List> _sineChunks({
+  required double frequencyHz,
+  int leadingSilenceSamples = 0,
+}) {
   const sampleRate = 48000;
   const sampleCount = 16384;
   const samplesPerChunk = 1024;
@@ -135,8 +140,13 @@ List<Uint8List> _sineChunks({required double frequencyHz}) {
     final data = ByteData.sublistView(bytes);
     for (var index = 0; index < samplesPerChunk; index++) {
       final sampleIndex = start + index;
-      final normalized =
-          0.4 * math.sin(2 * math.pi * frequencyHz * sampleIndex / sampleRate);
+      final soundingIndex = sampleIndex - leadingSilenceSamples;
+      final normalized = soundingIndex < 0
+          ? 0.0
+          : 0.4 *
+                math.sin(
+                  2 * math.pi * frequencyHz * soundingIndex / sampleRate,
+                );
       data.setInt16(index * 2, (normalized * 32767).round(), Endian.little);
     }
     chunks.add(bytes);

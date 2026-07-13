@@ -43,6 +43,11 @@ final class MpmDetector implements PitchDetector {
   final MpmDetectorConfig config;
   FFT? _fftPlan;
   Float64x2List _fftBuffer = Float64x2List(0);
+  Float64List _fftScalars = Float64List(0);
+  Float64List _centeredSamples = Float64List(0);
+  Float64List _prefixEnergy = Float64List(0);
+  Float64List _nsdf = Float64List(0);
+  Int32List _peakIndices = Int32List(0);
 
   @override
   PitchEstimate? detect(Float64List samples, {required double sampleRate}) {
@@ -51,7 +56,8 @@ final class MpmDetector implements PitchDetector {
     }
 
     var sum = 0.0;
-    for (final sample in samples) {
+    for (var index = 0; index < samples.length; index++) {
+      final sample = samples[index];
       if (!sample.isFinite) {
         return null;
       }
@@ -59,14 +65,13 @@ final class MpmDetector implements PitchDetector {
     }
     final mean = sum / samples.length;
 
-    final centeredSamples = Float64List(samples.length);
-    final prefixEnergy = Float64List(samples.length + 1);
+    _ensureFrameScratch(samples.length);
     var energy = 0.0;
     for (var index = 0; index < samples.length; index++) {
       final centered = samples[index] - mean;
-      centeredSamples[index] = centered;
+      _centeredSamples[index] = centered;
       energy += centered * centered;
-      prefixEnergy[index + 1] = energy;
+      _prefixEnergy[index + 1] = energy;
     }
     final rms = math.sqrt(energy / samples.length);
     if (rms < config.minimumRms) {
@@ -91,28 +96,40 @@ final class MpmDetector implements PitchDetector {
       samples.length - 1,
       maximumCandidateLag + 1,
     );
-    _calculateAutocorrelation(centeredSamples, calculationMaxLag);
-    final nsdf = Float64List(calculationMaxLag + 1);
+    _ensureLagScratch(calculationMaxLag + 1);
+    _calculateCircularAutocorrelation(_centeredSamples);
     for (var lag = 0; lag <= calculationMaxLag; lag++) {
       final overlap = samples.length - lag;
+      var correlation = _fftScalars[lag << 1];
+      // An N-point FFT produces circular autocorrelation. Subtract the lag
+      // boundary pairs that wrapped around to recover the exact linear
+      // autocorrelation used by NSDF, while keeping the FFT half-sized.
+      for (var index = overlap; index < samples.length; index++) {
+        correlation -=
+            _centeredSamples[index] * _centeredSamples[index - overlap];
+      }
       final squaredMagnitude =
-          prefixEnergy[overlap] + (prefixEnergy.last - prefixEnergy[lag]);
-      nsdf[lag] = squaredMagnitude == 0
+          _prefixEnergy[overlap] + (energy - _prefixEnergy[lag]);
+      _nsdf[lag] = squaredMagnitude == 0
           ? 0
-          : (2 * _fftBuffer[lag].x / squaredMagnitude).clamp(-1.0, 1.0);
+          : (2 * correlation / squaredMagnitude).clamp(-1.0, 1.0);
     }
 
-    final peaks = _positiveLobeMaxima(
-      nsdf,
+    final peakCount = _collectPositiveLobeMaxima(
+      _nsdf,
       maximumCandidateLag,
-    ).where((index) => index >= minimumLag).toList(growable: false);
-    if (peaks.isEmpty) {
-      return null;
-    }
+      _peakIndices,
+    );
 
     var strongestClarity = -1.0;
-    for (final peak in peaks) {
-      strongestClarity = math.max(strongestClarity, nsdf[peak]);
+    for (var index = 0; index < peakCount; index++) {
+      final peak = _peakIndices[index];
+      if (peak >= minimumLag) {
+        strongestClarity = math.max(strongestClarity, _nsdf[peak]);
+      }
+    }
+    if (strongestClarity < 0) {
+      return null;
     }
     final cutoff = math.max(
       config.clarityThreshold,
@@ -120,8 +137,9 @@ final class MpmDetector implements PitchDetector {
     );
 
     int? selectedPeak;
-    for (final peak in peaks) {
-      if (nsdf[peak] >= cutoff) {
+    for (var index = 0; index < peakCount; index++) {
+      final peak = _peakIndices[index];
+      if (peak >= minimumLag && _nsdf[peak] >= cutoff) {
         selectedPeak = peak;
         break;
       }
@@ -130,7 +148,7 @@ final class MpmDetector implements PitchDetector {
       return null;
     }
 
-    final refined = _parabolicPeak(nsdf, selectedPeak);
+    final refined = _parabolicPeak(_nsdf, selectedPeak);
     if (refined.periodSamples <= 0) {
       return null;
     }
@@ -147,38 +165,54 @@ final class MpmDetector implements PitchDetector {
     );
   }
 
-  /// Linear autocorrelation via a zero-padded FFT.
-  ///
-  /// The zero padding prevents circular wrap for every requested lag. Scratch
-  /// buffers are retained by the detector to avoid per-frame GC pressure.
-  void _calculateAutocorrelation(Float64List centeredSamples, int maximumLag) {
-    var fftSize = 1;
-    final requiredSize = centeredSamples.length + maximumLag;
-    while (fftSize < requiredSize) {
-      fftSize <<= 1;
+  void _ensureFrameScratch(int sampleCount) {
+    if (_centeredSamples.length != sampleCount) {
+      _centeredSamples = Float64List(sampleCount);
+      _prefixEnergy = Float64List(sampleCount + 1);
     }
+    _prefixEnergy[0] = 0;
+  }
+
+  void _ensureLagScratch(int lagCount) {
+    if (_nsdf.length < lagCount) {
+      _nsdf = Float64List(lagCount);
+      _peakIndices = Int32List(lagCount);
+    }
+  }
+
+  /// Circular autocorrelation via an N-point FFT.
+  ///
+  /// The caller removes boundary wrap terms for the requested lags to recover
+  /// exact linear autocorrelation. Scratch buffers are retained between frames.
+  void _calculateCircularAutocorrelation(Float64List centeredSamples) {
+    final fftSize = centeredSamples.length;
     if (_fftBuffer.length != fftSize) {
       _fftPlan = FFT(fftSize);
       _fftBuffer = Float64x2List(fftSize);
+      _fftScalars = Float64List.view(_fftBuffer.buffer);
     } else {
-      _fftBuffer.fillRange(0, fftSize, Float64x2.zero());
+      _fftScalars.fillRange(0, fftSize << 1, 0);
     }
     for (var index = 0; index < centeredSamples.length; index++) {
-      _fftBuffer[index] = Float64x2(centeredSamples[index], 0);
+      _fftScalars[index << 1] = centeredSamples[index];
     }
     _fftPlan!.inPlaceFft(_fftBuffer);
     for (var index = 0; index < fftSize; index++) {
-      final value = _fftBuffer[index];
-      _fftBuffer[index] = Float64x2(value.x * value.x + value.y * value.y, 0);
+      final scalarIndex = index << 1;
+      final real = _fftScalars[scalarIndex];
+      final imaginary = _fftScalars[scalarIndex + 1];
+      _fftScalars[scalarIndex] = real * real + imaginary * imaginary;
+      _fftScalars[scalarIndex + 1] = 0;
     }
     _fftPlan!.inPlaceInverseFft(_fftBuffer);
   }
 
-  static List<int> _positiveLobeMaxima(
+  static int _collectPositiveLobeMaxima(
     Float64List nsdf,
     int maximumCandidateLag,
+    Int32List peakIndices,
   ) {
-    final peaks = <int>[];
+    var peakCount = 0;
     var cursor = 1;
 
     // The lobe centered on lag zero represents the trivial self-match.
@@ -201,10 +235,10 @@ final class MpmDetector implements PitchDetector {
         }
         cursor++;
       }
-      peaks.add(bestIndex);
+      peakIndices[peakCount++] = bestIndex;
     }
 
-    return peaks;
+    return peakCount;
   }
 
   static ({double periodSamples, double value}) _parabolicPeak(

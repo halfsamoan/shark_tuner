@@ -449,12 +449,18 @@ final class _DspIsolate {
     required int hopSamples,
     required List<double> targetFrequenciesHz,
   }) {
+    final minimumTargetHz = targetFrequenciesHz.reduce(math.min);
+    final sessionMinimumFrequencyHz = math.max(
+      TunerDspConfig.minimumFrequencyHz,
+      minimumTargetHz / math.pow(2, 3 / 12),
+    );
     _commands.send({
       'type': 'configure',
       'sampleRate': sampleRate,
       'windowSamples': windowSamples,
       'hopSamples': hopSamples,
       'targetFrequenciesHz': targetFrequenciesHz,
+      'minimumFrequencyHz': sessionMinimumFrequencyHz,
     });
   }
 
@@ -494,9 +500,10 @@ void _dspIsolateMain(Map<String, Object> bootstrap) {
   var processedSamples = 0;
   int? pendingLowByte;
   int? pluckToFirstValidMicros;
-  int? lastPluckOnsetSample;
+  int? pendingPluckOnsetSample;
   var pluckLatencySequence = 0;
-  final detector = MpmDetector();
+  var detector = MpmDetector();
+  PluckOnsetTracker? onsetTracker;
 
   void analyzeFrame() {
     final activeRing = ring!;
@@ -519,30 +526,16 @@ void _dspIsolateMain(Map<String, Object> bootstrap) {
     final tracked = pitchPipeline!.process(raw);
     final stable = tracked.stabilized;
     if (stable != null) {
-      final history = activeRing.copyLatest(activeRing.length);
-      final onset = detectSignalOnsetSample(
-        history,
-        sampleRateHz: activeSampleRate,
-      );
+      final onset = pendingPluckOnsetSample;
       if (onset != null) {
-        final historyStart = processedSamples - history.length;
-        final onsetSample = historyStart + onset;
-        final lastOnset = lastPluckOnsetSample;
-        final isFirstOnset = lastOnset == null;
-        final isNewOnset =
-            !isFirstOnset &&
-            onset > 0 &&
-            onsetSample - lastOnset >= activeSampleRate ~/ 4;
-        if (isFirstOnset || isNewOnset) {
-          final latencySamples = processedSamples - onsetSample;
-          if (latencySamples >= 0 && latencySamples <= history.length) {
-            lastPluckOnsetSample = onsetSample;
-            pluckToFirstValidMicros =
-                (latencySamples * Duration.microsecondsPerSecond) ~/
-                activeSampleRate;
-            pluckLatencySequence++;
-          }
+        final latencySamples = processedSamples - onset;
+        if (latencySamples >= 0 && latencySamples <= activeSampleRate ~/ 2) {
+          pluckToFirstValidMicros =
+              (latencySamples * Duration.microsecondsPerSecond) ~/
+              activeSampleRate;
+          pluckLatencySequence++;
         }
+        pendingPluckOnsetSample = null;
       }
     }
     stopwatch.stop();
@@ -566,7 +559,13 @@ void _dspIsolateMain(Map<String, Object> bootstrap) {
     final signedSample = unsignedSample >= 0x8000
         ? unsignedSample - 0x10000
         : unsignedSample;
-    ring!.write(signedSample / 32768.0);
+    final normalized = signedSample / 32768.0;
+    final onset = onsetTracker!.addSample(normalized);
+    if (onset != null) {
+      pendingPluckOnsetSample = onset;
+      pitchPipeline!.reset();
+    }
+    ring!.write(normalized);
     processedSamples++;
     samplesUntilAnalysis--;
     if (samplesUntilAnalysis <= 0 && ring!.length >= windowSamples!) {
@@ -587,11 +586,17 @@ void _dspIsolateMain(Map<String, Object> bootstrap) {
           targetFrequenciesHz: (command['targetFrequenciesHz']! as List)
               .cast<double>(),
         );
+        detector = MpmDetector(
+          config: MpmDetectorConfig(
+            minimumFrequencyHz: command['minimumFrequencyHz']! as double,
+          ),
+        );
+        onsetTracker = PluckOnsetTracker(sampleRateHz: sampleRate!);
         samplesUntilAnalysis = windowSamples!;
         processedSamples = 0;
         pendingLowByte = null;
         pluckToFirstValidMicros = null;
-        lastPluckOnsetSample = null;
+        pendingPluckOnsetSample = null;
         pluckLatencySequence = 0;
       case 'audio':
         if (ring == null) {
@@ -610,6 +615,15 @@ void _dspIsolateMain(Map<String, Object> bootstrap) {
           final availableSamples = (bytes.length - index) >> 1;
           final batchSamples = math.min(availableSamples, samplesUntilAnalysis);
           final batchEnd = index + (batchSamples << 1);
+          final onsets = onsetTracker!.addPcm16Le(
+            bytes,
+            start: index,
+            end: batchEnd,
+          );
+          if (onsets.isNotEmpty) {
+            pendingPluckOnsetSample = onsets.last;
+            pitchPipeline!.reset();
+          }
           ring!.writePcm16Le(bytes, start: index, end: batchEnd);
           processedSamples += batchSamples;
           samplesUntilAnalysis -= batchSamples;
