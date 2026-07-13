@@ -32,6 +32,8 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   late final TunerEngine _engine;
   late final StreamSubscription<LiveTunerState> _engineSubscription;
   late final Future<List<SongTuningMatch>> _compatibleSongs;
+  late final Stopwatch _tuneUpStopwatch;
+  late final TuneUpProgressTracker _tuneUpTracker;
   late LiveTunerState _liveState;
 
   @override
@@ -39,6 +41,12 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     super.initState();
     _engine = widget.tunerEngineFactory();
     _liveState = _engine.current;
+    _tuneUpStopwatch = Stopwatch()..start();
+    _tuneUpTracker = TuneUpProgressTracker(
+      expectedStringNumbers: widget.match.tuning.strings.map(
+        (string) => string.stringNumber,
+      ),
+    );
     _engineSubscription = _engine.states.listen(_handleEngineState);
     _compatibleSongs = widget.catalog.findPlayableWith(
       widget.match.tuning,
@@ -49,6 +57,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
 
   @override
   void dispose() {
+    _tuneUpStopwatch.stop();
     unawaited(_engineSubscription.cancel());
     unawaited(_engine.dispose());
     super.dispose();
@@ -66,6 +75,12 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
       return;
     }
     final detectedTarget = state.target;
+    if (state.locked && detectedTarget != null) {
+      _tuneUpTracker.recordLock(
+        stringNumber: detectedTarget.stringNumber,
+        elapsed: _tuneUpStopwatch.elapsed,
+      );
+    }
     setState(() {
       _liveState = state;
       if (!_manualTarget && detectedTarget != null) {
@@ -242,6 +257,24 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
               value: _liveState.pluckToFirstValidLatency == null
                   ? '픽 어택 대기'
                   : '${(_liveState.pluckToFirstValidLatency!.inMicroseconds / 1000).toStringAsFixed(1)} ms · PCM 기준',
+            ),
+            DefinitionRow(
+              label: '응답 p95',
+              value: _liveState.pluckToDisplayP95Latency == null
+                  ? '표본 대기 · 매번 현을 뮤트한 뒤 피킹'
+                  : '${(_liveState.pluckToDisplayP95Latency!.inMicroseconds / 1000).toStringAsFixed(1)} ms · n=${_liveState.pluckLatencySampleCount}',
+              valueColor: _liveState.pluckToDisplayP95Latency == null
+                  ? InstrumentColors.text
+                  : _liveState.pluckToDisplayP95Latency!.inMilliseconds <= 150
+                  ? InstrumentColors.accent
+                  : InstrumentColors.danger,
+            ),
+            DefinitionRow(
+              label: '튜닝 진행',
+              value: _tuneUpProgressLabel(_tuneUpTracker.state),
+              valueColor: _tuneUpTracker.state.isComplete
+                  ? InstrumentColors.accent
+                  : InstrumentColors.text,
             ),
             DefinitionRow(
               label: '곡 오프셋',
@@ -422,4 +455,14 @@ String _offsetLabel(double cents) {
   }
   final sign = cents > 0 ? '+' : '';
   return '$sign${cents.toStringAsFixed(cents == cents.roundToDouble() ? 0 : 1)} cents';
+}
+
+String _tuneUpProgressLabel(TuneUpProgressState state) {
+  final elapsed = state.elapsed;
+  final minutes = elapsed.inMinutes;
+  final seconds = elapsed.inSeconds.remainder(60).toString().padLeft(2, '0');
+  final progress = '${state.lockedStringCount}/${state.expectedStringCount}';
+  return state.isComplete
+      ? '$progress · 완료 ${minutes.toString().padLeft(2, '0')}:$seconds'
+      : '$progress · ${minutes.toString().padLeft(2, '0')}:$seconds';
 }

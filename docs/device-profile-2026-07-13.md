@@ -39,6 +39,18 @@ which is exactly 20 updates/s at 48 kHz. The earlier 20.7% row remains the
 pre-change measurement and must not be relabeled as a passing result; the new
 configuration requires a fresh device sample.
 
+`tool/profile_android_dsp.ps1` now automates the same thread-view collection,
+discards the first partial interval per worker, stores every sample in an
+ignored JSON report, and optionally enforces the 20% mean gate. The highest
+active `DartWorker` remains only a candidate until its CPU time is confirmed
+to stop after leaving the tuner screen.
+
+The precision tuner also accumulates repeated pluck-to-display samples. For a
+valid latency run, mute the strings after each estimate, wait for the input to
+fall quiet, and pluck again. The displayed p95 includes PCM onset-to-analysis
+time plus detector processing time; at least 20 samples are required for the
+device gate report.
+
 The on-screen detector timer, which excludes PCM ingest, showed approximately
 1.9–5.8 ms for warmed frames after FFT acceleration. A 10.9 ms transient was
 seen immediately after one redeploy. Repeated builds and profiling warmed the

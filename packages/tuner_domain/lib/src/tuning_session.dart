@@ -230,6 +230,76 @@ final class InTuneLockTracker {
   }
 }
 
+final class TuneUpProgressState {
+  TuneUpProgressState({
+    required Set<int> lockedStringNumbers,
+    required this.expectedStringCount,
+    required this.elapsed,
+  }) : lockedStringNumbers = Set.unmodifiable(lockedStringNumbers);
+
+  final Set<int> lockedStringNumbers;
+  final int expectedStringCount;
+  final Duration elapsed;
+
+  int get lockedStringCount => lockedStringNumbers.length;
+  bool get isComplete => lockedStringCount == expectedStringCount;
+}
+
+/// Records the first in-tune lock for each physical string in one tune-up.
+///
+/// The caller owns the monotonic clock, allowing the same tracker to be used
+/// in production with a [Stopwatch] and in deterministic usability tests.
+final class TuneUpProgressTracker {
+  TuneUpProgressTracker({required Iterable<int> expectedStringNumbers})
+    : _expectedStringNumbers = Set.unmodifiable(expectedStringNumbers) {
+    if (_expectedStringNumbers.isEmpty ||
+        _expectedStringNumbers.any((number) => number <= 0)) {
+      throw ArgumentError.value(
+        expectedStringNumbers,
+        'expectedStringNumbers',
+        'Must contain positive physical string numbers.',
+      );
+    }
+  }
+
+  final Set<int> _expectedStringNumbers;
+  final Set<int> _lockedStringNumbers = {};
+  Duration _lastElapsed = Duration.zero;
+  Duration? _completedElapsed;
+
+  TuneUpProgressState get state => TuneUpProgressState(
+    lockedStringNumbers: _lockedStringNumbers,
+    expectedStringCount: _expectedStringNumbers.length,
+    elapsed: _completedElapsed ?? _lastElapsed,
+  );
+
+  TuneUpProgressState recordLock({
+    required int stringNumber,
+    required Duration elapsed,
+  }) {
+    if (!_expectedStringNumbers.contains(stringNumber)) {
+      throw ArgumentError.value(
+        stringNumber,
+        'stringNumber',
+        'Not present in the active tuning.',
+      );
+    }
+    if (elapsed < _lastElapsed) {
+      throw ArgumentError.value(elapsed, 'elapsed', 'Must be monotonic.');
+    }
+    if (_completedElapsed != null) {
+      return state;
+    }
+
+    _lastElapsed = elapsed;
+    _lockedStringNumbers.add(stringNumber);
+    if (_lockedStringNumbers.length == _expectedStringNumbers.length) {
+      _completedElapsed = elapsed;
+    }
+    return state;
+  }
+}
+
 String _keyFor(TuningDefinition tuning) {
   final strings = tuning.strings
       .map((target) => '${target.stringNumber}:${target.midiNote}')

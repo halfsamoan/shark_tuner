@@ -157,4 +157,51 @@ void main() {
       );
     });
   });
+
+  group('TuneUpProgressTracker', () {
+    test('counts each physical string once and freezes completion time', () {
+      final tracker = TuneUpProgressTracker(
+        expectedStringNumbers: const [6, 5, 4],
+      );
+
+      tracker.recordLock(stringNumber: 6, elapsed: const Duration(seconds: 10));
+      tracker.recordLock(stringNumber: 6, elapsed: const Duration(seconds: 15));
+      tracker.recordLock(stringNumber: 5, elapsed: const Duration(seconds: 30));
+      final complete = tracker.recordLock(
+        stringNumber: 4,
+        elapsed: const Duration(seconds: 44),
+      );
+      final afterCompletion = tracker.recordLock(
+        stringNumber: 4,
+        elapsed: const Duration(seconds: 60),
+      );
+
+      expect(complete.lockedStringNumbers, {4, 5, 6});
+      expect(complete.isComplete, isTrue);
+      expect(complete.elapsed, const Duration(seconds: 44));
+      expect(afterCompletion.elapsed, const Duration(seconds: 44));
+    });
+
+    test('rejects unknown strings and non-monotonic timestamps', () {
+      final tracker = TuneUpProgressTracker(
+        expectedStringNumbers: const [2, 1],
+      );
+      tracker.recordLock(stringNumber: 2, elapsed: const Duration(seconds: 5));
+
+      expect(
+        () => tracker.recordLock(
+          stringNumber: 3,
+          elapsed: const Duration(seconds: 6),
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => tracker.recordLock(
+          stringNumber: 1,
+          elapsed: const Duration(seconds: 4),
+        ),
+        throwsArgumentError,
+      );
+    });
+  });
 }

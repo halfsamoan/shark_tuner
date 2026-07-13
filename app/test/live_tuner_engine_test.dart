@@ -30,8 +30,10 @@ void main() {
       expect(state.windowSamples, 4096);
       expect(state.hopSamples, 1536);
       expect(state.pluckToFirstValidLatency, isNotNull);
+      expect(state.pluckLatencySampleCount, 1);
+      expect(state.pluckToDisplayP95Latency, isNotNull);
       expect(
-        state.pluckToFirstValidLatency! + state.processingDuration!,
+        state.pluckToDisplayP95Latency!,
         lessThan(const Duration(milliseconds: 150)),
       );
 
@@ -39,6 +41,26 @@ void main() {
       expect(capture.disposed, isTrue);
     },
   );
+
+  test('reports repeated damp-and-pluck latency samples and p95', () async {
+    final capture = _FakeAudioCapture(
+      stream: Stream.fromIterable(_repeatedPluckChunks(frequencyHz: 110)),
+    );
+    final engine = IsolateTunerEngine(audioCapture: capture);
+    final sampledState = engine.states.firstWhere(
+      (state) => state.pluckLatencySampleCount >= 3,
+    );
+
+    await engine.start(BuiltInTunings.standardGuitar);
+    final state = await sampledState.timeout(const Duration(seconds: 5));
+
+    expect(state.pluckLatencySampleCount, 3);
+    expect(
+      state.pluckToDisplayP95Latency,
+      lessThan(const Duration(milliseconds: 150)),
+    );
+    await engine.dispose();
+  });
 
   test('uses the long window for tunings below E2', () async {
     final capture = _FakeAudioCapture(stream: const Stream.empty());
@@ -115,6 +137,38 @@ List<Uint8List> _sineChunks({required double frequencyHz}) {
       final sampleIndex = start + index;
       final normalized =
           0.4 * math.sin(2 * math.pi * frequencyHz * sampleIndex / sampleRate);
+      data.setInt16(index * 2, (normalized * 32767).round(), Endian.little);
+    }
+    chunks.add(bytes);
+  }
+  return chunks;
+}
+
+List<Uint8List> _repeatedPluckChunks({required double frequencyHz}) {
+  const sampleRate = 48000;
+  const samplesPerChunk = 1024;
+  const cycleSamples = sampleRate;
+  const attackStart = 12000;
+  const soundingSamples = 18000;
+  const cycleCount = 3;
+  final totalSamples = cycleSamples * cycleCount;
+  final chunks = <Uint8List>[];
+  for (var start = 0; start < totalSamples; start += samplesPerChunk) {
+    final chunkSamples = math.min(samplesPerChunk, totalSamples - start);
+    final bytes = Uint8List(chunkSamples * 2);
+    final data = ByteData.sublistView(bytes);
+    for (var index = 0; index < chunkSamples; index++) {
+      final sampleIndex = start + index;
+      final withinCycle = sampleIndex % cycleSamples;
+      var normalized = 0.0;
+      if (withinCycle >= attackStart &&
+          withinCycle < attackStart + soundingSamples) {
+        final elapsed = (withinCycle - attackStart) / sampleRate;
+        normalized =
+            0.4 *
+            math.exp(-elapsed * 2) *
+            math.sin(2 * math.pi * frequencyHz * elapsed);
+      }
       data.setInt16(index * 2, (normalized * 32767).round(), Endian.little);
     }
     chunks.add(bytes);

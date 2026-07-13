@@ -31,6 +31,8 @@ final class LiveTunerState {
     this.hopSamples,
     this.processingDuration,
     this.pluckToFirstValidLatency,
+    this.pluckLatencySampleCount = 0,
+    this.pluckToDisplayP95Latency,
     this.error,
   });
 
@@ -50,6 +52,8 @@ final class LiveTunerState {
   final int? hopSamples;
   final Duration? processingDuration;
   final Duration? pluckToFirstValidLatency;
+  final int pluckLatencySampleCount;
+  final Duration? pluckToDisplayP95Latency;
   final Object? error;
 
   LiveTunerState copyWith({
@@ -67,6 +71,8 @@ final class LiveTunerState {
     int? hopSamples,
     Duration? processingDuration,
     Duration? pluckToFirstValidLatency,
+    int? pluckLatencySampleCount,
+    Duration? pluckToDisplayP95Latency,
     Object? error,
     bool clearPitch = false,
     bool clearError = false,
@@ -87,6 +93,10 @@ final class LiveTunerState {
       processingDuration: processingDuration ?? this.processingDuration,
       pluckToFirstValidLatency:
           pluckToFirstValidLatency ?? this.pluckToFirstValidLatency,
+      pluckLatencySampleCount:
+          pluckLatencySampleCount ?? this.pluckLatencySampleCount,
+      pluckToDisplayP95Latency:
+          pluckToDisplayP95Latency ?? this.pluckToDisplayP95Latency,
       error: clearError ? null : error ?? this.error,
     );
   }
@@ -122,6 +132,8 @@ final class IsolateTunerEngine implements TunerEngine {
   StreamSubscription<Uint8List>? _audioSubscription;
   StreamSubscription<Map<String, Object?>>? _frameSubscription;
   var _disposed = false;
+  int _lastPluckLatencySequence = 0;
+  final List<int> _pluckToDisplayLatencyMicros = [];
 
   @override
   LiveTunerState get current => _current;
@@ -141,6 +153,8 @@ final class IsolateTunerEngine implements TunerEngine {
     _selector.reset();
     _lockTracker.reset();
     _manualStringNumber = null;
+    _lastPluckLatencySequence = 0;
+    _pluckToDisplayLatencyMicros.clear();
     final windowSamples = _windowSamplesFor(tuning);
     final hopSamples = _hopSamplesFor(windowSamples);
     _emit(
@@ -232,6 +246,14 @@ final class IsolateTunerEngine implements TunerEngine {
     final rmsDb = frame['rmsDb'] as double?;
     final processingMicros = frame['processingMicros'] as int?;
     final pluckLatencyMicros = frame['pluckToFirstValidMicros'] as int?;
+    final pluckLatencySequence = frame['pluckLatencySequence'] as int? ?? 0;
+    if (pluckLatencyMicros != null &&
+        processingMicros != null &&
+        pluckLatencySequence > _lastPluckLatencySequence) {
+      _lastPluckLatencySequence = pluckLatencySequence;
+      _pluckToDisplayLatencyMicros.add(pluckLatencyMicros + processingMicros);
+    }
+    final pluckToDisplayP95 = _durationP95(_pluckToDisplayLatencyMicros);
     if (frequencyHz == null) {
       _lockTracker.reset();
       _emit(
@@ -243,6 +265,8 @@ final class IsolateTunerEngine implements TunerEngine {
           pluckToFirstValidLatency: pluckLatencyMicros == null
               ? null
               : Duration(microseconds: pluckLatencyMicros),
+          pluckLatencySampleCount: _pluckToDisplayLatencyMicros.length,
+          pluckToDisplayP95Latency: pluckToDisplayP95,
           clearPitch: true,
         ),
       );
@@ -271,6 +295,8 @@ final class IsolateTunerEngine implements TunerEngine {
           pluckToFirstValidLatency: pluckLatencyMicros == null
               ? null
               : Duration(microseconds: pluckLatencyMicros),
+          pluckLatencySampleCount: _pluckToDisplayLatencyMicros.length,
+          pluckToDisplayP95Latency: pluckToDisplayP95,
           clearPitch: true,
         ),
       );
@@ -296,6 +322,8 @@ final class IsolateTunerEngine implements TunerEngine {
         pluckToFirstValidLatency: pluckLatencyMicros == null
             ? null
             : Duration(microseconds: pluckLatencyMicros),
+        pluckLatencySampleCount: _pluckToDisplayLatencyMicros.length,
+        pluckToDisplayP95Latency: pluckToDisplayP95,
       ),
     );
   }
@@ -466,6 +494,8 @@ void _dspIsolateMain(Map<String, Object> bootstrap) {
   var processedSamples = 0;
   int? pendingLowByte;
   int? pluckToFirstValidMicros;
+  int? lastPluckOnsetSample;
+  var pluckLatencySequence = 0;
   final detector = MpmDetector();
 
   void analyzeFrame() {
@@ -488,7 +518,7 @@ void _dspIsolateMain(Map<String, Object> bootstrap) {
     );
     final tracked = pitchPipeline!.process(raw);
     final stable = tracked.stabilized;
-    if (stable != null && pluckToFirstValidMicros == null) {
+    if (stable != null) {
       final history = activeRing.copyLatest(activeRing.length);
       final onset = detectSignalOnsetSample(
         history,
@@ -496,10 +526,23 @@ void _dspIsolateMain(Map<String, Object> bootstrap) {
       );
       if (onset != null) {
         final historyStart = processedSamples - history.length;
-        final latencySamples = processedSamples - (historyStart + onset);
-        pluckToFirstValidMicros =
-            (latencySamples * Duration.microsecondsPerSecond) ~/
-            activeSampleRate;
+        final onsetSample = historyStart + onset;
+        final lastOnset = lastPluckOnsetSample;
+        final isFirstOnset = lastOnset == null;
+        final isNewOnset =
+            !isFirstOnset &&
+            onset > 0 &&
+            onsetSample - lastOnset >= activeSampleRate ~/ 4;
+        if (isFirstOnset || isNewOnset) {
+          final latencySamples = processedSamples - onsetSample;
+          if (latencySamples >= 0 && latencySamples <= history.length) {
+            lastPluckOnsetSample = onsetSample;
+            pluckToFirstValidMicros =
+                (latencySamples * Duration.microsecondsPerSecond) ~/
+                activeSampleRate;
+            pluckLatencySequence++;
+          }
+        }
       }
     }
     stopwatch.stop();
@@ -515,6 +558,7 @@ void _dspIsolateMain(Map<String, Object> bootstrap) {
           activeSampleRate,
       'processingMicros': stopwatch.elapsedMicroseconds,
       'pluckToFirstValidMicros': pluckToFirstValidMicros,
+      'pluckLatencySequence': pluckLatencySequence,
     });
   }
 
@@ -547,6 +591,8 @@ void _dspIsolateMain(Map<String, Object> bootstrap) {
         processedSamples = 0;
         pendingLowByte = null;
         pluckToFirstValidMicros = null;
+        lastPluckOnsetSample = null;
+        pluckLatencySequence = 0;
       case 'audio':
         if (ring == null) {
           return;
@@ -580,4 +626,13 @@ void _dspIsolateMain(Map<String, Object> bootstrap) {
         commands.close();
     }
   });
+}
+
+Duration? _durationP95(List<int> values) {
+  if (values.isEmpty) {
+    return null;
+  }
+  final sorted = [...values]..sort();
+  final rank = (0.95 * sorted.length).ceil().clamp(1, sorted.length);
+  return Duration(microseconds: sorted[rank - 1]);
 }
