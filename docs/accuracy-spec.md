@@ -20,12 +20,13 @@
 
 | 신호군 | 조건 | 합격 기준 |
 |---|---|---|
-| 순수 사인파 | 안정 구간, SNR 40 dB 이상 | median ≤ 0.5 cent, p95 ≤ 1.0 cent, octave error 0 |
+| 순수 사인파 | 안정 구간, SNR 40 dB 이상 | median ≤ 0.5 cent, p95 ≤ 1.0 cent, max ≤ 1.0 cent, 미검출 0, octave error rate 0 |
 | 배음 혼합 | 기본음이 가장 강하지 않은 기타형 배음 | median ≤ 1.0 cent, p95 ≤ 2.0 cents, octave error < 0.1% |
 | 잡음/레벨 변화 | SNR 20 dB 이상, 진폭 변화 | p95 ≤ 3.0 cents 또는 명시적 no-estimate |
 | 무음/비정상 입력 | 무음, NaN, 너무 짧은 창 | 유효 피치를 반환하지 않음 |
 
 S1의 `±1 cent`는 순수 사인파 p95 기준이다. 실기타 성능을 의미하지 않는다.
+순수 사인파 코퍼스는 기본 경로인 4,096 samples와 저튜닝 경로인 8,192 samples에서 각각 위 조건을 모두 통과해야 한다.
 
 ## Gate G1 — 녹음된 실제 기타 WAV
 
