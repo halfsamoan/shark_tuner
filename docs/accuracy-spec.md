@@ -67,3 +67,10 @@ S1 순수 사인파의 재현 가능한 수치 리포트는 다음 명령으로 
 Set-Location packages\tuner_dsp
 & ..\..\.tools\flutter\bin\dart.bat run tool\synthetic_accuracy_report.dart
 ```
+
+G1 실기타 WAV는 `packages/tuner_dsp/test/fixtures/guitar/manifest.v1.json`에 등록한 뒤 다음 명령으로 강제한다. 빈 코퍼스는 `missing_corpus`로 보고하며 `--require-corpus` 사용 시 성공 처리하지 않는다.
+
+```powershell
+Set-Location packages\tuner_dsp
+& ..\..\.tools\flutter\bin\dart.bat run tool\guitar_accuracy_report.dart --require-corpus
+```

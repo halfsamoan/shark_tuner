@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "sampleFormat": "pcm_s16le",
+  "requiredSampleRateHz": 48000,
+  "fixtures": []
+}

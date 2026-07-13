@@ -27,6 +27,9 @@ try {
     try {
         & $dart run 'tool\synthetic_accuracy_report.dart'
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+        & $dart run 'tool\guitar_accuracy_report.dart'
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     }
     finally {
         Pop-Location
