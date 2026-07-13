@@ -66,8 +66,8 @@ flutter:
   uses-material-design: true
 
   assets:
-    - ../data/songs/candidates.v1.json
-    - ../data/songs/tunings.v1.json
+    - assets/songs/candidates.v1.json
+    - assets/songs/tunings.v1.json
 
   # To add assets to your application, add an assets section, like this:
   # assets:
