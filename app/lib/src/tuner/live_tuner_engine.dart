@@ -115,16 +115,26 @@ abstract interface class TunerEngine {
 typedef TunerEngineFactory = TunerEngine Function();
 
 TunerEngine createLiveTunerEngine() {
-  return IsolateTunerEngine(audioCapture: RecordAudioCapture());
+  return IsolateTunerEngine(
+    audioCapture: RecordAudioCapture(),
+    lockConfig: const InTuneLockConfig(
+      toleranceCents: 5,
+      releaseToleranceCents: 7,
+    ),
+  );
 }
 
 final class IsolateTunerEngine implements TunerEngine {
-  IsolateTunerEngine({required this._audioCapture});
+  IsolateTunerEngine({
+    required this._audioCapture,
+    this.lockConfig = const InTuneLockConfig(),
+  }) : _lockTracker = InTuneLockTracker(config: lockConfig);
 
   final AudioCapture _audioCapture;
+  final InTuneLockConfig lockConfig;
   final _states = StreamController<LiveTunerState>.broadcast();
   final _selector = AutomaticStringSelector();
-  final _lockTracker = InTuneLockTracker();
+  final InTuneLockTracker _lockTracker;
   LiveTunerState _current = LiveTunerState.idle;
   TuningDefinition? _tuning;
   int? _manualStringNumber;

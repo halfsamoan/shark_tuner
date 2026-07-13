@@ -227,12 +227,14 @@ class TuningNoteCell extends StatelessWidget {
     required this.label,
     required this.stringNumber,
     this.active = false,
+    this.completed = false,
     this.onTap,
   });
 
   final String label;
   final int stringNumber;
   final bool active;
+  final bool completed;
   final VoidCallback? onTap;
 
   @override
@@ -243,7 +245,7 @@ class TuningNoteCell extends StatelessWidget {
     return Semantics(
       button: onTap != null,
       selected: active,
-      label: '$stringNumber번 현 $label',
+      label: '$stringNumber번 현 $label${completed ? ', 완료' : ''}',
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(3),
@@ -258,28 +260,46 @@ class TuningNoteCell extends StatelessWidget {
             ),
             borderRadius: BorderRadius.circular(3),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+          child: Stack(
             children: [
-              Text(
-                label,
-                style: TextStyle(
-                  color: foreground,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: foreground,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '$stringNumber',
+                      style: TextStyle(
+                        color: active
+                            ? const Color(0xFF32420E)
+                            : InstrumentColors.muted,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                '$stringNumber',
-                style: TextStyle(
-                  color: active
-                      ? const Color(0xFF32420E)
-                      : InstrumentColors.muted,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w500,
+              if (completed)
+                Positioned(
+                  top: 3,
+                  right: 3,
+                  child: Icon(
+                    Icons.check_rounded,
+                    size: 10,
+                    color: active
+                        ? InstrumentColors.accentInk
+                        : InstrumentColors.accent,
+                  ),
                 ),
-              ),
             ],
           ),
         ),
@@ -311,22 +331,22 @@ class PitchTape extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 96,
-      decoration: BoxDecoration(
-        color: InstrumentColors.chrome,
-        border: Border.all(color: InstrumentColors.line),
-      ),
-      child: CustomPaint(
-        painter: _PitchTapePainter(cents: cents, locked: locked),
-        child: Center(
-          child: Text(
-            status,
-            style: const TextStyle(
-              color: InstrumentColors.muted,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
+    return Semantics(
+      label: status,
+      value: cents == null ? '측정값 없음' : '${cents!.toStringAsFixed(1)} 센트',
+      child: RepaintBoundary(
+        child: Container(
+          height: 104,
+          decoration: BoxDecoration(
+            color: locked
+                ? InstrumentColors.accent.withValues(alpha: 0.08)
+                : InstrumentColors.chrome,
+            border: Border.all(
+              color: locked ? InstrumentColors.accent : InstrumentColors.line,
             ),
+          ),
+          child: CustomPaint(
+            painter: _PitchTapePainter(cents: cents, locked: locked),
           ),
         ),
       ),
@@ -342,37 +362,113 @@ class _PitchTapePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    const horizontalPadding = 20.0;
+    final tapeWidth = size.width - horizontalPadding * 2;
+    double xForCents(double cents) =>
+        horizontalPadding + tapeWidth * (cents.clamp(-50, 50) + 50) / 100;
+    final greenZone = Paint()
+      ..color = InstrumentColors.accent.withValues(alpha: 0.09);
+    canvas.drawRect(
+      Rect.fromLTRB(xForCents(-5), 8, xForCents(5), size.height - 22),
+      greenZone,
+    );
     final minor = Paint()
       ..color = InstrumentColors.line
       ..strokeWidth = 1;
     final center = Paint()
-      ..color = InstrumentColors.accent
+      ..color = InstrumentColors.muted
       ..strokeWidth = 2;
     for (var index = 0; index <= 20; index++) {
-      final x = 16 + (size.width - 32) * index / 20;
+      final x = horizontalPadding + tapeWidth * index / 20;
       final isMajor = index % 5 == 0;
-      final height = isMajor ? 34.0 : 18.0;
+      final height = isMajor ? 40.0 : 22.0;
       canvas.drawLine(
-        Offset(x, (size.height - height) / 2),
-        Offset(x, (size.height + height) / 2),
+        Offset(x, 40 - height / 2),
+        Offset(x, 40 + height / 2),
         index == 10 ? center : minor,
       );
     }
+    _paintLabel(canvas, '−50  ♭', Offset(horizontalPadding, 78));
+    _paintLabel(
+      canvas,
+      '0',
+      Offset(size.width / 2, 78),
+      alignment: TextAlign.center,
+    );
+    _paintLabel(
+      canvas,
+      '♯  +50',
+      Offset(size.width - horizontalPadding, 78),
+      alignment: TextAlign.right,
+    );
     final measuredCents = cents;
     if (measuredCents != null) {
-      final clamped = measuredCents.clamp(-50, 50);
-      final x = 16 + (size.width - 32) * (clamped + 50) / 100;
+      final x = xForCents(measuredCents);
+      final absoluteCents = measuredCents.abs();
       final marker = Paint()
-        ..color = locked ? InstrumentColors.accent : InstrumentColors.text
+        ..color = locked || absoluteCents <= 5
+            ? InstrumentColors.accent
+            : absoluteCents <= 15
+            ? InstrumentColors.text
+            : InstrumentColors.amber
         ..strokeWidth = 3;
-      canvas.drawLine(Offset(x, 12), Offset(x, size.height - 12), marker);
+      canvas.drawLine(Offset(x, 8), Offset(x, 69), marker);
       final triangle = Path()
-        ..moveTo(x - 6, 8)
-        ..lineTo(x + 6, 8)
-        ..lineTo(x, 16)
+        ..moveTo(x - 6, 5)
+        ..lineTo(x + 6, 5)
+        ..lineTo(x, 13)
         ..close();
       canvas.drawPath(triangle, marker);
+      if (absoluteCents > 50) {
+        final pointsRight = measuredCents > 0;
+        final chevron = Path();
+        if (pointsRight) {
+          chevron
+            ..moveTo(size.width - 12, 32)
+            ..lineTo(size.width - 5, 40)
+            ..lineTo(size.width - 12, 48);
+        } else {
+          chevron
+            ..moveTo(12, 32)
+            ..lineTo(5, 40)
+            ..lineTo(12, 48);
+        }
+        canvas.drawPath(
+          chevron,
+          Paint()
+            ..color = InstrumentColors.amber
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 3
+            ..strokeCap = StrokeCap.round,
+        );
+      }
     }
+  }
+
+  void _paintLabel(
+    Canvas canvas,
+    String label,
+    Offset anchor, {
+    TextAlign alignment = TextAlign.left,
+  }) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: label,
+        style: const TextStyle(
+          color: InstrumentColors.muted,
+          fontSize: 9,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+      textAlign: alignment,
+    )..layout();
+    final dx = switch (alignment) {
+      TextAlign.center => anchor.dx - painter.width / 2,
+      TextAlign.right => anchor.dx - painter.width,
+      _ => anchor.dx,
+    };
+    painter.paint(canvas, Offset(dx, anchor.dy));
   }
 
   @override

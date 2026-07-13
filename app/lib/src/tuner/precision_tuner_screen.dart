@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:tuner_data/tuner_data.dart';
 import 'package:tuner_domain/tuner_domain.dart';
 
 import '../app/instrument_theme.dart';
 import '../ui/instrument_widgets.dart';
 import 'live_tuner_engine.dart';
+import 'tuning_guidance.dart';
 
 class PrecisionTunerScreen extends StatefulWidget {
   const PrecisionTunerScreen({
@@ -29,6 +31,12 @@ class PrecisionTunerScreen extends StatefulWidget {
 class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   var _selectedIndex = 0;
   var _manualTarget = false;
+  var _autoProgressTarget = false;
+  var _coarseMode = false;
+  var _completionShown = false;
+  double? _displayCents;
+  int? _celebratingStringNumber;
+  Timer? _autoAdvanceTimer;
   late final TunerEngine _engine;
   late final StreamSubscription<LiveTunerState> _engineSubscription;
   late final Stopwatch _tuneUpStopwatch;
@@ -40,6 +48,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     super.initState();
     _engine = widget.tunerEngineFactory();
     _liveState = _engine.current;
+    _updateDisplayCents(_liveState.cents);
     _tuneUpStopwatch = Stopwatch()..start();
     _tuneUpTracker = TuneUpProgressTracker(
       expectedStringNumbers: widget.match.tuning.strings.map(
@@ -52,6 +61,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
 
   @override
   void dispose() {
+    _autoAdvanceTimer?.cancel();
     _tuneUpStopwatch.stop();
     unawaited(_engineSubscription.cancel());
     unawaited(_engine.dispose());
@@ -70,7 +80,11 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
       return;
     }
     final detectedTarget = state.target;
+    var newlyLocked = false;
     if (state.locked && detectedTarget != null) {
+      newlyLocked = !_tuneUpTracker.state.lockedStringNumbers.contains(
+        detectedTarget.stringNumber,
+      );
       _tuneUpTracker.recordLock(
         stringNumber: detectedTarget.stringNumber,
         elapsed: _tuneUpStopwatch.elapsed,
@@ -78,7 +92,8 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     }
     setState(() {
       _liveState = state;
-      if (!_manualTarget && detectedTarget != null) {
+      _updateDisplayCents(state.cents);
+      if (!_manualTarget && !_autoProgressTarget && detectedTarget != null) {
         final index = widget.match.tuning.strings.indexWhere(
           (target) => target.stringNumber == detectedTarget.stringNumber,
         );
@@ -87,16 +102,107 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
         }
       }
     });
+    if (newlyLocked && detectedTarget != null) {
+      _celebrateLock(detectedTarget.stringNumber);
+    }
+  }
+
+  void _updateDisplayCents(double? cents) {
+    if (cents == null || !cents.isFinite) {
+      _displayCents = null;
+      return;
+    }
+    final previous = _displayCents;
+    final alpha = cents.abs() > 10 ? 0.6 : 0.3;
+    _displayCents = previous == null
+        ? cents
+        : previous + alpha * (cents - previous);
+    if (!_coarseMode && cents.abs() > 55) {
+      _coarseMode = true;
+    } else if (_coarseMode && cents.abs() < 45) {
+      _coarseMode = false;
+    }
+  }
+
+  void _celebrateLock(int stringNumber) {
+    _autoAdvanceTimer?.cancel();
+    setState(() => _celebratingStringNumber = stringNumber);
+    unawaited(_lockHaptic());
+    final progress = _tuneUpTracker.state;
+    if (progress.isComplete) {
+      _autoAdvanceTimer = Timer(const Duration(milliseconds: 750), () {
+        if (!mounted) {
+          return;
+        }
+        setState(() => _celebratingStringNumber = null);
+        _showCompletion();
+      });
+      return;
+    }
+    _autoAdvanceTimer = Timer(const Duration(milliseconds: 750), () {
+      if (!mounted) {
+        return;
+      }
+      final completed = _tuneUpTracker.state.lockedStringNumbers;
+      final nextIndex = widget.match.tuning.strings.indexWhere(
+        (string) => !completed.contains(string.stringNumber),
+      );
+      if (nextIndex < 0) {
+        return;
+      }
+      setState(() {
+        _selectedIndex = nextIndex;
+        _manualTarget = false;
+        _autoProgressTarget = true;
+        _celebratingStringNumber = null;
+        _displayCents = null;
+      });
+      _engine.setManualTarget(_selected.stringNumber);
+    });
+  }
+
+  Future<void> _lockHaptic() async {
+    await HapticFeedback.mediumImpact();
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    await HapticFeedback.mediumImpact();
+  }
+
+  void _showCompletion() {
+    if (_completionShown || !mounted) {
+      return;
+    }
+    _completionShown = true;
+    showModalBottomSheet<void>(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: InstrumentColors.chrome,
+      builder: (context) => _TuneCompleteSheet(
+        tuning: widget.match.tuning,
+        elapsed: _tuneUpTracker.state.elapsed,
+        compatibleSongs: widget.catalog.findPlayableWith(
+          widget.match.tuning,
+          includeUnverified: widget.includeUnverifiedSongs,
+        ),
+      ),
+    ).whenComplete(() {
+      if (mounted) {
+        _completionShown = false;
+      }
+    });
   }
 
   void _toggleTarget(int index) {
+    _autoAdvanceTimer?.cancel();
     setState(() {
-      if (_manualTarget && _selectedIndex == index) {
+      if ((_manualTarget || _autoProgressTarget) && _selectedIndex == index) {
         _manualTarget = false;
+        _autoProgressTarget = false;
         _engine.setManualTarget(null);
       } else {
         _selectedIndex = index;
         _manualTarget = true;
+        _autoProgressTarget = false;
         _engine.setManualTarget(_selected.stringNumber);
       }
     });
@@ -128,6 +234,22 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   Widget build(BuildContext context) {
     final song = widget.match.song;
     final tuning = widget.match.tuning;
+    final progress = _tuneUpTracker.state;
+    final lockedNow = _celebratingStringNumber == _selected.stringNumber;
+    final guidance = lockedNow
+        ? TuningGuidance(
+            direction: TuningDirection.hold,
+            headline: '$_celebratingStringNumber번 줄 완료',
+            instruction: progress.isComplete
+                ? '모든 줄이 정확히 맞았습니다'
+                : '다음 줄로 이동합니다',
+            coarse: false,
+          )
+        : guidanceForCents(
+            cents: _displayCents,
+            stringNumber: _selected.stringNumber,
+            coarseMode: _coarseMode,
+          );
     return Scaffold(
       appBar: const InstrumentHeaderBar(section: '정밀 튜너', showBack: true),
       body: SafeArea(
@@ -188,6 +310,9 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                         label: tuning.strings[index].label,
                         stringNumber: tuning.strings[index].stringNumber,
                         active: _selectedIndex == index,
+                        completed: progress.lockedStringNumbers.contains(
+                          tuning.strings[index].stringNumber,
+                        ),
                         onTap: () => _toggleTarget(index),
                       ),
                       if (index != tuning.strings.length - 1)
@@ -198,38 +323,43 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
               ),
               const Spacer(),
               Text(
-                '${_liveState.target?.label ?? _selected.label} · ${_selected.stringNumber}번 줄 · ${_manualTarget ? '직접 선택' : '자동 인식'}',
+                '${_selected.label} · ${_selected.stringNumber}번 줄 · ${_targetModeLabel()}',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.labelSmall,
               ),
               const SizedBox(height: 6),
               Text(
-                _formatMeasuredCents(_liveState.cents),
+                _formatMeasuredCents(_displayCents, coarse: _coarseMode),
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: _liveState.locked
+                  color: lockedNow
                       ? InstrumentColors.accent
+                      : _coarseMode
+                      ? InstrumentColors.amber
                       : InstrumentColors.text,
-                  fontSize: 62,
+                  fontSize: _coarseMode ? 52 : 62,
                   height: 1.05,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -2,
                 ),
               ),
               Text(
-                _signalDescription(_liveState),
+                guidance.headline,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: _liveState.locked
+                  color: lockedNow
                       ? InstrumentColors.accent
+                      : guidance.coarse
+                      ? InstrumentColors.amber
                       : InstrumentColors.muted,
-                  fontSize: 11,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 14),
               PitchTape(
-                cents: _liveState.cents,
-                locked: _liveState.locked,
+                cents: _displayCents,
+                locked: lockedNow,
                 status: _tapeStatus(_liveState),
               ),
               const SizedBox(height: 12),
@@ -271,33 +401,18 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                 ),
                 const SizedBox(height: 8),
               ],
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: InstrumentColors.panel,
-                  border: Border.all(color: InstrumentColors.line),
-                ),
-                child: Text(
-                  tuning.centsOffset == 0
-                      ? '현을 한 번 튕기면 측정을 시작합니다.'
-                      : '곡 기준 ${_offsetLabel(tuning.centsOffset)} 적용',
-                  style: TextStyle(
-                    color: tuning.centsOffset == 0
-                        ? InstrumentColors.muted
-                        : InstrumentColors.accent,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+              _GuidancePanel(
+                guidance: guidance,
+                lockProgress: _liveState.lockProgress,
+                offsetLabel: tuning.centsOffset == 0
+                    ? null
+                    : '곡 기준 ${_offsetLabel(tuning.centsOffset)} 적용',
               ),
               const SizedBox(height: 8),
               Text(
-                '튜닝 진행 ${_tuneUpTracker.state.lockedStringCount}/${_tuneUpTracker.state.expectedStringCount}',
+                '튜닝 진행 ${progress.lockedStringCount}/${progress.expectedStringCount}',
                 style: TextStyle(
-                  color: _tuneUpTracker.state.isComplete
+                  color: progress.isComplete
                       ? InstrumentColors.accent
                       : InstrumentColors.muted,
                   fontSize: 11,
@@ -312,6 +427,172 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
         detail:
             '${tuning.name.toUpperCase()} │ A4 ${tuning.referenceA4Hz.toStringAsFixed(0)}',
         active: _liveState.status == LiveTunerStatus.listening,
+      ),
+    );
+  }
+
+  String _targetModeLabel() {
+    if (_manualTarget) {
+      return '직접 선택';
+    }
+    if (_autoProgressTarget) {
+      return '다음 줄';
+    }
+    return '자동 인식';
+  }
+}
+
+class _GuidancePanel extends StatelessWidget {
+  const _GuidancePanel({
+    required this.guidance,
+    required this.lockProgress,
+    this.offsetLabel,
+  });
+
+  final TuningGuidance guidance;
+  final double lockProgress;
+  final String? offsetLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final completed =
+        guidance.direction == TuningDirection.hold &&
+        guidance.headline.contains('완료');
+    final color = completed
+        ? InstrumentColors.accent
+        : guidance.coarse
+        ? InstrumentColors.amber
+        : InstrumentColors.text;
+    return Semantics(
+      liveRegion: true,
+      label: guidance.spokenLabel,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 9),
+        decoration: BoxDecoration(
+          color: completed
+              ? InstrumentColors.accent.withValues(alpha: 0.08)
+              : InstrumentColors.panel,
+          border: Border.all(
+            color: completed ? InstrumentColors.accent : InstrumentColors.line,
+          ),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                SizedBox(
+                  width: 32,
+                  child: Text(
+                    guidance.arrow,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    guidance.instruction,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (lockProgress > 0 && lockProgress < 1) ...[
+              const SizedBox(height: 8),
+              LinearProgressIndicator(
+                value: lockProgress,
+                minHeight: 3,
+                color: InstrumentColors.accent,
+                backgroundColor: InstrumentColors.line,
+              ),
+            ],
+            if (offsetLabel != null) ...[
+              const SizedBox(height: 6),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  offsetLabel!,
+                  style: const TextStyle(
+                    color: InstrumentColors.accent,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TuneCompleteSheet extends StatelessWidget {
+  const _TuneCompleteSheet({
+    required this.tuning,
+    required this.elapsed,
+    required this.compatibleSongs,
+  });
+
+  final TuningDefinition tuning;
+  final Duration elapsed;
+  final Future<List<SongTuningMatch>> compatibleSongs;
+
+  @override
+  Widget build(BuildContext context) {
+    final seconds = elapsed.inSeconds;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.check_circle_rounded,
+              color: InstrumentColors.accent,
+              size: 52,
+            ),
+            const SizedBox(height: 14),
+            Text(
+              '${tuning.strings.length}현 모두 완료!',
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${tuning.name} · $seconds초',
+              style: const TextStyle(color: InstrumentColors.muted),
+            ),
+            const SizedBox(height: 8),
+            FutureBuilder<List<SongTuningMatch>>(
+              future: compatibleSongs,
+              builder: (context, snapshot) {
+                final count = snapshot.data?.length;
+                return Text(
+                  count == null ? '연주 가능한 곡 확인 중' : '이 튜닝으로 연주 가능한 곡 $count개',
+                  style: const TextStyle(
+                    color: InstrumentColors.accent,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 22),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('완료'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -427,24 +708,15 @@ class _InputErrorNotice extends StatelessWidget {
   }
 }
 
-String _formatMeasuredCents(double? cents) {
+String _formatMeasuredCents(double? cents, {required bool coarse}) {
   if (cents == null) {
     return '—';
   }
+  if (coarse) {
+    return cents > 0 ? '▼ 50¢+' : '▲ 50¢+';
+  }
   final sign = cents > 0 ? '+' : '';
-  return '$sign${cents.toStringAsFixed(1)}';
-}
-
-String _signalDescription(LiveTunerState state) {
-  return switch (state.status) {
-    LiveTunerStatus.idle => 'cents · 입력 준비',
-    LiveTunerStatus.probingInput => 'cents · 입력 확인 중',
-    LiveTunerStatus.permissionDenied => 'cents · 마이크 권한 필요',
-    LiveTunerStatus.unavailable => 'cents · 입력 사용 불가',
-    LiveTunerStatus.listening when state.locked => 'cents · 인튠 잠금',
-    LiveTunerStatus.listening when state.frequencyHz != null => 'cents · 안정화됨',
-    LiveTunerStatus.listening => 'cents · 신호 확인 중',
-  };
+  return '$sign${cents.toStringAsFixed(1)}¢';
 }
 
 String _tapeStatus(LiveTunerState state) {

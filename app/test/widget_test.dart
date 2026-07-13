@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:toauner_app/main.dart';
@@ -51,7 +53,7 @@ void main() {
 
     expect(find.textContaining('ERUPTION'), findsOneWidget);
     expect(find.text('E♭2'), findsWidgets);
-    expect(find.text('0.0'), findsOneWidget);
+    expect(find.text('0.0¢'), findsOneWidget);
     expect(find.textContaining('78.69 Hz'), findsNWidgets(2));
     expect(find.text('곡 기준 +20 cents 적용'), findsOneWidget);
 
@@ -115,6 +117,91 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await _pumpFrames(tester);
   });
+
+  testWidgets('guides peg action, marks locks, and advances all six strings', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final catalog = _FakeSongCatalog(
+      currentMatch: _FakeSongCatalog.verifiedMatch,
+    );
+    final engine = _ScriptedTunerEngine();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildInstrumentTheme(),
+        home: PrecisionTunerScreen(
+          match: _FakeSongCatalog.verifiedMatch,
+          catalog: catalog,
+          tunerEngineFactory: () => engine,
+          includeUnverifiedSongs: false,
+        ),
+      ),
+    );
+    await _pumpFrames(tester);
+
+    engine.emit(_stateForString(6, cents: 24));
+    await tester.pump();
+    expect(
+      find.text('음이 높아요'),
+      findsOneWidget,
+      reason: tester
+          .widgetList<Text>(find.byType(Text))
+          .map((text) => text.data)
+          .whereType<String>()
+          .join(' | '),
+    );
+    expect(find.textContaining('6번 줄 페그를 풀어 낮추세요'), findsOneWidget);
+    expect(find.text('−50  ♭'), findsNothing);
+    expect(find.byType(PitchTape), findsOneWidget);
+
+    for (final stringNumber in [6, 5, 4, 3, 2, 1]) {
+      engine.emit(_stateForString(stringNumber, cents: 0, locked: true));
+      await tester.pump();
+      expect(find.text('$stringNumber번 줄 완료'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 800));
+    }
+    await tester.pumpAndSettle();
+
+    expect(find.text('6현 모두 완료!'), findsOneWidget);
+    expect(find.text('이 튜닝으로 연주 가능한 곡 1개'), findsOneWidget);
+    expect(engine.manualTargets, containsAllInOrder([5, 4, 3, 2, 1]));
+    expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+
+    await tester.tap(find.text('완료'));
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+  });
+}
+
+LiveTunerState _stateForString(
+  int stringNumber, {
+  required double cents,
+  bool locked = false,
+}) {
+  final target = _FakeSongCatalog.match.tuning.strings.singleWhere(
+    (string) => string.stringNumber == stringNumber,
+  );
+  final targetHz = target.targetFrequencyHz(
+    referenceA4Hz: _FakeSongCatalog.match.tuning.referenceA4Hz,
+    centsOffset: _FakeSongCatalog.match.tuning.centsOffset,
+  );
+  return LiveTunerState(
+    status: LiveTunerStatus.listening,
+    frequencyHz: targetHz,
+    clarity: 0.99,
+    rmsDb: -12,
+    cents: cents,
+    target: target,
+    locked: locked,
+    lockProgress: locked ? 1 : 0,
+    actualSampleRate: 48000,
+    windowSamples: 4096,
+  );
 }
 
 final class _FakeTunerEngine implements TunerEngine {
@@ -152,6 +239,37 @@ final class _FakeTunerEngine implements TunerEngine {
 
   @override
   void setManualTarget(int? stringNumber) {}
+
+  @override
+  Future<void> start(TuningDefinition tuning) async {}
+
+  @override
+  Future<void> stop() async {}
+}
+
+final class _ScriptedTunerEngine implements TunerEngine {
+  final _states = StreamController<LiveTunerState>.broadcast(sync: true);
+  final manualTargets = <int?>[];
+  LiveTunerState _current = LiveTunerState.idle;
+
+  void emit(LiveTunerState state) {
+    _current = state;
+    _states.add(state);
+  }
+
+  @override
+  LiveTunerState get current => _current;
+
+  @override
+  Stream<LiveTunerState> get states => _states.stream;
+
+  @override
+  Future<void> dispose() => _states.close();
+
+  @override
+  void setManualTarget(int? stringNumber) {
+    manualTargets.add(stringNumber);
+  }
 
   @override
   Future<void> start(TuningDefinition tuning) async {}
