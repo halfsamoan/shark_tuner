@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:tuner_data/tuner_data.dart';
+import 'package:tuner_domain/tuner_domain.dart';
 
 import '../app/instrument_theme.dart';
 import '../app/toauner_app.dart';
 import '../tuner/live_tuner_engine.dart';
+import '../tuner/precision_tuner_screen.dart';
 import '../ui/instrument_widgets.dart';
 import 'song_detail_screen.dart';
 
@@ -114,6 +116,11 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
               '오프라인 카탈로그에서 튜닝을 찾습니다.',
               style: TextStyle(color: InstrumentColors.muted, fontSize: 12),
             ),
+            const SizedBox(height: 16),
+            _QuickTunePanel(
+              enabled: _catalog != null,
+              onSelected: _openDirectTuner,
+            ),
             const SizedBox(height: 20),
             TextField(
               autofocus: false,
@@ -180,6 +187,78 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
             : '곡 찾기 준비됨',
         detail: '${_results.length}곡 │ 오프라인',
         active: !_loading && _error == null,
+      ),
+    );
+  }
+
+  void _openDirectTuner(TuningDefinition tuning) {
+    final catalog = _catalog;
+    if (catalog == null) {
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PrecisionTunerScreen(
+          directTuning: tuning,
+          directLabel: '바로 튜닝',
+          catalog: catalog,
+          tunerEngineFactory: widget.tunerEngineFactory,
+          includeUnverifiedSongs: widget.includeUnverifiedSongs,
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickTunePanel extends StatelessWidget {
+  const _QuickTunePanel({required this.enabled, required this.onSelected});
+
+  final bool enabled;
+  final ValueChanged<TuningDefinition> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: InstrumentColors.chrome,
+        border: Border.all(color: InstrumentColors.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const InstrumentSectionLabel(
+            'Quick tune',
+            color: InstrumentColors.accent,
+          ),
+          const SizedBox(height: 9),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              key: const Key('quick-tune-standard'),
+              onPressed: enabled
+                  ? () => onSelected(BuiltInTunings.standardGuitar)
+                  : null,
+              icon: const Icon(Icons.graphic_eq_rounded, size: 18),
+              label: const Text('바로 튜닝하기 · E Standard'),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: [
+              ActionChip(
+                key: const Key('quick-tune-drop-d'),
+                onPressed: enabled
+                    ? () => onSelected(BuiltInTunings.dropD)
+                    : null,
+                avatar: const Icon(Icons.tune_rounded, size: 15),
+                label: const Text('Drop D'),
+              ),
+              const Chip(label: Text('최근 · E Standard')),
+            ],
+          ),
+        ],
       ),
     );
   }

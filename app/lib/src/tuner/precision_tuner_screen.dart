@@ -13,16 +13,27 @@ import 'tuning_guidance.dart';
 class PrecisionTunerScreen extends StatefulWidget {
   const PrecisionTunerScreen({
     super.key,
-    required this.match,
     required this.catalog,
     required this.tunerEngineFactory,
     required this.includeUnverifiedSongs,
-  });
+    this.match,
+    this.directTuning,
+    this.directLabel = '바로 튜닝',
+  }) : assert(
+         (match == null) != (directTuning == null),
+         'Provide exactly one of match or directTuning.',
+       );
 
-  final SongTuningMatch match;
+  final SongTuningMatch? match;
+  final TuningDefinition? directTuning;
+  final String directLabel;
   final SongCatalog catalog;
   final TunerEngineFactory tunerEngineFactory;
   final bool includeUnverifiedSongs;
+
+  TuningDefinition get tuning => match?.tuning ?? directTuning!;
+  SongTuningRecord? get song => match?.song;
+  String get sessionLabel => song?.title ?? directLabel;
 
   @override
   State<PrecisionTunerScreen> createState() => _PrecisionTunerScreenState();
@@ -51,12 +62,12 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     _updateDisplayCents(_liveState.cents);
     _tuneUpStopwatch = Stopwatch()..start();
     _tuneUpTracker = TuneUpProgressTracker(
-      expectedStringNumbers: widget.match.tuning.strings.map(
+      expectedStringNumbers: widget.tuning.strings.map(
         (string) => string.stringNumber,
       ),
     );
     _engineSubscription = _engine.states.listen(_handleEngineState);
-    unawaited(_engine.start(widget.match.tuning));
+    unawaited(_engine.start(widget.tuning));
   }
 
   @override
@@ -68,11 +79,11 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     super.dispose();
   }
 
-  TuningString get _selected => widget.match.tuning.strings[_selectedIndex];
+  TuningString get _selected => widget.tuning.strings[_selectedIndex];
 
   double get _targetHz => _selected.targetFrequencyHz(
-    referenceA4Hz: widget.match.tuning.referenceA4Hz,
-    centsOffset: widget.match.tuning.centsOffset,
+    referenceA4Hz: widget.tuning.referenceA4Hz,
+    centsOffset: widget.tuning.centsOffset,
   );
 
   void _handleEngineState(LiveTunerState state) {
@@ -94,7 +105,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
       _liveState = state;
       _updateDisplayCents(state.cents);
       if (!_manualTarget && !_autoProgressTarget && detectedTarget != null) {
-        final index = widget.match.tuning.strings.indexWhere(
+        final index = widget.tuning.strings.indexWhere(
           (target) => target.stringNumber == detectedTarget.stringNumber,
         );
         if (index >= 0) {
@@ -144,7 +155,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
         return;
       }
       final completed = _tuneUpTracker.state.lockedStringNumbers;
-      final nextIndex = widget.match.tuning.strings.indexWhere(
+      final nextIndex = widget.tuning.strings.indexWhere(
         (string) => !completed.contains(string.stringNumber),
       );
       if (nextIndex < 0) {
@@ -178,10 +189,10 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
       enableDrag: false,
       backgroundColor: InstrumentColors.chrome,
       builder: (context) => _TuneCompleteSheet(
-        tuning: widget.match.tuning,
+        tuning: widget.tuning,
         elapsed: _tuneUpTracker.state.elapsed,
         compatibleSongs: widget.catalog.findPlayableWith(
-          widget.match.tuning,
+          widget.tuning,
           includeUnverified: widget.includeUnverifiedSongs,
         ),
       ),
@@ -213,7 +224,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     if (!mounted) {
       return;
     }
-    await _engine.start(widget.match.tuning);
+    await _engine.start(widget.tuning);
   }
 
   void _showDiagnostics() {
@@ -223,8 +234,8 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
       isScrollControlled: true,
       builder: (context) => _DiagnosticsSheet(
         state: _liveState,
-        tuning: widget.match.tuning,
-        song: widget.match.song,
+        tuning: widget.tuning,
+        song: widget.song,
         progress: _tuneUpTracker.state,
       ),
     );
@@ -232,8 +243,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final song = widget.match.song;
-    final tuning = widget.match.tuning;
+    final tuning = widget.tuning;
     final progress = _tuneUpTracker.state;
     final lockedNow = _celebratingStringNumber == _selected.stringNumber;
     final guidance = lockedNow
@@ -269,7 +279,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        '${song.title.toUpperCase()}  /  ${tuning.name.toUpperCase()}',
+                        '${widget.sessionLabel.toUpperCase()}  /  ${tuning.name.toUpperCase()}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -608,7 +618,7 @@ class _DiagnosticsSheet extends StatelessWidget {
 
   final LiveTunerState state;
   final TuningDefinition tuning;
-  final SongTuningRecord song;
+  final SongTuningRecord? song;
   final TuneUpProgressState progress;
 
   @override
@@ -662,7 +672,7 @@ class _DiagnosticsSheet extends StatelessWidget {
             DefinitionRow(
               label: 'DEV·곡 설정',
               value:
-                  '${tuning.id}@${tuning.version} · ${_offsetLabel(tuning.centsOffset)} · capo ${song.capoFret}',
+                  '${tuning.id}@${tuning.version} · ${_offsetLabel(tuning.centsOffset)} · capo ${song?.capoFret ?? 0}',
             ),
           ],
         ),

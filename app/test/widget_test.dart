@@ -46,9 +46,10 @@ void main() {
     expect(find.text('+20 cents'), findsOneWidget);
     expect(find.text('사람 검증 필요'), findsOneWidget);
 
-    await tester.drag(find.byType(ListView), const Offset(0, -500));
-    await _pumpFrames(tester);
-    await tester.tap(find.text('이 곡으로 튜닝'));
+    final stickyCta = find.byKey(const Key('song-tune-cta'));
+    expect(stickyCta, findsOneWidget);
+    expect(tester.getCenter(stickyCta).dy, lessThan(780));
+    await tester.tap(stickyCta);
     await _pumpFrames(tester);
 
     expect(find.textContaining('ERUPTION'), findsOneWidget);
@@ -56,6 +57,33 @@ void main() {
     expect(find.text('0.0¢'), findsOneWidget);
     expect(find.textContaining('78.69 Hz'), findsNWidgets(2));
     expect(find.text('곡 기준 +20 cents 적용'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+  });
+
+  testWidgets('opens the standard tuner without choosing a song', (
+    tester,
+  ) async {
+    final catalog = _FakeSongCatalog();
+    final engine = _ScriptedTunerEngine();
+
+    await tester.pumpWidget(
+      ToaunerApp(
+        catalogLoader: () async => catalog,
+        tunerEngineFactory: () => engine,
+        includeUnverifiedSongs: false,
+      ),
+    );
+    await _pumpFrames(tester);
+
+    await tester.tap(find.byKey(const Key('quick-tune-standard')));
+    await _pumpFrames(tester);
+
+    expect(find.textContaining('바로 튜닝'.toUpperCase()), findsOneWidget);
+    expect(find.textContaining('STANDARD'), findsWidgets);
+    expect(find.text('E2'), findsWidgets);
+    expect(find.text('곡을 선택하지 않아도 튜닝할 수 있습니다.'), findsNothing);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await _pumpFrames(tester);

@@ -94,38 +94,74 @@ class SongDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 22),
             _VerificationNotice(song: song),
-            const SizedBox(height: 22),
-            FilledButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => PrecisionTunerScreen(
-                      match: match,
-                      catalog: catalog,
-                      tunerEngineFactory: tunerEngineFactory,
-                      includeUnverifiedSongs: includeUnverifiedSongs,
-                    ),
-                  ),
-                );
-              },
-              child: const Text('이 곡으로 튜닝'),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              song.capoFret > 0
-                  ? '개방현을 먼저 맞춘 뒤 카포 ${song.capoFret}를 장착합니다.'
-                  : '개방현을 기준으로 낮은 현부터 맞춥니다.',
-              style: const TextStyle(
-                color: InstrumentColors.muted,
-                fontSize: 10,
-              ),
-            ),
+            const SizedBox(height: 32),
           ],
         ),
       ),
-      bottomNavigationBar: InstrumentStatusBar(
-        state: '곡 설정 준비됨',
-        detail: '${tuning.strings.length}현 │ $cents',
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _StickyTuneBar(
+            instruction: song.capoFret > 0
+                ? '개방현을 맞춘 뒤 카포 ${song.capoFret}를 장착하세요.'
+                : '개방현을 기준으로 낮은 줄부터 맞춥니다.',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => PrecisionTunerScreen(
+                    match: match,
+                    catalog: catalog,
+                    tunerEngineFactory: tunerEngineFactory,
+                    includeUnverifiedSongs: includeUnverifiedSongs,
+                  ),
+                ),
+              );
+            },
+          ),
+          InstrumentStatusBar(
+            state: '곡 설정 준비됨',
+            detail: '${tuning.strings.length}현 │ $cents',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StickyTuneBar extends StatelessWidget {
+  const _StickyTuneBar({required this.instruction, required this.onPressed});
+
+  final String instruction;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(24, 10, 24, 10),
+      decoration: const BoxDecoration(
+        color: InstrumentColors.chrome,
+        border: Border(top: BorderSide(color: InstrumentColors.line)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              key: const Key('song-tune-cta'),
+              onPressed: onPressed,
+              child: const Text('이 곡으로 튜닝'),
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            instruction,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: InstrumentColors.muted, fontSize: 9),
+          ),
+        ],
       ),
     );
   }
