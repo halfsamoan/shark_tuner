@@ -17,7 +17,7 @@ final class StabilityPluckObservation {
       attackOvershootCents,
       steadyStateDriftCentsPerSecond,
       peakRmsDb,
-      if (interPluckDriftCents case final value?) value,
+      ?interPluckDriftCents,
     ]) {
       if (!value.isFinite) {
         throw ArgumentError('Stability metrics must be finite.');

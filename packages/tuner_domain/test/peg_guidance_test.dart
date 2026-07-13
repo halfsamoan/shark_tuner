@@ -59,7 +59,7 @@ void main() {
   group('PegDirectionMonitor', () {
     test('pauses guidance after two consecutive contradictions', () {
       final monitor = PegDirectionMonitor(
-        raisePitchDirection: PegRotationDirection.counterClockwise,
+        PegRotationDirection.counterClockwise,
       );
 
       expect(
@@ -80,9 +80,7 @@ void main() {
     });
 
     test('matching movement clears a one-off contradiction', () {
-      final monitor = PegDirectionMonitor(
-        raisePitchDirection: PegRotationDirection.clockwise,
-      );
+      final monitor = PegDirectionMonitor(PegRotationDirection.clockwise);
       monitor.recordAdjustment(
         direction: PegRotationDirection.clockwise,
         pitchDeltaCents: -6,
@@ -99,9 +97,7 @@ void main() {
     });
 
     test('accepting the suggestion persists an inverted mapping', () {
-      final monitor = PegDirectionMonitor(
-        raisePitchDirection: PegRotationDirection.clockwise,
-      );
+      final monitor = PegDirectionMonitor(PegRotationDirection.clockwise);
       for (var index = 0; index < 2; index++) {
         monitor.recordAdjustment(
           direction: PegRotationDirection.clockwise,
@@ -120,9 +116,7 @@ void main() {
     });
 
     test('ignores pitch movement below the observation floor', () {
-      final monitor = PegDirectionMonitor(
-        raisePitchDirection: PegRotationDirection.clockwise,
-      );
+      final monitor = PegDirectionMonitor(PegRotationDirection.clockwise);
       for (var index = 0; index < 3; index++) {
         monitor.recordAdjustment(
           direction: PegRotationDirection.clockwise,

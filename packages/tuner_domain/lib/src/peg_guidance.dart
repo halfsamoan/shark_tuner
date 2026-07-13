@@ -89,11 +89,11 @@ enum PegDirectionMonitorState { observing, flipSuggested }
 
 /// Detects a likely reversed string winding without continuing unsafe guidance.
 final class PegDirectionMonitor {
-  PegDirectionMonitor({
-    required PegRotationDirection raisePitchDirection,
+  PegDirectionMonitor(
+    this._raisePitchDirection, {
     this.minimumObservedDeltaCents = 2,
     this.contradictionsBeforeSuggestion = 2,
-  }) : _raisePitchDirection = raisePitchDirection {
+  }) {
     if (minimumObservedDeltaCents <= 0 || contradictionsBeforeSuggestion <= 0) {
       throw ArgumentError('Monitor thresholds must be positive.');
     }
