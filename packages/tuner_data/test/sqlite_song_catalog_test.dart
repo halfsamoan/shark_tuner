@@ -41,7 +41,10 @@ void main() {
       'Master of Puppets',
     });
     expect(mixedFields.single.song.title, 'Everlong');
-    expect(punctuation.single.song.title, 'Back in Black');
+    expect(punctuation.map((match) => match.song.title).toSet(), {
+      'Back in Black',
+      'Highway to Hell',
+    });
   });
 
   test('unverified candidates are hidden unless explicitly enabled', () async {
@@ -53,24 +56,24 @@ void main() {
     );
   });
 
-  test('a match owns the versioned tuning snapshot and song offset', () async {
+  test('a match owns the versioned tuning snapshot and capo fact', () async {
     final match = await catalog.getById(
-      'van-halen-eruption',
+      'the-beatles-here-comes-the-sun',
       includeUnverified: true,
     );
 
     expect(match, isNotNull);
-    expect(match!.tuning.id, 'guitar-6-eb-standard');
+    expect(match!.tuning.id, 'guitar-6-standard');
     expect(match.tuning.version, 1);
-    expect(match.tuning.name, 'E-flat Standard');
-    expect(match.tuning.centsOffset, 20);
-    expect(match.song.capoFret, 0);
+    expect(match.tuning.name, 'E Standard');
+    expect(match.tuning.centsOffset, 0);
+    expect(match.song.capoFret, 7);
     expect(
       match.tuning.strings.first.targetFrequencyHz(
         referenceA4Hz: match.tuning.referenceA4Hz,
         centsOffset: match.tuning.centsOffset,
       ),
-      closeTo(78.68, 0.02),
+      closeTo(82.41, 0.02),
     );
   });
 
@@ -81,8 +84,8 @@ void main() {
         'foo-fighters-everlong',
         includeUnverified: true,
       );
-      final eruption = await catalog.getById(
-        'van-halen-eruption',
+      final sweetChild = await catalog.getById(
+        'guns-n-roses-sweet-child-o-mine',
         includeUnverified: true,
       );
 
@@ -90,18 +93,18 @@ void main() {
         everlong!.tuning,
         includeUnverified: true,
       );
-      final offsetSongs = await catalog.findPlayableWith(
-        eruption!.tuning,
+      final eFlatSongs = await catalog.findPlayableWith(
+        sweetChild!.tuning,
         includeUnverified: true,
       );
 
       expect(dropDSongs.map((match) => match.song.title).toSet(), {
-        'Black Hole Sun',
         'Everlong',
         'Killing in the Name',
+        'Schism',
       });
-      expect(offsetSongs.map((match) => match.song.title).toSet(), {
-        'Eruption',
+      expect(eFlatSongs.map((match) => match.song.title).toSet(), {
+        "Sweet Child O' Mine",
       });
     },
   );

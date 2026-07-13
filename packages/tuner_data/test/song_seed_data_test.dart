@@ -22,7 +22,7 @@ void main() {
             as Map<String, dynamic>;
   });
 
-  test('first curation batch has 20 unique non-shipping candidates', () {
+  test('source-audited batch has 20 unique non-shipping candidates', () {
     final songs = (candidates['songs'] as List).cast<Map<String, dynamic>>();
     final ids = songs.map((song) => song['id'] as String).toSet();
 
@@ -33,6 +33,42 @@ void main() {
       songs.every((song) => song['verificationStatus'] == 'needs_human_review'),
       isTrue,
     );
+    expect(
+      songs.every((song) => song['researchConfidence'] == 'web_verified'),
+      isTrue,
+    );
+  });
+
+  test('every candidate has two distinct stored source URLs', () {
+    final songs = (candidates['songs'] as List).cast<Map<String, dynamic>>();
+
+    for (final song in songs) {
+      final sources = (song['sources'] as List).cast<Map<String, dynamic>>();
+      final urls = sources.map((source) => source['url'] as String).toSet();
+      final sourceHosts = urls.map((url) => Uri.parse(url).host).toSet();
+
+      expect(sources, hasLength(2), reason: song['id'] as String);
+      expect(urls, hasLength(2), reason: song['id'] as String);
+      expect(sourceHosts, hasLength(2), reason: song['id'] as String);
+      expect(
+        sourceHosts.intersection({'ultimate-guitar.com', 'songsterr.com'}),
+        isEmpty,
+        reason: song['id'] as String,
+      );
+      expect(
+        sources.every((source) => source['checkedAt'] == '2026-07-13'),
+        isTrue,
+        reason: song['id'] as String,
+      );
+      expect(
+        sources.every(
+          (source) =>
+              (source['checkedBy'] as String).contains('human review pending'),
+        ),
+        isTrue,
+        reason: song['id'] as String,
+      );
+    }
   });
 
   test('every song references a versioned tuning in the local catalog', () {
