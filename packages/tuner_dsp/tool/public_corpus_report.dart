@@ -35,6 +35,7 @@ Future<void> main(List<String> arguments) async {
         .cast<Map<String, dynamic>>();
     final detector = MpmDetector();
     final classAccumulators = <String, _MetricAccumulator>{};
+    final segmentAccumulators = <String, Map<String, _MetricAccumulator>>{};
     final fixtureResults = <Map<String, Object?>>[];
     for (final fixture in fixtures) {
       final result = await _analyzeFixture(
@@ -46,12 +47,32 @@ Future<void> main(List<String> arguments) async {
       classAccumulators
           .putIfAbsent(result.corpusClass, _MetricAccumulator.new)
           .add(result);
+      for (final segment in result.segments.entries) {
+        segmentAccumulators
+            .putIfAbsent(result.corpusClass, () => {})
+            .putIfAbsent(
+              '${segment.key}:${segment.value}',
+              _MetricAccumulator.new,
+            )
+            .add(result);
+      }
     }
     final classes = <String, Object?>{
       for (final entry
           in classAccumulators.entries.toList()
             ..sort((left, right) => left.key.compareTo(right.key)))
         entry.key: entry.value.toJson(),
+    };
+    final segments = <String, Object?>{
+      for (final classEntry
+          in segmentAccumulators.entries.toList()
+            ..sort((left, right) => left.key.compareTo(right.key)))
+        classEntry.key: <String, Object?>{
+          for (final segmentEntry
+              in classEntry.value.entries.toList()
+                ..sort((left, right) => left.key.compareTo(right.key)))
+            segmentEntry.key: segmentEntry.value.toJson(),
+        },
     };
     final report = const JsonEncoder.withIndent('  ').convert({
       'report': 'public-recorded-guitar-baseline',
@@ -61,6 +82,7 @@ Future<void> main(List<String> arguments) async {
       'groundTruth': 'nominal MIDI note; not a sub-cent reference',
       'fixtureCount': fixtures.length,
       'classes': classes,
+      'segments': segments,
       'fixtures': fixtureResults,
     });
     final outputPath = outputArgument?.substring('--output='.length);
@@ -121,6 +143,15 @@ Future<_FixtureMetrics> _analyzeFixture({
     throw StateError('$id has an invalid stable analysis segment.');
   }
   final nominalHz = (fixture['nominalFrequencyHz'] as num).toDouble();
+  final segments = <String, String>{};
+  if (corpusClass == 'user-guitar') {
+    segments.addAll({
+      'tuning': fixture['offTuning'] == true ? 'semitone-down' : 'standard',
+      'string': 's${fixture['stringNumber']}',
+      'pickStrength': fixture['pickStrength'] as String,
+      'clipping': fixture['clippingDetected'] == true ? 'detected' : 'clear',
+    });
+  }
   final frequencies = <double>[];
   final nominalAbsoluteErrors = <double>[];
   var grossNoteErrorCount = 0;
@@ -171,6 +202,7 @@ Future<_FixtureMetrics> _analyzeFixture({
     noEstimateCount: noEstimateCount,
     nominalAbsoluteErrors: nominalAbsoluteErrors,
     octaveErrorCount: octaveErrorCount,
+    segments: segments,
     selfConsistencyErrors: selfConsistencyErrors,
   );
 }
@@ -195,6 +227,7 @@ final class _FixtureMetrics {
     required this.noEstimateCount,
     required this.nominalAbsoluteErrors,
     required this.octaveErrorCount,
+    required this.segments,
     required this.selfConsistencyErrors,
   });
 
@@ -205,6 +238,7 @@ final class _FixtureMetrics {
   final int noEstimateCount;
   final List<double> nominalAbsoluteErrors;
   final int octaveErrorCount;
+  final Map<String, String> segments;
   final List<double> selfConsistencyErrors;
 
   int get estimateCount => nominalAbsoluteErrors.length;
@@ -212,6 +246,7 @@ final class _FixtureMetrics {
   Map<String, Object?> get json => {
     'id': id,
     'corpusClass': corpusClass,
+    if (segments.isNotEmpty) 'segments': segments,
     'attemptedWindowCount': attemptedWindowCount,
     'estimateCount': estimateCount,
     'noEstimateCount': noEstimateCount,
@@ -224,6 +259,10 @@ final class _FixtureMetrics {
         : octaveErrorCount / estimateCount,
     'grossNoteErrorCount': grossNoteErrorCount,
     'grossNoteErrorRate': estimateCount == 0
+        ? 0.0
+        : grossNoteErrorCount / estimateCount,
+    'errorOver50CentsCount': grossNoteErrorCount,
+    'errorOver50CentsRate': estimateCount == 0
         ? 0.0
         : grossNoteErrorCount / estimateCount,
     'medianAbsoluteNominalDeviationCents': _percentile(
@@ -240,6 +279,7 @@ final class _FixtureMetrics {
 }
 
 final class _MetricAccumulator {
+  int fixtureCount = 0;
   int attemptedWindowCount = 0;
   int noEstimateCount = 0;
   int octaveErrorCount = 0;
@@ -248,6 +288,7 @@ final class _MetricAccumulator {
   final List<double> selfConsistencyErrors = [];
 
   void add(_FixtureMetrics metrics) {
+    fixtureCount++;
     attemptedWindowCount += metrics.attemptedWindowCount;
     noEstimateCount += metrics.noEstimateCount;
     octaveErrorCount += metrics.octaveErrorCount;
@@ -261,6 +302,7 @@ final class _MetricAccumulator {
     selfConsistencyErrors.sort();
     final estimateCount = nominalAbsoluteErrors.length;
     return {
+      'fixtureCount': fixtureCount,
       'attemptedWindowCount': attemptedWindowCount,
       'estimateCount': estimateCount,
       'noEstimateCount': noEstimateCount,
@@ -273,6 +315,10 @@ final class _MetricAccumulator {
           : octaveErrorCount / estimateCount,
       'grossNoteErrorCount': grossNoteErrorCount,
       'grossNoteErrorRate': estimateCount == 0
+          ? 0.0
+          : grossNoteErrorCount / estimateCount,
+      'errorOver50CentsCount': grossNoteErrorCount,
+      'errorOver50CentsRate': estimateCount == 0
           ? 0.0
           : grossNoteErrorCount / estimateCount,
       'medianAbsoluteNominalDeviationCents': _percentile(

@@ -19,7 +19,7 @@
     "generatedBy": { "const": "tool/prepare_corpus.dart" },
     "toolVersion": { "type": "string", "minLength": 1 },
     "groundTruthPolicy": { "type": "object" },
-    "datasets": { "type": "array", "minItems": 2 },
+    "datasets": { "type": "array", "minItems": 3 },
     "fixtureCount": { "type": "integer", "minimum": 1 },
     "fixtures": {
       "type": "array",
@@ -32,7 +32,6 @@
           "corpusClass",
           "dataset",
           "license",
-          "sourceUrl",
           "sourceFile",
           "sourceSha256",
           "sourceSampleRateHz",
@@ -59,15 +58,23 @@
               "guitartechs-di",
               "guitartechs-amp",
               "nsynth-low-16k",
-              "nsynth-low-48k"
+              "nsynth-low-48k",
+              "user-guitar"
             ]
           },
-          "dataset": { "enum": ["guitartechs-v1", "nsynth-test"] },
-          "license": { "const": "CC BY 4.0" },
+          "dataset": {
+            "enum": [
+              "guitartechs-v1",
+              "nsynth-test",
+              "user-guitar-samsung-sm-s926n-20260713-v1"
+            ]
+          },
+          "license": { "enum": ["CC BY 4.0", "project-provided"] },
+          "rights": { "enum": ["project_provided_user_recording"] },
           "sourceUrl": { "type": "string", "format": "uri" },
           "sourceFile": { "type": "string", "minLength": 1 },
           "sourceSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
-          "sourceSampleRateHz": { "enum": [16000, 48000] },
+          "sourceSampleRateHz": { "enum": [16000, 44100, 48000] },
           "sourceBitsPerSample": { "enum": [16, 24] },
           "sourceChannelCount": { "enum": [1, 2] },
           "selectedChannel": { "const": 0 },
@@ -75,7 +82,10 @@
           "nominalFrequencyHz": { "type": "number", "minimum": 43 },
           "velocity": { "type": "integer", "minimum": 1, "maximum": 127 },
           "referenceKind": {
-            "const": "nominal_midi_note_not_subcent_ground_truth"
+            "enum": [
+              "nominal_midi_note_not_subcent_ground_truth",
+              "uncalibrated_mobile_tuner_nominal_center"
+            ]
           },
           "outputSampleRateHz": { "enum": [16000, 48000] },
           "outputBitsPerSample": { "const": 16 },
@@ -83,9 +93,68 @@
           "stableEndMs": { "type": "integer", "minimum": 1 },
           "windowSamples": { "enum": [4096, 8192] },
           "transforms": { "type": "array", "items": { "type": "string" } },
-          "outputSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+          "outputSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "sourceExtension": { "type": "string" },
+          "detectedSourceContainer": { "type": "string" },
+          "sourceExtensionMatchesContainer": { "type": "boolean" },
+          "deviceModel": { "type": "string" },
+          "recordingApp": { "type": "string" },
+          "recordingAppPackage": { "type": "string" },
+          "recordingAppVersion": { "type": "string" },
+          "recordingAppUrl": { "type": "string", "format": "uri" },
+          "referenceTuner": { "type": "string" },
+          "referenceTunerPackage": { "type": "string" },
+          "referenceTunerVersion": { "type": "string" },
+          "referenceTunerUrl": { "type": "string", "format": "uri" },
+          "a4ReferenceHz": { "const": 440 },
+          "stringNumber": { "type": "integer", "minimum": 1, "maximum": 6 },
+          "noteName": { "type": "string" },
+          "pickStrength": { "enum": ["soft", "medium", "hard"] },
+          "offTuning": { "type": "boolean" },
+          "annotatedFrequencyHz": { "type": "number", "minimum": 43 },
+          "sourcePeakDbfs": { "type": "number", "maximum": 0 },
+          "sourceClippedSampleCount": { "type": "integer", "minimum": 0 },
+          "sourceClippedSampleRate": { "type": "number", "minimum": 0, "maximum": 1 },
+          "clippingDetected": { "type": "boolean" },
+          "sourceAttackSeconds": { "type": "number", "minimum": 0 },
+          "outputAttackMs": { "type": "number", "minimum": 0 }
         },
-        "additionalProperties": true
+        "additionalProperties": true,
+        "allOf": [
+          {
+            "if": {
+              "properties": { "corpusClass": { "const": "user-guitar" } }
+            },
+            "then": {
+              "required": [
+                "rights",
+                "sourceExtension",
+                "detectedSourceContainer",
+                "sourceExtensionMatchesContainer",
+                "deviceModel",
+                "recordingApp",
+                "recordingAppPackage",
+                "recordingAppVersion",
+                "recordingAppUrl",
+                "referenceTuner",
+                "referenceTunerPackage",
+                "referenceTunerVersion",
+                "referenceTunerUrl",
+                "a4ReferenceHz",
+                "stringNumber",
+                "noteName",
+                "pickStrength",
+                "offTuning",
+                "sourcePeakDbfs",
+                "sourceClippedSampleCount",
+                "sourceClippedSampleRate",
+                "clippingDetected",
+                "sourceAttackSeconds",
+                "outputAttackMs"
+              ]
+            }
+          }
+        ]
       }
     }
   },
