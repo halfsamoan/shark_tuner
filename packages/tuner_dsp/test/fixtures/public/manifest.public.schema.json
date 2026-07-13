@@ -116,6 +116,12 @@
           "sourceClippedSampleCount": { "type": "integer", "minimum": 0 },
           "sourceClippedSampleRate": { "type": "number", "minimum": 0, "maximum": 1 },
           "clippingDetected": { "type": "boolean" },
+          "resampledPeakDbfsBeforeAttenuation": { "type": "number" },
+          "resampledClippedSampleCountBeforeAttenuation": { "type": "integer", "minimum": 0 },
+          "fixedGainDb": { "const": -3.0 },
+          "fixedGainLinear": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+          "outputPeakDbfsBeforeEncoding": { "type": "number", "maximum": 0 },
+          "outputClippedSampleCountBeforeEncoding": { "const": 0 },
           "sourceAttackSeconds": { "type": "number", "minimum": 0 },
           "outputAttackMs": { "type": "number", "minimum": 0 }
         },
@@ -149,6 +155,12 @@
                 "sourceClippedSampleCount",
                 "sourceClippedSampleRate",
                 "clippingDetected",
+                "resampledPeakDbfsBeforeAttenuation",
+                "resampledClippedSampleCountBeforeAttenuation",
+                "fixedGainDb",
+                "fixedGainLinear",
+                "outputPeakDbfsBeforeEncoding",
+                "outputClippedSampleCountBeforeEncoding",
                 "sourceAttackSeconds",
                 "outputAttackMs"
               ]

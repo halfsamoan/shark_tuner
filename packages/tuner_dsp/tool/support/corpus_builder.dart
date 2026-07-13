@@ -347,10 +347,15 @@ Future<List<Map<String, Object?>>> _prepareUserGuitar({
         sourceClipStart,
         sourceClipStart + sourceClipLength,
       );
-      final outputSamples = resampleCubic(
+      final resampledSamples = resampleCubic(
         sourceClip,
         sourceRateHz: reader.sampleRateHz,
         targetRateHz: 48000,
+      );
+      final resampledLevels = analyzePcmLevels(resampledSamples);
+      final outputSamples = applyFixedGain(
+        resampledSamples,
+        gainDb: userGuitarFixtureGainDb,
       );
       final outputLevels = analyzePcmLevels(outputSamples);
       final relativeOutput = _forwardSlash(
@@ -418,6 +423,11 @@ Future<List<Map<String, Object?>>> _prepareUserGuitar({
         'sourceClippedSampleCount': sourceLevels.clippedSampleCount,
         'sourceClippedSampleRate': sourceLevels.clippedSampleRate,
         'clippingDetected': sourceLevels.clippedSampleCount > 0,
+        'resampledPeakDbfsBeforeAttenuation': resampledLevels.peakDbfs,
+        'resampledClippedSampleCountBeforeAttenuation':
+            resampledLevels.clippedSampleCount,
+        'fixedGainDb': userGuitarFixtureGainDb,
+        'fixedGainLinear': userGuitarFixtureLinearGain,
         'outputPeakDbfsBeforeEncoding': outputLevels.peakDbfs,
         'outputClippedSampleCountBeforeEncoding':
             outputLevels.clippedSampleCount,
@@ -427,8 +437,9 @@ Future<List<Map<String, Object?>>> _prepareUserGuitar({
           'clip_4500ms_attack_at_250ms',
           'selected_channel_0',
           'cubic_hermite_resample_v1',
+          'fixed_attenuation_minus_3db_v1',
           'canonical_pcm_16_wave',
-          'no_amplitude_normalization',
+          'no_peak_normalization',
         ],
         'outputSha256': await sha256File(outputFile),
       });

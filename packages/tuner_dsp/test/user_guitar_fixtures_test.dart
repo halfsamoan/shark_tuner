@@ -34,6 +34,13 @@ void main() {
       hasLength(13),
     );
     expect(
+      fixtures.where(
+        (fixture) =>
+            (fixture['outputClippedSampleCountBeforeEncoding'] as int) != 0,
+      ),
+      isEmpty,
+    );
+    expect(
       fixtures,
       everyElement(
         allOf(
@@ -56,11 +63,24 @@ void main() {
               'https://play.google.com/store/apps/details?id=lior.hai.soundanalyzertest',
             ),
             containsPair('a4ReferenceHz', 440),
+            containsPair('fixedGainDb', -3.0),
+            containsPair('fixedGainLinear', closeTo(0.7079457843841379, 1e-15)),
             containsPair(
               'referenceKind',
               'uncalibrated_mobile_tuner_nominal_center',
             ),
           ),
+        ),
+      ),
+    );
+    expect(
+      fixtures,
+      everyElement(
+        predicate<Map<String, dynamic>>(
+          (fixture) => (fixture['transforms'] as List).contains(
+            'fixed_attenuation_minus_3db_v1',
+          ),
+          'records the fixed attenuation transform',
         ),
       ),
     );

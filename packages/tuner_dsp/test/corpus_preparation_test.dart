@@ -114,6 +114,17 @@ void main() {
     expect(levels.clippedSampleRate, 0.5);
   });
 
+  test('fixed minus 3 dB gain prevents cubic overshoot re-clipping', () {
+    final samples = Float64List.fromList([1.15, -1.15, 0.5]);
+
+    final attenuated = applyFixedGain(samples, gainDb: userGuitarFixtureGainDb);
+    final levels = analyzePcmLevels(attenuated);
+
+    expect(userGuitarFixtureLinearGain, closeTo(0.7079457843841379, 1e-15));
+    expect(levels.peakDbfs, lessThan(0));
+    expect(levels.clippedSampleCount, 0);
+  });
+
   test('attack alignment finds the energy rise around the MIDI onset', () {
     final samples = Float64List(2000);
     for (var index = 1030; index < 1500; index++) {

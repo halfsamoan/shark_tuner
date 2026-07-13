@@ -779,18 +779,23 @@
       "sourceClippedSampleCount": 27,
       "sourceClippedSampleRate": 0.00006128577557148986,
       "clippingDetected": true,
-      "outputPeakDbfsBeforeEncoding": 0.30844442748537215,
-      "outputClippedSampleCountBeforeEncoding": 14,
+      "resampledPeakDbfsBeforeAttenuation": 0.30844442748537215,
+      "resampledClippedSampleCountBeforeAttenuation": 14,
+      "fixedGainDb": -3.0,
+      "fixedGainLinear": 0.7079457843841379,
+      "outputPeakDbfsBeforeEncoding": -2.691555572514627,
+      "outputClippedSampleCountBeforeEncoding": 0,
       "transforms": [
         "content_signature_riff_wave_v1",
         "energy_attack_discovery_v1",
         "clip_4500ms_attack_at_250ms",
         "selected_channel_0",
         "cubic_hermite_resample_v1",
+        "fixed_attenuation_minus_3db_v1",
         "canonical_pcm_16_wave",
-        "no_amplitude_normalization"
+        "no_peak_normalization"
       ],
-      "outputSha256": "f0ff576401f05fbc381d6bcbf5dc3dbc5e82a46d1b68cd29e1df95345c09ab8b"
+      "outputSha256": "b965ca6b940e7ff75f12abeef20915e62e833f0410eb91b33641d7e53fa8b9c9"
     },
     {
       "id": "user-s1-e4-medium",
@@ -837,18 +842,23 @@
       "sourceClippedSampleCount": 5,
       "sourceClippedSampleRate": 0.000011452392404773358,
       "clippingDetected": true,
-      "outputPeakDbfsBeforeEncoding": 0.7051362951813646,
-      "outputClippedSampleCountBeforeEncoding": 5,
+      "resampledPeakDbfsBeforeAttenuation": 0.7051362951813646,
+      "resampledClippedSampleCountBeforeAttenuation": 5,
+      "fixedGainDb": -3.0,
+      "fixedGainLinear": 0.7079457843841379,
+      "outputPeakDbfsBeforeEncoding": -2.2948637048186344,
+      "outputClippedSampleCountBeforeEncoding": 0,
       "transforms": [
         "content_signature_riff_wave_v1",
         "energy_attack_discovery_v1",
         "clip_4500ms_attack_at_250ms",
         "selected_channel_0",
         "cubic_hermite_resample_v1",
+        "fixed_attenuation_minus_3db_v1",
         "canonical_pcm_16_wave",
-        "no_amplitude_normalization"
+        "no_peak_normalization"
       ],
-      "outputSha256": "28ad2b32befe5370c12c658cbbb3a4734b04a66550890e3ac79761eeb4caf727"
+      "outputSha256": "9a4fef70b7ec9928bb0a8dae07a906bd146f551f1bc464fd334588e322ad0bd4"
     },
     {
       "id": "user-s1-e4-soft",
@@ -895,7 +905,11 @@
       "sourceClippedSampleCount": 0,
       "sourceClippedSampleRate": 0.0,
       "clippingDetected": false,
-      "outputPeakDbfsBeforeEncoding": -0.4228270886334848,
+      "resampledPeakDbfsBeforeAttenuation": -0.4228270886334848,
+      "resampledClippedSampleCountBeforeAttenuation": 0,
+      "fixedGainDb": -3.0,
+      "fixedGainLinear": 0.7079457843841379,
+      "outputPeakDbfsBeforeEncoding": -3.422827088633485,
       "outputClippedSampleCountBeforeEncoding": 0,
       "transforms": [
         "content_signature_riff_wave_v1",
@@ -903,10 +917,11 @@
         "clip_4500ms_attack_at_250ms",
         "selected_channel_0",
         "cubic_hermite_resample_v1",
+        "fixed_attenuation_minus_3db_v1",
         "canonical_pcm_16_wave",
-        "no_amplitude_normalization"
+        "no_peak_normalization"
       ],
-      "outputSha256": "3fcb2eb5ba86a0e3a5588b10229fd4e1d59aa3067cba907ca215155cf1cabc75"
+      "outputSha256": "fa708080911872f239c82e785b1dddc81ad075cf5b696141f3474f302d959499"
     },
     {
       "id": "user-s1-eb4-hard",
@@ -954,18 +969,23 @@
       "sourceClippedSampleCount": 20,
       "sourceClippedSampleRate": 0.00005859363555930555,
       "clippingDetected": true,
-      "outputPeakDbfsBeforeEncoding": 0.9078174577474601,
-      "outputClippedSampleCountBeforeEncoding": 15,
+      "resampledPeakDbfsBeforeAttenuation": 0.9078174577474601,
+      "resampledClippedSampleCountBeforeAttenuation": 15,
+      "fixedGainDb": -3.0,
+      "fixedGainLinear": 0.7079457843841379,
+      "outputPeakDbfsBeforeEncoding": -2.09218254225254,
+      "outputClippedSampleCountBeforeEncoding": 0,
       "transforms": [
         "content_signature_riff_wave_v1",
         "energy_attack_discovery_v1",
         "clip_4500ms_attack_at_250ms",
         "selected_channel_0",
         "cubic_hermite_resample_v1",
+        "fixed_attenuation_minus_3db_v1",
         "canonical_pcm_16_wave",
-        "no_amplitude_normalization"
+        "no_peak_normalization"
       ],
-      "outputSha256": "2a818095834d28e928e3949feac7d072a104d4df88e5703a4f8e1ae8a1c90ffb"
+      "outputSha256": "fecd8f64bd2cb8ab483c19987a46e7bd8fd98bd0ca92acea7de846d3e887a744"
     },
     {
       "id": "user-s2-b3-hard",
@@ -1012,18 +1032,23 @@
       "sourceClippedSampleCount": 77,
       "sourceClippedSampleRate": 0.00017017853275163217,
       "clippingDetected": true,
-      "outputPeakDbfsBeforeEncoding": 1.2271138590107897,
-      "outputClippedSampleCountBeforeEncoding": 54,
+      "resampledPeakDbfsBeforeAttenuation": 1.2271138590107897,
+      "resampledClippedSampleCountBeforeAttenuation": 54,
+      "fixedGainDb": -3.0,
+      "fixedGainLinear": 0.7079457843841379,
+      "outputPeakDbfsBeforeEncoding": -1.7728861409892098,
+      "outputClippedSampleCountBeforeEncoding": 0,
       "transforms": [
         "content_signature_riff_wave_v1",
         "energy_attack_discovery_v1",
         "clip_4500ms_attack_at_250ms",
         "selected_channel_0",
         "cubic_hermite_resample_v1",
+        "fixed_attenuation_minus_3db_v1",
         "canonical_pcm_16_wave",
-        "no_amplitude_normalization"
+        "no_peak_normalization"
       ],
-      "outputSha256": "0b6aea169539067d4d4a37bf74832092c0cb4cc851730d3fa016fc110d679fdb"
+      "outputSha256": "fd8405e321e3bb0f409519ad1959ec0e831a10d5e2eb0c3d9c4aaf11f3ffcc80"
     },
     {
       "id": "user-s2-b3-medium",
@@ -1070,7 +1095,11 @@
       "sourceClippedSampleCount": 1,
       "sourceClippedSampleRate": 0.000002896007274770274,
       "clippingDetected": true,
-      "outputPeakDbfsBeforeEncoding": -0.13580194747655974,
+      "resampledPeakDbfsBeforeAttenuation": -0.13580194747655974,
+      "resampledClippedSampleCountBeforeAttenuation": 0,
+      "fixedGainDb": -3.0,
+      "fixedGainLinear": 0.7079457843841379,
+      "outputPeakDbfsBeforeEncoding": -3.13580194747656,
       "outputClippedSampleCountBeforeEncoding": 0,
       "transforms": [
         "content_signature_riff_wave_v1",
@@ -1078,10 +1107,11 @@
         "clip_4500ms_attack_at_250ms",
         "selected_channel_0",
         "cubic_hermite_resample_v1",
+        "fixed_attenuation_minus_3db_v1",
         "canonical_pcm_16_wave",
-        "no_amplitude_normalization"
+        "no_peak_normalization"
       ],
-      "outputSha256": "1666a327be5be7200f10de950058005fb1ce46b29cc5795665628467c74bfb48"
+      "outputSha256": "1bdb6e46bc6b20e2c0f18d415a258910c315f9530da19035e0831d13e921ac34"
     },
     {
       "id": "user-s2-bb3-hard",
@@ -1129,18 +1159,23 @@
       "sourceClippedSampleCount": 558,
       "sourceClippedSampleRate": 0.0016938502308553943,
       "clippingDetected": true,
-      "outputPeakDbfsBeforeEncoding": 1.2624763302279225,
-      "outputClippedSampleCountBeforeEncoding": 469,
+      "resampledPeakDbfsBeforeAttenuation": 1.2624763302279225,
+      "resampledClippedSampleCountBeforeAttenuation": 469,
+      "fixedGainDb": -3.0,
+      "fixedGainLinear": 0.7079457843841379,
+      "outputPeakDbfsBeforeEncoding": -1.7375236697720768,
+      "outputClippedSampleCountBeforeEncoding": 0,
       "transforms": [
         "content_signature_riff_wave_v1",
         "energy_attack_discovery_v1",
         "clip_4500ms_attack_at_250ms",
         "selected_channel_0",
         "cubic_hermite_resample_v1",
+        "fixed_attenuation_minus_3db_v1",
         "canonical_pcm_16_wave",
-        "no_amplitude_normalization"
+        "no_peak_normalization"
       ],
-      "outputSha256": "2ddaed298b8da6f766c78b73a85b93f4e48459d5156135cab5da967debc4850f"
+      "outputSha256": "78d32b9ff4c8b6cad83b03e82a80e501f1ffc96967dafd83e07426c8f883746c"
     },
     {
       "id": "user-s3-fs3-hard",
@@ -1188,18 +1223,23 @@
       "sourceClippedSampleCount": 5,
       "sourceClippedSampleRate": 0.000012472902619060092,
       "clippingDetected": true,
-      "outputPeakDbfsBeforeEncoding": 0.6625180670370681,
-      "outputClippedSampleCountBeforeEncoding": 6,
+      "resampledPeakDbfsBeforeAttenuation": 0.6625180670370681,
+      "resampledClippedSampleCountBeforeAttenuation": 6,
+      "fixedGainDb": -3.0,
+      "fixedGainLinear": 0.7079457843841379,
+      "outputPeakDbfsBeforeEncoding": -2.337481932962931,
+      "outputClippedSampleCountBeforeEncoding": 0,
       "transforms": [
         "content_signature_riff_wave_v1",
         "energy_attack_discovery_v1",
         "clip_4500ms_attack_at_250ms",
         "selected_channel_0",
         "cubic_hermite_resample_v1",
+        "fixed_attenuation_minus_3db_v1",
         "canonical_pcm_16_wave",
-        "no_amplitude_normalization"
+        "no_peak_normalization"
       ],
-      "outputSha256": "2ab922d3cac781352149c971ba0adf63150c33039c397d33d877e4d5040d0a05"
+      "outputSha256": "225d819b64f018e6bef9402beb742242772e86823d59180f1581e64eaf6d3c29"
     },
     {
       "id": "user-s3-g3-hard",
@@ -1246,18 +1286,23 @@
       "sourceClippedSampleCount": 10,
       "sourceClippedSampleRate": 0.00001799661663607242,
       "clippingDetected": true,
-      "outputPeakDbfsBeforeEncoding": 0.5717067870516187,
-      "outputClippedSampleCountBeforeEncoding": 8,
+      "resampledPeakDbfsBeforeAttenuation": 0.5717067870516187,
+      "resampledClippedSampleCountBeforeAttenuation": 8,
+      "fixedGainDb": -3.0,
+      "fixedGainLinear": 0.7079457843841379,
+      "outputPeakDbfsBeforeEncoding": -2.4282932129483816,
+      "outputClippedSampleCountBeforeEncoding": 0,
       "transforms": [
         "content_signature_riff_wave_v1",
         "energy_attack_discovery_v1",
         "clip_4500ms_attack_at_250ms",
         "selected_channel_0",
         "cubic_hermite_resample_v1",
+        "fixed_attenuation_minus_3db_v1",
         "canonical_pcm_16_wave",
-        "no_amplitude_normalization"
+        "no_peak_normalization"
       ],
-      "outputSha256": "6f1df92fe91c5adc05eff745fdc1b27fb8745bae4e9649e265904777e391174a"
+      "outputSha256": "2f79787a6e6ac0e53e6125ff52a1aea591017489af9c63a6125fa0b332985c4b"
     },
     {
       "id": "user-s3-g3-medium",
@@ -1304,7 +1349,11 @@
       "sourceClippedSampleCount": 0,
       "sourceClippedSampleRate": 0.0,
       "clippingDetected": false,
-      "outputPeakDbfsBeforeEncoding": -0.3765052152811395,
+      "resampledPeakDbfsBeforeAttenuation": -0.3765052152811395,
+      "resampledClippedSampleCountBeforeAttenuation": 0,
+      "fixedGainDb": -3.0,
+      "fixedGainLinear": 0.7079457843841379,
+      "outputPeakDbfsBeforeEncoding": -3.37650521528114,
       "outputClippedSampleCountBeforeEncoding": 0,
       "transforms": [
         "content_signature_riff_wave_v1",
@@ -1312,10 +1361,11 @@
         "clip_4500ms_attack_at_250ms",
         "selected_channel_0",
         "cubic_hermite_resample_v1",
+        "fixed_attenuation_minus_3db_v1",
         "canonical_pcm_16_wave",
-        "no_amplitude_normalization"
+        "no_peak_normalization"
       ],
-      "outputSha256": "e6a6df9676ef322308c2065b290ef57ebdf2079a8be9b53ce533057364cfea8e"
+      "outputSha256": "0e86fc39a2bb008d06ba942be9b2c3c7603d2cb13183452145133d0030ce1bd8"
     },
     {
       "id": "user-s4-cs3-hard",
@@ -1363,18 +1413,23 @@
       "sourceClippedSampleCount": 6,
       "sourceClippedSampleRate": 0.00001374287088572803,
       "clippingDetected": true,
-      "outputPeakDbfsBeforeEncoding": 0.8024872317151417,
-      "outputClippedSampleCountBeforeEncoding": 6,
+      "resampledPeakDbfsBeforeAttenuation": 0.8024872317151417,
+      "resampledClippedSampleCountBeforeAttenuation": 6,
+      "fixedGainDb": -3.0,
+      "fixedGainLinear": 0.7079457843841379,
+      "outputPeakDbfsBeforeEncoding": -2.197512768284857,
+      "outputClippedSampleCountBeforeEncoding": 0,
       "transforms": [
         "content_signature_riff_wave_v1",
         "energy_attack_discovery_v1",
         "clip_4500ms_attack_at_250ms",
         "selected_channel_0",
         "cubic_hermite_resample_v1",
+        "fixed_attenuation_minus_3db_v1",
         "canonical_pcm_16_wave",
-        "no_amplitude_normalization"
+        "no_peak_normalization"
       ],
-      "outputSha256": "81e08337e035bad454702c4de66e6d9d67b9c6ce9ee21ee468e62b693115b352"
+      "outputSha256": "c365f66ae9e1bb1c7ce26db347b97fe31f67950f9b79478c32525429b473479c"
     },
     {
       "id": "user-s4-d3-hard",
@@ -1421,18 +1476,23 @@
       "sourceClippedSampleCount": 24,
       "sourceClippedSampleRate": 0.00004031242126480222,
       "clippingDetected": true,
-      "outputPeakDbfsBeforeEncoding": 1.0835089006533776,
-      "outputClippedSampleCountBeforeEncoding": 22,
+      "resampledPeakDbfsBeforeAttenuation": 1.0835089006533776,
+      "resampledClippedSampleCountBeforeAttenuation": 22,
+      "fixedGainDb": -3.0,
+      "fixedGainLinear": 0.7079457843841379,
+      "outputPeakDbfsBeforeEncoding": -1.9164910993466224,
+      "outputClippedSampleCountBeforeEncoding": 0,
       "transforms": [
         "content_signature_riff_wave_v1",
         "energy_attack_discovery_v1",
         "clip_4500ms_attack_at_250ms",
         "selected_channel_0",
         "cubic_hermite_resample_v1",
+        "fixed_attenuation_minus_3db_v1",
         "canonical_pcm_16_wave",
-        "no_amplitude_normalization"
+        "no_peak_normalization"
       ],
-      "outputSha256": "000a8d361753c4976299dbc2662d3012f80e1b8dc3c511f9ebc63f8cacbad3d4"
+      "outputSha256": "ad68f0b05b0b85b60a11105408b9bdd97f0a2d42391d43d00e1dccad4c4517ba"
     },
     {
       "id": "user-s4-d3-medium",
@@ -1479,7 +1539,11 @@
       "sourceClippedSampleCount": 0,
       "sourceClippedSampleRate": 0.0,
       "clippingDetected": false,
-      "outputPeakDbfsBeforeEncoding": -4.813321623786613,
+      "resampledPeakDbfsBeforeAttenuation": -4.813321623786613,
+      "resampledClippedSampleCountBeforeAttenuation": 0,
+      "fixedGainDb": -3.0,
+      "fixedGainLinear": 0.7079457843841379,
+      "outputPeakDbfsBeforeEncoding": -7.813321623786613,
       "outputClippedSampleCountBeforeEncoding": 0,
       "transforms": [
         "content_signature_riff_wave_v1",
@@ -1487,10 +1551,11 @@
         "clip_4500ms_attack_at_250ms",
         "selected_channel_0",
         "cubic_hermite_resample_v1",
+        "fixed_attenuation_minus_3db_v1",
         "canonical_pcm_16_wave",
-        "no_amplitude_normalization"
+        "no_peak_normalization"
       ],
-      "outputSha256": "0785cd07314dc594cc06d9f9d433618cd202547b9336a6b2a2c4769dff318e60"
+      "outputSha256": "a2075ee5285b35acd390d0ef5eff34f7038f411a8ad79fb80da5baf453147f96"
     },
     {
       "id": "user-s5-a2-hard",
@@ -1537,18 +1602,23 @@
       "sourceClippedSampleCount": 48,
       "sourceClippedSampleRate": 0.00008892445867235783,
       "clippingDetected": true,
-      "outputPeakDbfsBeforeEncoding": 0.8965924025689597,
-      "outputClippedSampleCountBeforeEncoding": 33,
+      "resampledPeakDbfsBeforeAttenuation": 0.8965924025689597,
+      "resampledClippedSampleCountBeforeAttenuation": 33,
+      "fixedGainDb": -3.0,
+      "fixedGainLinear": 0.7079457843841379,
+      "outputPeakDbfsBeforeEncoding": -2.10340759743104,
+      "outputClippedSampleCountBeforeEncoding": 0,
       "transforms": [
         "content_signature_riff_wave_v1",
         "energy_attack_discovery_v1",
         "clip_4500ms_attack_at_250ms",
         "selected_channel_0",
         "cubic_hermite_resample_v1",
+        "fixed_attenuation_minus_3db_v1",
         "canonical_pcm_16_wave",
-        "no_amplitude_normalization"
+        "no_peak_normalization"
       ],
-      "outputSha256": "da7ee20961612754493165c280154e736f8979d06bffc736cf639577a357c112"
+      "outputSha256": "232634f438b9ef904f43710b2a69e40714a2c67321419a5edd52cfd2b5d187c3"
     },
     {
       "id": "user-s5-a2-medium",
@@ -1595,7 +1665,11 @@
       "sourceClippedSampleCount": 0,
       "sourceClippedSampleRate": 0.0,
       "clippingDetected": false,
-      "outputPeakDbfsBeforeEncoding": -0.27756096205249003,
+      "resampledPeakDbfsBeforeAttenuation": -0.27756096205249003,
+      "resampledClippedSampleCountBeforeAttenuation": 0,
+      "fixedGainDb": -3.0,
+      "fixedGainLinear": 0.7079457843841379,
+      "outputPeakDbfsBeforeEncoding": -3.277560962052489,
       "outputClippedSampleCountBeforeEncoding": 0,
       "transforms": [
         "content_signature_riff_wave_v1",
@@ -1603,10 +1677,11 @@
         "clip_4500ms_attack_at_250ms",
         "selected_channel_0",
         "cubic_hermite_resample_v1",
+        "fixed_attenuation_minus_3db_v1",
         "canonical_pcm_16_wave",
-        "no_amplitude_normalization"
+        "no_peak_normalization"
       ],
-      "outputSha256": "a315b23bee7ffc9cdb429eeed38a18fbe08fba2e8ae87a2c5d7892bc04e85656"
+      "outputSha256": "88079e5aefc77a090f801fd7e36e5dbff43e110738faa0eaa4003ccc040b8e26"
     },
     {
       "id": "user-s5-gs2-hard",
@@ -1654,18 +1729,23 @@
       "sourceClippedSampleCount": 6,
       "sourceClippedSampleRate": 0.000010954462300217993,
       "clippingDetected": true,
-      "outputPeakDbfsBeforeEncoding": 0.6422440463601858,
-      "outputClippedSampleCountBeforeEncoding": 7,
+      "resampledPeakDbfsBeforeAttenuation": 0.6422440463601858,
+      "resampledClippedSampleCountBeforeAttenuation": 7,
+      "fixedGainDb": -3.0,
+      "fixedGainLinear": 0.7079457843841379,
+      "outputPeakDbfsBeforeEncoding": -2.3577559536398134,
+      "outputClippedSampleCountBeforeEncoding": 0,
       "transforms": [
         "content_signature_riff_wave_v1",
         "energy_attack_discovery_v1",
         "clip_4500ms_attack_at_250ms",
         "selected_channel_0",
         "cubic_hermite_resample_v1",
+        "fixed_attenuation_minus_3db_v1",
         "canonical_pcm_16_wave",
-        "no_amplitude_normalization"
+        "no_peak_normalization"
       ],
-      "outputSha256": "27bd53acc021daf1013ba24fbdaa6777891c6000009be8a2f4b319ec4d3fe9d7"
+      "outputSha256": "0e612912dc1d778b3d1120caa3820082fb572e8dda47b25300ca2e4745f9bbbc"
     },
     {
       "id": "user-s6-e2-hard",
@@ -1712,7 +1792,11 @@
       "sourceClippedSampleCount": 0,
       "sourceClippedSampleRate": 0.0,
       "clippingDetected": false,
-      "outputPeakDbfsBeforeEncoding": -6.595225994515397,
+      "resampledPeakDbfsBeforeAttenuation": -6.595225994515397,
+      "resampledClippedSampleCountBeforeAttenuation": 0,
+      "fixedGainDb": -3.0,
+      "fixedGainLinear": 0.7079457843841379,
+      "outputPeakDbfsBeforeEncoding": -9.595225994515399,
       "outputClippedSampleCountBeforeEncoding": 0,
       "transforms": [
         "content_signature_riff_wave_v1",
@@ -1720,10 +1804,11 @@
         "clip_4500ms_attack_at_250ms",
         "selected_channel_0",
         "cubic_hermite_resample_v1",
+        "fixed_attenuation_minus_3db_v1",
         "canonical_pcm_16_wave",
-        "no_amplitude_normalization"
+        "no_peak_normalization"
       ],
-      "outputSha256": "2a592153e43c0517cec88079cbf4f61127a0a4fb799c675b3c87727a3d57fc82"
+      "outputSha256": "dbd7ce3bab36ddbb7c66f437f81b01cb2c6e4e4b74c6aa9c697b33caf245c350"
     },
     {
       "id": "user-s6-e2-medium",
@@ -1770,18 +1855,23 @@
       "sourceClippedSampleCount": 2,
       "sourceClippedSampleRate": 0.000004130371031229736,
       "clippingDetected": true,
-      "outputPeakDbfsBeforeEncoding": 0.46270027284043286,
-      "outputClippedSampleCountBeforeEncoding": 1,
+      "resampledPeakDbfsBeforeAttenuation": 0.46270027284043286,
+      "resampledClippedSampleCountBeforeAttenuation": 1,
+      "fixedGainDb": -3.0,
+      "fixedGainLinear": 0.7079457843841379,
+      "outputPeakDbfsBeforeEncoding": -2.5372997271595668,
+      "outputClippedSampleCountBeforeEncoding": 0,
       "transforms": [
         "content_signature_riff_wave_v1",
         "energy_attack_discovery_v1",
         "clip_4500ms_attack_at_250ms",
         "selected_channel_0",
         "cubic_hermite_resample_v1",
+        "fixed_attenuation_minus_3db_v1",
         "canonical_pcm_16_wave",
-        "no_amplitude_normalization"
+        "no_peak_normalization"
       ],
-      "outputSha256": "3f633399a8e9396bf65815e2c51bd874a2ddc994d9b814b72c35834f8e8107f9"
+      "outputSha256": "17d8a262842f9602ce29d655f7a876b440dcabd3b701fa289e245e0115f5dadb"
     },
     {
       "id": "user-s6-eb2-hard",
@@ -1830,7 +1920,11 @@
       "sourceClippedSampleCount": 0,
       "sourceClippedSampleRate": 0.0,
       "clippingDetected": false,
-      "outputPeakDbfsBeforeEncoding": -11.928491904458784,
+      "resampledPeakDbfsBeforeAttenuation": -11.928491904458784,
+      "resampledClippedSampleCountBeforeAttenuation": 0,
+      "fixedGainDb": -3.0,
+      "fixedGainLinear": 0.7079457843841379,
+      "outputPeakDbfsBeforeEncoding": -14.928491904458784,
       "outputClippedSampleCountBeforeEncoding": 0,
       "transforms": [
         "content_signature_riff_wave_v1",
@@ -1838,10 +1932,11 @@
         "clip_4500ms_attack_at_250ms",
         "selected_channel_0",
         "cubic_hermite_resample_v1",
+        "fixed_attenuation_minus_3db_v1",
         "canonical_pcm_16_wave",
-        "no_amplitude_normalization"
+        "no_peak_normalization"
       ],
-      "outputSha256": "7b0d72e2eac90eda2a59a72a7f2d3dfdf24490e8d6abe6004f3e0b4aa85dd5ca"
+      "outputSha256": "82e27f7a5b345074ab73c54127e3115c637ab949dca0a525d65967a19f233469"
     }
   ]
 }

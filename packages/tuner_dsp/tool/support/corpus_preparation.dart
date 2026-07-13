@@ -5,6 +5,11 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 
+const double userGuitarFixtureGainDb = -3;
+final double userGuitarFixtureLinearGain = math
+    .pow(10, userGuitarFixtureGainDb / 20)
+    .toDouble();
+
 final class MidiNote {
   const MidiNote({
     required this.channel,
@@ -81,6 +86,18 @@ PcmLevelStats analyzePcmLevels(Float64List samples) {
         ? double.negativeInfinity
         : 20 * math.log(peak) / math.ln10,
   );
+}
+
+Float64List applyFixedGain(Float64List samples, {required double gainDb}) {
+  if (!gainDb.isFinite || gainDb > 0) {
+    throw ArgumentError.value(
+      gainDb,
+      'gainDb',
+      'Fixture gain must be finite and non-positive.',
+    );
+  }
+  final gain = math.pow(10, gainDb / 20).toDouble();
+  return Float64List.fromList([for (final sample in samples) sample * gain]);
 }
 
 List<MidiNote> parseMidiNotes(Uint8List bytes) {
