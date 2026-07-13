@@ -1,0 +1,12 @@
+name: tuner_dsp
+description: Flutter-independent pitch detection and signal processing for toauner.
+version: 0.1.0
+publish_to: none
+environment:
+  sdk: ^3.12.2
+
+resolution: workspace
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0

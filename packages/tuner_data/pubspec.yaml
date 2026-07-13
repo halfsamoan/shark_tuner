@@ -1,0 +1,18 @@
+name: tuner_data
+description: Song metadata and repository contracts for toauner.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.12.2
+
+resolution: workspace
+
+# Add regular dependencies here.
+dependencies:
+  tuner_domain:
+    path: ../tuner_domain
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.6

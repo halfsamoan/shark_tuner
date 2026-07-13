@@ -1,0 +1,32 @@
+# Dart / Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+build/
+coverage/
+doc/api/
+pubspec.lock
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Local SDKs and machine-specific files
+.tools/
+local.properties
+*.jks
+*.keystore
+key.properties
+
+# Generated databases and reports
+*.sqlite
+*.sqlite3
+reports/
+
+# The Pub workspace has one shared application lockfile at the repository root.
+!/pubspec.lock
