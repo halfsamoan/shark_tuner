@@ -33,6 +33,8 @@ dependencies:
   flutter:
     sdk: flutter
   path_provider: ^2.1.6
+  tuner_audio:
+    path: ../packages/tuner_audio
   tuner_data:
     path: ../packages/tuner_data
   tuner_domain:

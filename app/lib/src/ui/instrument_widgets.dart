@@ -293,6 +293,24 @@ class IdlePitchTape extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return const PitchTape(status: '신호 대기');
+  }
+}
+
+class PitchTape extends StatelessWidget {
+  const PitchTape({
+    super.key,
+    required this.status,
+    this.cents,
+    this.locked = false,
+  });
+
+  final String status;
+  final double? cents;
+  final bool locked;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       height: 96,
       decoration: BoxDecoration(
@@ -300,11 +318,11 @@ class IdlePitchTape extends StatelessWidget {
         border: Border.all(color: InstrumentColors.line),
       ),
       child: CustomPaint(
-        painter: const _PitchTapePainter(),
-        child: const Center(
+        painter: _PitchTapePainter(cents: cents, locked: locked),
+        child: Center(
           child: Text(
-            '신호 대기',
-            style: TextStyle(
+            status,
+            style: const TextStyle(
               color: InstrumentColors.muted,
               fontSize: 11,
               fontWeight: FontWeight.w500,
@@ -317,7 +335,10 @@ class IdlePitchTape extends StatelessWidget {
 }
 
 class _PitchTapePainter extends CustomPainter {
-  const _PitchTapePainter();
+  const _PitchTapePainter({required this.cents, required this.locked});
+
+  final double? cents;
+  final bool locked;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -337,8 +358,25 @@ class _PitchTapePainter extends CustomPainter {
         index == 10 ? center : minor,
       );
     }
+    final measuredCents = cents;
+    if (measuredCents != null) {
+      final clamped = measuredCents.clamp(-50, 50);
+      final x = 16 + (size.width - 32) * (clamped + 50) / 100;
+      final marker = Paint()
+        ..color = locked ? InstrumentColors.accent : InstrumentColors.text
+        ..strokeWidth = 3;
+      canvas.drawLine(Offset(x, 12), Offset(x, size.height - 12), marker);
+      final triangle = Path()
+        ..moveTo(x - 6, 8)
+        ..lineTo(x + 6, 8)
+        ..lineTo(x, 16)
+        ..close();
+      canvas.drawPath(triangle, marker);
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _PitchTapePainter oldDelegate) => false;
+  bool shouldRepaint(covariant _PitchTapePainter oldDelegate) {
+    return oldDelegate.cents != cents || oldDelegate.locked != locked;
+  }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tuner_data/tuner_data.dart';
 
 import '../app/instrument_theme.dart';
+import '../tuner/live_tuner_engine.dart';
 import '../tuner/precision_tuner_screen.dart';
 import '../ui/instrument_widgets.dart';
 
@@ -10,11 +11,13 @@ class SongDetailScreen extends StatelessWidget {
     super.key,
     required this.match,
     required this.catalog,
+    required this.tunerEngineFactory,
     required this.includeUnverifiedSongs,
   });
 
   final SongTuningMatch match;
   final SongCatalog catalog;
+  final TunerEngineFactory tunerEngineFactory;
   final bool includeUnverifiedSongs;
 
   @override
@@ -99,6 +102,7 @@ class SongDetailScreen extends StatelessWidget {
                     builder: (_) => PrecisionTunerScreen(
                       match: match,
                       catalog: catalog,
+                      tunerEngineFactory: tunerEngineFactory,
                       includeUnverifiedSongs: includeUnverifiedSongs,
                     ),
                   ),

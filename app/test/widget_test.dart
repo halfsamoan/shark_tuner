@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:toauner_app/main.dart';
 import 'package:toauner_app/src/app/instrument_theme.dart';
+import 'package:toauner_app/src/tuner/live_tuner_engine.dart';
 import 'package:tuner_data/tuner_data.dart';
 import 'package:tuner_domain/tuner_domain.dart';
 
@@ -14,6 +15,7 @@ void main() {
     await tester.pumpWidget(
       ToaunerApp(
         catalogLoader: () async => catalog,
+        tunerEngineFactory: _FakeTunerEngine.new,
         includeUnverifiedSongs: true,
       ),
     );
@@ -47,6 +49,7 @@ void main() {
 
     expect(find.textContaining('ERUPTION'), findsOneWidget);
     expect(find.text('E♭2'), findsWidgets);
+    expect(find.text('0.0'), findsOneWidget);
     await tester.drag(find.byType(ListView), const Offset(0, -500));
     await _pumpFrames(tester);
     expect(find.textContaining('78.69 Hz'), findsNWidgets(2));
@@ -55,6 +58,49 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await _pumpFrames(tester);
   });
+}
+
+final class _FakeTunerEngine implements TunerEngine {
+  _FakeTunerEngine() {
+    final match = _FakeSongCatalog.match;
+    final target = match.tuning.strings.first;
+    _current = LiveTunerState(
+      status: LiveTunerStatus.listening,
+      frequencyHz: target.targetFrequencyHz(
+        referenceA4Hz: match.tuning.referenceA4Hz,
+        centsOffset: match.tuning.centsOffset,
+      ),
+      clarity: 0.99,
+      rmsDb: -12,
+      cents: 0,
+      target: target,
+      locked: true,
+      lockProgress: 1,
+      actualSampleRate: 48000,
+      windowSamples: 8192,
+      processingDuration: const Duration(milliseconds: 2),
+    );
+  }
+
+  late LiveTunerState _current;
+
+  @override
+  LiveTunerState get current => _current;
+
+  @override
+  Stream<LiveTunerState> get states => const Stream.empty();
+
+  @override
+  Future<void> dispose() async {}
+
+  @override
+  void setManualTarget(int? stringNumber) {}
+
+  @override
+  Future<void> start(TuningDefinition tuning) async {}
+
+  @override
+  Future<void> stop() async {}
 }
 
 Future<void> _pumpFrames(WidgetTester tester) async {

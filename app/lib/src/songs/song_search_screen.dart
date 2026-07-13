@@ -5,6 +5,7 @@ import 'package:tuner_data/tuner_data.dart';
 
 import '../app/instrument_theme.dart';
 import '../app/toauner_app.dart';
+import '../tuner/live_tuner_engine.dart';
 import '../ui/instrument_widgets.dart';
 import 'song_detail_screen.dart';
 
@@ -12,10 +13,12 @@ class SongSearchScreen extends StatefulWidget {
   const SongSearchScreen({
     super.key,
     required this.catalogLoader,
+    required this.tunerEngineFactory,
     required this.includeUnverifiedSongs,
   });
 
   final SongCatalogLoader catalogLoader;
+  final TunerEngineFactory tunerEngineFactory;
   final bool includeUnverifiedSongs;
 
   @override
@@ -150,6 +153,7 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
                         builder: (_) => SongDetailScreen(
                           match: match,
                           catalog: _catalog!,
+                          tunerEngineFactory: widget.tunerEngineFactory,
                           includeUnverifiedSongs: widget.includeUnverifiedSongs,
                         ),
                       ),

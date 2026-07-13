@@ -4,6 +4,7 @@ import 'package:tuner_data/tuner_data.dart';
 
 import '../songs/bundled_song_catalog.dart';
 import '../songs/song_search_screen.dart';
+import '../tuner/live_tuner_engine.dart';
 import 'instrument_theme.dart';
 
 typedef SongCatalogLoader = Future<SongCatalog> Function();
@@ -12,10 +13,12 @@ class ToaunerApp extends StatelessWidget {
   const ToaunerApp({
     super.key,
     this.catalogLoader = openBundledSongCatalog,
+    this.tunerEngineFactory = createLiveTunerEngine,
     this.includeUnverifiedSongs = !kReleaseMode,
   });
 
   final SongCatalogLoader catalogLoader;
+  final TunerEngineFactory tunerEngineFactory;
   final bool includeUnverifiedSongs;
 
   @override
@@ -26,6 +29,7 @@ class ToaunerApp extends StatelessWidget {
       theme: buildInstrumentTheme(),
       home: SongSearchScreen(
         catalogLoader: catalogLoader,
+        tunerEngineFactory: tunerEngineFactory,
         includeUnverifiedSongs: includeUnverifiedSongs,
       ),
     );
