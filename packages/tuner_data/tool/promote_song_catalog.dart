@@ -32,7 +32,7 @@ _Options _parseOptions(List<String> arguments) {
   final approvedAt = valueAfter('--approved-at')?.trim();
   if (approvedBy == null || approvedBy.isEmpty || approvedAt == null) {
     stderr.writeln(
-      'Usage: dart run tool/promote_song_catalog.dart '
+      'Usage: dart run packages/tuner_data/tool/promote_song_catalog.dart '
       '--approved-by <name> --approved-at <YYYY-MM-DD> '
       '[--input <path>] [--output <path>]',
     );

@@ -8,5 +8,5 @@
   독립 출처 URL과 검증 메타데이터만 포함
 
 후보 원본은 감사 이력으로 유지하며 수정하지 않는다. 출시 카탈로그는
-`tool/promote_song_catalog.dart`로 결정적으로 생성했고 모든 곡을
+`packages/tuner_data/tool/promote_song_catalog.dart`로 결정적으로 생성했고 모든 곡을
 `verified`, 루트를 `shippingEligible: true`로 기록한다.
