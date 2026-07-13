@@ -10,6 +10,7 @@ resolution: workspace
 
 # Add regular dependencies here.
 dependencies:
+  sqlite3: ^3.3.4
   tuner_domain:
     path: ../tuner_domain
 
