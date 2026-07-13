@@ -1,0 +1,156 @@
+import 'package:test/test.dart';
+import 'package:tuner_domain/tuner_domain.dart';
+
+void main() {
+  group('PegDirectionRule', () {
+    for (final handedness in InstrumentHandedness.values) {
+      for (final orientation in HeadstockOrientation.values) {
+        for (final side in PegSide.values) {
+          for (final winding in StringWinding.values) {
+            test('$handedness $orientation $side $winding', () {
+              final direction = PegDirectionRule.raisePitchDirection(
+                PegConfiguration(
+                  side: side,
+                  handedness: handedness,
+                  orientation: orientation,
+                  winding: winding,
+                ),
+              );
+              final flips = [
+                handedness == InstrumentHandedness.left,
+                orientation == HeadstockOrientation.reversed,
+                winding == StringWinding.reversed,
+              ].where((flip) => flip).length;
+              final rightHandedStandard = side == PegSide.bass
+                  ? PegRotationDirection.counterClockwise
+                  : PegRotationDirection.clockwise;
+              final expected = flips.isEven
+                  ? rightHandedStandard
+                  : rightHandedStandard.opposite;
+
+              expect(direction, expected);
+            });
+          }
+        }
+      }
+    }
+
+    test('slotted rollers require a verified per-peg override', () {
+      const configuration = PegConfiguration(
+        side: PegSide.bass,
+        mechanism: PegMechanism.slottedRoller,
+      );
+
+      expect(
+        () => PegDirectionRule.raisePitchDirection(configuration),
+        throwsA(isA<StateError>()),
+      );
+      expect(
+        PegDirectionRule.raisePitchDirection(
+          configuration.copyWith(
+            directionOverride: PegRotationDirection.clockwise,
+          ),
+        ),
+        PegRotationDirection.clockwise,
+      );
+    });
+  });
+
+  group('PegDirectionMonitor', () {
+    test('pauses guidance after two consecutive contradictions', () {
+      final monitor = PegDirectionMonitor(
+        raisePitchDirection: PegRotationDirection.counterClockwise,
+      );
+
+      expect(
+        monitor.recordAdjustment(
+          direction: PegRotationDirection.counterClockwise,
+          pitchDeltaCents: -8,
+        ),
+        PegDirectionMonitorState.observing,
+      );
+      expect(
+        monitor.recordAdjustment(
+          direction: PegRotationDirection.counterClockwise,
+          pitchDeltaCents: -7,
+        ),
+        PegDirectionMonitorState.flipSuggested,
+      );
+      expect(monitor.guidancePaused, isTrue);
+    });
+
+    test('matching movement clears a one-off contradiction', () {
+      final monitor = PegDirectionMonitor(
+        raisePitchDirection: PegRotationDirection.clockwise,
+      );
+      monitor.recordAdjustment(
+        direction: PegRotationDirection.clockwise,
+        pitchDeltaCents: -6,
+      );
+
+      expect(
+        monitor.recordAdjustment(
+          direction: PegRotationDirection.clockwise,
+          pitchDeltaCents: 8,
+        ),
+        PegDirectionMonitorState.observing,
+      );
+      expect(monitor.consecutiveContradictions, 0);
+    });
+
+    test('accepting the suggestion persists an inverted mapping', () {
+      final monitor = PegDirectionMonitor(
+        raisePitchDirection: PegRotationDirection.clockwise,
+      );
+      for (var index = 0; index < 2; index++) {
+        monitor.recordAdjustment(
+          direction: PegRotationDirection.clockwise,
+          pitchDeltaCents: -8,
+        );
+      }
+
+      monitor.acceptSuggestedFlip();
+
+      expect(
+        monitor.raisePitchDirection,
+        PegRotationDirection.counterClockwise,
+      );
+      expect(monitor.hasRuntimeOverride, isTrue);
+      expect(monitor.guidancePaused, isFalse);
+    });
+
+    test('ignores pitch movement below the observation floor', () {
+      final monitor = PegDirectionMonitor(
+        raisePitchDirection: PegRotationDirection.clockwise,
+      );
+      for (var index = 0; index < 3; index++) {
+        monitor.recordAdjustment(
+          direction: PegRotationDirection.clockwise,
+          pitchDeltaCents: -0.5,
+        );
+      }
+
+      expect(monitor.consecutiveContradictions, 0);
+      expect(monitor.guidancePaused, isFalse);
+    });
+  });
+
+  group('PegRotationHint', () {
+    test('uses conservative plain and wound starting heuristics', () {
+      expect(
+        PegRotationHint.estimate(
+          centsToTarget: 50,
+          construction: StringConstruction.plain,
+        ).buttonTurns,
+        closeTo(0.25, 0.001),
+      );
+      expect(
+        PegRotationHint.estimate(
+          centsToTarget: 100,
+          construction: StringConstruction.wound,
+        ).buttonTurns,
+        closeTo(0.25, 0.001),
+      );
+    });
+  });
+}
