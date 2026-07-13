@@ -32,6 +32,9 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
+  path_provider: ^2.1.6
+  tuner_data:
+    path: ../packages/tuner_data
   tuner_domain:
     path: ../packages/tuner_domain
   tuner_dsp:
@@ -61,6 +64,10 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - ../data/songs/candidates.v1.json
+    - ../data/songs/tunings.v1.json
 
   # To add assets to your application, add an assets section, like this:
   # assets:
