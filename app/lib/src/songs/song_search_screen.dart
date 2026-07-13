@@ -114,12 +114,21 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
             const SizedBox(height: 20),
             TextField(
               autofocus: false,
+              style: const TextStyle(
+                color: InstrumentColors.text,
+                fontSize: 16,
+              ),
+              cursorColor: InstrumentColors.accent,
               textInputAction: TextInputAction.search,
               onChanged: _search,
               decoration: const InputDecoration(
                 hintText: '곡명 또는 아티스트 검색',
                 prefixIcon: Icon(Icons.search_rounded, size: 20),
                 suffixIcon: _ShortcutHint(),
+                suffixIconConstraints: BoxConstraints.tightFor(
+                  width: 64,
+                  height: 48,
+                ),
               ),
             ),
             const SizedBox(height: 20),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:toauner_app/main.dart';
+import 'package:toauner_app/src/app/instrument_theme.dart';
 import 'package:tuner_data/tuner_data.dart';
 import 'package:tuner_domain/tuner_domain.dart';
 
@@ -19,6 +20,8 @@ void main() {
     await _pumpFrames(tester);
 
     expect(find.text('곡명 또는 아티스트 검색'), findsOneWidget);
+    final searchInput = tester.widget<EditableText>(find.byType(EditableText));
+    expect(searchInput.style.color, InstrumentColors.text);
 
     await tester.enterText(find.byType(EditableText), 'Eruption');
     await _pumpFrames(tester);
