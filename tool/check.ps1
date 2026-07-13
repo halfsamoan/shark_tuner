@@ -30,6 +30,9 @@ try {
 
         & $dart run 'tool\guitar_accuracy_report.dart'
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+        & $dart run 'tool\public_corpus_report.dart'
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     }
     finally {
         Pop-Location

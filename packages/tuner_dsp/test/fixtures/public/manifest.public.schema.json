@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toauner.local/schemas/public-corpus-manifest.v1.json",
+  "title": "toauner public guitar corpus provenance manifest",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "profile",
+    "generatedBy",
+    "toolVersion",
+    "groundTruthPolicy",
+    "datasets",
+    "fixtureCount",
+    "fixtures"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "profile": { "enum": ["ci", "full"] },
+    "generatedBy": { "const": "tool/prepare_corpus.dart" },
+    "toolVersion": { "type": "string", "minLength": 1 },
+    "groundTruthPolicy": { "type": "object" },
+    "datasets": { "type": "array", "minItems": 2 },
+    "fixtureCount": { "type": "integer", "minimum": 1 },
+    "fixtures": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "file",
+          "corpusClass",
+          "dataset",
+          "license",
+          "sourceUrl",
+          "sourceFile",
+          "sourceSha256",
+          "sourceSampleRateHz",
+          "sourceBitsPerSample",
+          "sourceChannelCount",
+          "selectedChannel",
+          "nominalMidi",
+          "nominalFrequencyHz",
+          "velocity",
+          "referenceKind",
+          "outputSampleRateHz",
+          "outputBitsPerSample",
+          "stableStartMs",
+          "stableEndMs",
+          "windowSamples",
+          "transforms",
+          "outputSha256"
+        ],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "file": { "type": "string", "pattern": "\\.wav$" },
+          "corpusClass": {
+            "enum": [
+              "guitartechs-di",
+              "guitartechs-amp",
+              "nsynth-low-16k",
+              "nsynth-low-48k"
+            ]
+          },
+          "dataset": { "enum": ["guitartechs-v1", "nsynth-test"] },
+          "license": { "const": "CC BY 4.0" },
+          "sourceUrl": { "type": "string", "format": "uri" },
+          "sourceFile": { "type": "string", "minLength": 1 },
+          "sourceSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "sourceSampleRateHz": { "enum": [16000, 48000] },
+          "sourceBitsPerSample": { "enum": [16, 24] },
+          "sourceChannelCount": { "enum": [1, 2] },
+          "selectedChannel": { "const": 0 },
+          "nominalMidi": { "type": "integer", "minimum": 0, "maximum": 127 },
+          "nominalFrequencyHz": { "type": "number", "minimum": 43 },
+          "velocity": { "type": "integer", "minimum": 1, "maximum": 127 },
+          "referenceKind": {
+            "const": "nominal_midi_note_not_subcent_ground_truth"
+          },
+          "outputSampleRateHz": { "enum": [16000, 48000] },
+          "outputBitsPerSample": { "const": 16 },
+          "stableStartMs": { "type": "integer", "minimum": 0 },
+          "stableEndMs": { "type": "integer", "minimum": 1 },
+          "windowSamples": { "enum": [4096, 8192] },
+          "transforms": { "type": "array", "items": { "type": "string" } },
+          "outputSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": false
+}
