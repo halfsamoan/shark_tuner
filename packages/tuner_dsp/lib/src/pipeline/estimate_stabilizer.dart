@@ -6,7 +6,7 @@ final class EstimateStabilizerConfig {
   const EstimateStabilizerConfig({
     this.minimumClarity = 0.9,
     this.medianWindowSize = 5,
-    this.minimumSamples = 3,
+    this.minimumSamples = 2,
     this.emaAlpha = 0.3,
     this.missingFramesBeforeReset = 3,
   }) : assert(minimumClarity >= 0 && minimumClarity <= 1),

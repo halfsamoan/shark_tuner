@@ -3,18 +3,16 @@ import 'package:tuner_dsp/tuner_dsp.dart';
 
 void main() {
   group('EstimateStabilizer', () {
-    test('gates weak frames and emits only after three trusted samples', () {
+    test('gates weak frames and emits after two trusted samples', () {
       final stabilizer = EstimateStabilizer();
 
       expect(stabilizer.add(_estimate(110, clarity: 0.89)), isNull);
       expect(stabilizer.add(_estimate(110.1)), isNull);
-      expect(stabilizer.add(_estimate(109.9)), isNull);
-
-      final stable = stabilizer.add(_estimate(110));
+      final stable = stabilizer.add(_estimate(109.9));
 
       expect(stable, isNotNull);
       expect(stable!.frequencyHz, closeTo(110, 0.02));
-      expect(stable.sampleCount, 3);
+      expect(stable.sampleCount, 2);
     });
 
     test('median-of-five rejects a single octave outlier', () {
@@ -55,7 +53,6 @@ void main() {
       expect(stabilizer.add(null), isNull);
       expect(stabilizer.add(null), isNull);
       expect(stabilizer.add(null), isNull);
-      expect(stabilizer.add(_estimate(146.83)), isNull);
       expect(stabilizer.add(_estimate(146.83)), isNull);
       expect(
         stabilizer.add(_estimate(146.83))!.frequencyHz,

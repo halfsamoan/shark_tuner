@@ -30,5 +30,7 @@ All classes provide nominal semitone labels rather than calibrated sub-cent
 references. Therefore the report separates valid estimates, octave errors,
 errors over 50 cents, nominal-note deviation, and within-clip self-consistency.
 For `user-guitar`, it also reports tuning, string, pick-strength, and clipping
-segments. These results remain informational and cannot be used for product
-accuracy claims or G1 passage.
+segments. Raw detector and product-pipeline metrics are reported side by side,
+including the direction and timestamp of every octave correction. These
+results remain informational and cannot be used for product accuracy claims or
+G1 passage.
