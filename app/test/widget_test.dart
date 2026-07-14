@@ -520,6 +520,156 @@ void main() {
     await _pumpFrames(tester);
   });
 
+  testWidgets('peg setup adds a physical rotation direction to guidance', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final engine = _ScriptedTunerEngine();
+    InstrumentPegProfile? savedProfile;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildInstrumentTheme(),
+        home: PrecisionTunerScreen(
+          match: _FakeSongCatalog.verifiedMatch,
+          catalog: _FakeSongCatalog(
+            currentMatch: _FakeSongCatalog.verifiedMatch,
+          ),
+          tunerEngineFactory: () => engine,
+          includeUnverifiedSongs: false,
+          loadInstrumentProfile: () async => null,
+          saveInstrumentProfile: (profile) async {
+            savedProfile = profile;
+          },
+        ),
+      ),
+    );
+    await _pumpFrames(tester);
+
+    expect(find.byKey(const Key('configure-peg-guidance')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('configure-peg-guidance')));
+    await tester.pumpAndSettle();
+    expect(find.text('내 기타 페그 설정'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('save-peg-profile')));
+    await tester.pumpAndSettle();
+
+    expect(savedProfile, isNotNull);
+    expect(savedProfile!.layout, HeadstockLayout.split);
+    engine.emit(_stateForString(6, cents: -24));
+    await tester.pump();
+    expect(find.textContaining('↺ 반시계방향'), findsOneWidget);
+    expect(find.textContaining('헤드스톡 정면에서'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+  });
+
+  testWidgets('two opposite peg outcomes pause and offer a persisted flip', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final engine = _ScriptedTunerEngine();
+    final saves = <InstrumentPegProfile>[];
+    final profile = InstrumentPegProfile.split(
+      stringCount: 6,
+      bassSideStringCount: 3,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildInstrumentTheme(),
+        home: PrecisionTunerScreen(
+          match: _FakeSongCatalog.verifiedMatch,
+          catalog: _FakeSongCatalog(
+            currentMatch: _FakeSongCatalog.verifiedMatch,
+          ),
+          tunerEngineFactory: () => engine,
+          includeUnverifiedSongs: false,
+          loadInstrumentProfile: () async => profile,
+          saveInstrumentProfile: (profile) async => saves.add(profile),
+        ),
+      ),
+    );
+    await _pumpFrames(tester);
+
+    engine.emit(_stateForString(6, cents: -20));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('verify-peg-direction')));
+    await tester.pump();
+    engine.emit(_stateForString(6, cents: -26));
+    await tester.pump();
+    expect(find.text('방향 안내를 멈췄어요'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('verify-peg-direction')));
+    await tester.pump();
+    engine.emit(_stateForString(6, cents: -32));
+    await tester.pump();
+    expect(find.text('방향 안내를 멈췄어요'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('accept-peg-direction-flip')));
+    await tester.pump();
+    expect(saves, hasLength(1));
+    expect(saves.single.directionOverrides[6], PegRotationDirection.clockwise);
+    expect(find.textContaining('↻ 시계방향'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+  });
+
+  testWidgets('classical slotted peg is calibrated before direction advice', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final engine = _ScriptedTunerEngine();
+    final saves = <InstrumentPegProfile>[];
+    final profile = InstrumentPegProfile.classicalSplit(
+      stringCount: 6,
+      bassSideStringCount: 3,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildInstrumentTheme(),
+        home: PrecisionTunerScreen(
+          match: _FakeSongCatalog.verifiedMatch,
+          catalog: _FakeSongCatalog(
+            currentMatch: _FakeSongCatalog.verifiedMatch,
+          ),
+          tunerEngineFactory: () => engine,
+          includeUnverifiedSongs: false,
+          loadInstrumentProfile: () async => profile,
+          saveInstrumentProfile: (profile) async => saves.add(profile),
+        ),
+      ),
+    );
+    await _pumpFrames(tester);
+
+    engine.emit(_stateForString(6, cents: -20));
+    await tester.pump();
+    expect(find.textContaining('클래식 페그 방향 확인'), findsOneWidget);
+    expect(find.textContaining('반시계방향'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('verify-peg-direction')));
+    await tester.pump();
+    engine.emit(_stateForString(6, cents: -14));
+    await tester.pump();
+    expect(saves, hasLength(1));
+    expect(saves.single.directionOverrides[6], PegRotationDirection.clockwise);
+    expect(find.textContaining('↻ 시계방향'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+  });
+
   testWidgets('keeps the screen awake only while the tuner is mounted', (
     tester,
   ) async {

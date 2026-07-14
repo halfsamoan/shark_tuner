@@ -7,6 +7,7 @@ import 'package:tuner_domain/tuner_domain.dart';
 
 import '../app/instrument_theme.dart';
 import '../device/tuner_device_control.dart';
+import '../instrument_setup/instrument_profile_store.dart';
 import '../settings/app_settings.dart';
 import '../ui/instrument_widgets.dart';
 import '../ui/throttled_live_region.dart';
@@ -24,6 +25,8 @@ class PrecisionTunerScreen extends StatefulWidget {
     this.directLabel = '바로 튜닝',
     this.openAppSettings = openToaunerAppSettings,
     this.setScreenAwake = setToaunerScreenAwake,
+    this.loadInstrumentProfile = loadInstrumentPegProfile,
+    this.saveInstrumentProfile = saveInstrumentPegProfile,
   }) : assert(
          (match == null) != (directTuning == null),
          'Provide exactly one of match or directTuning.',
@@ -37,6 +40,8 @@ class PrecisionTunerScreen extends StatefulWidget {
   final bool includeUnverifiedSongs;
   final AppSettingsLauncher openAppSettings;
   final ScreenAwakeSetter setScreenAwake;
+  final InstrumentProfileLoader loadInstrumentProfile;
+  final InstrumentProfileSaver saveInstrumentProfile;
 
   TuningDefinition get tuning => match?.tuning ?? directTuning!;
   SongTuningRecord? get song => match?.song;
@@ -55,6 +60,11 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   var _checkingMicrophonePermission = true;
   double? _displayCents;
   int? _celebratingStringNumber;
+  InstrumentPegProfile? _instrumentProfile;
+  var _instrumentProfileLoaded = false;
+  final Map<int, PegDirectionMonitor> _pegDirectionMonitors = {};
+  _PendingPegObservation? _pendingPegObservation;
+  int? _flipSuggestedStringNumber;
   Timer? _autoAdvanceTimer;
   late final TunerEngine _engine;
   late final StreamSubscription<LiveTunerState> _engineSubscription;
@@ -76,6 +86,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     );
     _engineSubscription = _engine.states.listen(_handleEngineState);
     unawaited(widget.setScreenAwake(true));
+    unawaited(_loadInstrumentProfile());
     unawaited(_prepareInput());
   }
 
@@ -95,6 +106,30 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     referenceA4Hz: widget.tuning.referenceA4Hz,
     centsOffset: widget.tuning.centsOffset,
   );
+
+  InstrumentPegProfile? get _activeInstrumentProfile {
+    final profile = _instrumentProfile;
+    return profile?.stringCount == widget.tuning.strings.length
+        ? profile
+        : null;
+  }
+
+  Future<void> _loadInstrumentProfile() async {
+    InstrumentPegProfile? profile;
+    try {
+      profile = await widget.loadInstrumentProfile();
+    } on Object {
+      profile = null;
+    }
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _instrumentProfile = profile;
+      _instrumentProfileLoaded = true;
+      _resetPegDirectionRuntime();
+    });
+  }
 
   Future<void> _prepareInput() async {
     var granted = false;
@@ -147,6 +182,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
         elapsed: _tuneUpStopwatch.elapsed,
       );
     }
+    _consumePendingPegObservation(state);
     setState(() {
       _liveState = state;
       _updateDisplayCents(state.cents);
@@ -162,6 +198,176 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     if (newlyLocked && detectedTarget != null) {
       _celebrateLock(detectedTarget.stringNumber);
     }
+  }
+
+  void _resetPegDirectionRuntime() {
+    _pegDirectionMonitors.clear();
+    _pendingPegObservation = null;
+    _flipSuggestedStringNumber = null;
+  }
+
+  PegDirectionMonitor _monitorFor(int stringNumber) {
+    return _pegDirectionMonitors.putIfAbsent(stringNumber, () {
+      return PegDirectionMonitor(
+        _activeInstrumentProfile!.raisePitchDirectionForString(stringNumber),
+      );
+    });
+  }
+
+  void _consumePendingPegObservation(LiveTunerState state) {
+    final pending = _pendingPegObservation;
+    if (pending == null) {
+      return;
+    }
+    final target = state.target;
+    final cents = state.cents;
+    if (target == null || target.stringNumber != pending.stringNumber) {
+      _pendingPegObservation = null;
+      return;
+    }
+    if (cents == null || !cents.isFinite) {
+      return;
+    }
+    final delta = cents - pending.baselineCents;
+    if (delta.abs() < 2) {
+      return;
+    }
+    _pendingPegObservation = null;
+
+    if (pending.classicalCalibration) {
+      final raiseDirection = delta > 0
+          ? pending.direction
+          : pending.direction.opposite;
+      final updated = _activeInstrumentProfile!.withDirectionOverride(
+        stringNumber: pending.stringNumber,
+        raisePitchDirection: raiseDirection,
+      );
+      _instrumentProfile = updated;
+      _pegDirectionMonitors.remove(pending.stringNumber);
+      unawaited(_persistInstrumentProfile(updated));
+      return;
+    }
+
+    final result = _monitorFor(
+      pending.stringNumber,
+    ).recordAdjustment(direction: pending.direction, pitchDeltaCents: delta);
+    if (result == PegDirectionMonitorState.flipSuggested) {
+      _flipSuggestedStringNumber = pending.stringNumber;
+    }
+  }
+
+  Future<void> _persistInstrumentProfile(InstrumentPegProfile profile) async {
+    try {
+      await widget.saveInstrumentProfile(profile);
+    } on Object {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('기타 설정을 저장하지 못했습니다. 다시 시도해 주세요.')),
+      );
+    }
+  }
+
+  Future<void> _showPegSetup() async {
+    final profile = await showModalBottomSheet<InstrumentPegProfile>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: InstrumentColors.chrome,
+      builder: (context) => _PegSetupSheet(
+        stringCount: widget.tuning.strings.length,
+        current: _activeInstrumentProfile,
+      ),
+    );
+    if (!mounted || profile == null) {
+      return;
+    }
+    setState(() {
+      _instrumentProfile = profile;
+      _instrumentProfileLoaded = true;
+      _resetPegDirectionRuntime();
+    });
+    await _persistInstrumentProfile(profile);
+  }
+
+  PegRotationDirection? _presentedRotationDirection(TuningGuidance guidance) {
+    final profile = _activeInstrumentProfile;
+    if (profile == null ||
+        _flipSuggestedStringNumber == _selected.stringNumber) {
+      return null;
+    }
+    PegRotationDirection raiseDirection;
+    try {
+      raiseDirection = profile.raisePitchDirectionForString(
+        _selected.stringNumber,
+      );
+    } on StateError {
+      return null;
+    }
+    return switch (guidance.direction) {
+      TuningDirection.raise => raiseDirection,
+      TuningDirection.lower => raiseDirection.opposite,
+      TuningDirection.hold => null,
+    };
+  }
+
+  void _beginPegDirectionCheck(TuningGuidance guidance) {
+    final profile = _activeInstrumentProfile;
+    final cents = _liveState.cents;
+    if (profile == null || cents == null || !cents.isFinite) {
+      return;
+    }
+    final configuration = profile.configurationForString(
+      _selected.stringNumber,
+    );
+    final classicalCalibration =
+        configuration.mechanism == PegMechanism.slottedRoller &&
+        configuration.directionOverride == null;
+    final direction = classicalCalibration
+        ? PegRotationDirection.clockwise
+        : _presentedRotationDirection(guidance);
+    if (direction == null) {
+      return;
+    }
+    setState(() {
+      _pendingPegObservation = _PendingPegObservation(
+        stringNumber: _selected.stringNumber,
+        baselineCents: cents,
+        direction: direction,
+        classicalCalibration: classicalCalibration,
+      );
+    });
+  }
+
+  void _acceptPegDirectionFlip() {
+    final stringNumber = _flipSuggestedStringNumber;
+    final profile = _activeInstrumentProfile;
+    if (stringNumber == null || profile == null) {
+      return;
+    }
+    final monitor = _monitorFor(stringNumber)..acceptSuggestedFlip();
+    final updated = profile.withDirectionOverride(
+      stringNumber: stringNumber,
+      raisePitchDirection: monitor.raisePitchDirection,
+    );
+    setState(() {
+      _instrumentProfile = updated;
+      _flipSuggestedStringNumber = null;
+      _pendingPegObservation = null;
+    });
+    unawaited(_persistInstrumentProfile(updated));
+  }
+
+  void _dismissPegDirectionFlip() {
+    final stringNumber = _flipSuggestedStringNumber;
+    if (stringNumber == null) {
+      return;
+    }
+    _monitorFor(stringNumber).dismissSuggestion();
+    setState(() {
+      _flipSuggestedStringNumber = null;
+      _pendingPegObservation = null;
+    });
   }
 
   void _updateDisplayCents(double? cents) {
@@ -250,6 +456,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   void _toggleTarget(int index) {
     _autoAdvanceTimer?.cancel();
     setState(() {
+      _pendingPegObservation = null;
       if (_manualTarget && _selectedIndex == index) {
         _manualTarget = false;
         _engine.setManualTarget(null);
@@ -313,6 +520,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
             heardStringNumber: _liveState.heardTarget?.stringNumber,
             coarseMode: _coarseMode,
           );
+    final pegDirection = _pegDirectionPresentation(guidance);
     return Scaffold(
       appBar: const InstrumentHeaderBar(section: '정밀 튜너', showBack: true),
       body: Stack(
@@ -505,6 +713,12 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                     offsetLabel: tuning.centsOffset == 0
                         ? null
                         : '곡 기준 ${_offsetLabel(tuning.centsOffset)} 적용',
+                    pegDirection: pegDirection,
+                    onConfigurePegGuidance: _showPegSetup,
+                    onVerifyPegDirection: () =>
+                        _beginPegDirectionCheck(guidance),
+                    onAcceptPegDirectionFlip: _acceptPegDirectionFlip,
+                    onDismissPegDirectionFlip: _dismissPegDirectionFlip,
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -540,6 +754,56 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
       return '직접 선택';
     }
     return '자동 인식';
+  }
+
+  _PegDirectionPresentation _pegDirectionPresentation(TuningGuidance guidance) {
+    if (!_instrumentProfileLoaded) {
+      return const _PegDirectionPresentation(label: '페그 설정 불러오는 중');
+    }
+    final profile = _activeInstrumentProfile;
+    if (profile == null) {
+      return const _PegDirectionPresentation(
+        label: '내 기타를 설정하면 시계·반시계 방향도 알려드려요',
+        needsSetup: true,
+      );
+    }
+    if (_flipSuggestedStringNumber == _selected.stringNumber) {
+      return const _PegDirectionPresentation(
+        label: '방향 안내를 멈췄어요',
+        flipSuggested: true,
+      );
+    }
+    final pending = _pendingPegObservation;
+    if (pending?.stringNumber == _selected.stringNumber) {
+      return _PegDirectionPresentation(
+        label: pending!.classicalCalibration
+            ? '↻ 시계방향으로 아주 조금 돌린 뒤 다시 튕겨 주세요'
+            : '안내 방향으로 조금 돌린 뒤 같은 줄을 다시 튕겨 주세요',
+        pending: true,
+      );
+    }
+
+    final configuration = profile.configurationForString(
+      _selected.stringNumber,
+    );
+    if (configuration.mechanism == PegMechanism.slottedRoller &&
+        configuration.directionOverride == null) {
+      return _PegDirectionPresentation(
+        label: '클래식 페그 방향 확인 · ↻ 시계방향으로 아주 조금',
+        canVerify: _liveState.cents?.isFinite ?? false,
+        classicalCalibration: true,
+      );
+    }
+    final direction = _presentedRotationDirection(guidance);
+    if (direction == null) {
+      return _PegDirectionPresentation(
+        label: '페그 설정됨 · ${_pegProfileLabel(profile)}',
+      );
+    }
+    return _PegDirectionPresentation(
+      label: '헤드스톡 정면에서 ${_rotationDirectionLabel(direction)}',
+      canVerify: _liveState.cents?.isFinite ?? false,
+    );
   }
 }
 
@@ -606,11 +870,308 @@ class _MicrophonePrimer extends StatelessWidget {
   }
 }
 
+final class _PendingPegObservation {
+  const _PendingPegObservation({
+    required this.stringNumber,
+    required this.baselineCents,
+    required this.direction,
+    required this.classicalCalibration,
+  });
+
+  final int stringNumber;
+  final double baselineCents;
+  final PegRotationDirection direction;
+  final bool classicalCalibration;
+}
+
+final class _PegDirectionPresentation {
+  const _PegDirectionPresentation({
+    required this.label,
+    this.needsSetup = false,
+    this.canVerify = false,
+    this.pending = false,
+    this.flipSuggested = false,
+    this.classicalCalibration = false,
+  });
+
+  final String label;
+  final bool needsSetup;
+  final bool canVerify;
+  final bool pending;
+  final bool flipSuggested;
+  final bool classicalCalibration;
+}
+
+enum _PegSetupLayout { split, inline, classical }
+
+class _PegSetupSheet extends StatefulWidget {
+  const _PegSetupSheet({required this.stringCount, required this.current});
+
+  final int stringCount;
+  final InstrumentPegProfile? current;
+
+  @override
+  State<_PegSetupSheet> createState() => _PegSetupSheetState();
+}
+
+class _PegSetupSheetState extends State<_PegSetupSheet> {
+  late _PegSetupLayout _layout;
+  late InstrumentHandedness _handedness;
+  late bool _reversed;
+
+  @override
+  void initState() {
+    super.initState();
+    final current = widget.current;
+    _layout = switch (current?.layout) {
+      HeadstockLayout.inline => _PegSetupLayout.inline,
+      HeadstockLayout.classicalSplit => _PegSetupLayout.classical,
+      _ => _PegSetupLayout.split,
+    };
+    _handedness = current?.handedness ?? InstrumentHandedness.right;
+    _reversed = current?.orientation == HeadstockOrientation.reversed;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final splitLabel = widget.stringCount == 6
+        ? '3+3 헤드스톡'
+        : '${(widget.stringCount + 1) ~/ 2}+${widget.stringCount ~/ 2} 헤드스톡';
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const InstrumentSectionLabel(
+              '내 기타 페그 설정',
+              color: InstrumentColors.accent,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '헤드스톡을 정면에서 봤을 때의 모양을 고르세요. 설정 전에는 안전하게 조이기·풀기만 안내합니다.',
+              style: TextStyle(
+                color: InstrumentColors.muted,
+                fontSize: 12,
+                height: 1.45,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const InstrumentSectionLabel('페그 배치'),
+            const SizedBox(height: 6),
+            _SetupChoiceRow(
+              key: const Key('peg-layout-split'),
+              selected: _layout == _PegSetupLayout.split,
+              label: splitLabel,
+              detail: '낮은 줄과 높은 줄이 양쪽으로 나뉨',
+              onTap: () => setState(() => _layout = _PegSetupLayout.split),
+            ),
+            _SetupChoiceRow(
+              key: const Key('peg-layout-inline'),
+              selected: _layout == _PegSetupLayout.inline,
+              label: '${widget.stringCount}인라인',
+              detail: '모든 페그가 한쪽에 일렬로 배치됨',
+              onTap: () => setState(() => _layout = _PegSetupLayout.inline),
+            ),
+            _SetupChoiceRow(
+              key: const Key('peg-layout-classical'),
+              selected: _layout == _PegSetupLayout.classical,
+              label: '클래식 슬롯형',
+              detail: '방향을 추측하지 않고 각 페그를 한 번 확인',
+              onTap: () => setState(() => _layout = _PegSetupLayout.classical),
+            ),
+            const SizedBox(height: 14),
+            const InstrumentSectionLabel('연주 방향'),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Expanded(
+                  child: _SetupChoiceRow(
+                    key: const Key('peg-handed-right'),
+                    selected: _handedness == InstrumentHandedness.right,
+                    label: '오른손 기타',
+                    onTap: () => setState(
+                      () => _handedness = InstrumentHandedness.right,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _SetupChoiceRow(
+                    key: const Key('peg-handed-left'),
+                    selected: _handedness == InstrumentHandedness.left,
+                    label: '왼손 기타',
+                    onTap: () =>
+                        setState(() => _handedness = InstrumentHandedness.left),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              key: const Key('peg-reverse-headstock'),
+              value: _reversed,
+              onChanged: (value) => setState(() => _reversed = value),
+              contentPadding: EdgeInsets.zero,
+              title: const Text(
+                '리버스 헤드스톡',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+              subtitle: const Text(
+                '일반 헤드스톡과 반대 방향으로 기울어진 경우만 켜세요',
+                style: TextStyle(color: InstrumentColors.muted, fontSize: 10),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                key: const Key('save-peg-profile'),
+                onPressed: () => Navigator.of(context).pop(_buildProfile()),
+                child: const Text('이 기타로 저장'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  InstrumentPegProfile _buildProfile() {
+    final orientation = _reversed
+        ? HeadstockOrientation.reversed
+        : HeadstockOrientation.standard;
+    final layout = switch (_layout) {
+      _PegSetupLayout.split => HeadstockLayout.split,
+      _PegSetupLayout.inline => HeadstockLayout.inline,
+      _PegSetupLayout.classical => HeadstockLayout.classicalSplit,
+    };
+    final current = widget.current;
+    final keepOverrides =
+        current?.layout == layout &&
+        current?.handedness == _handedness &&
+        current?.orientation == orientation;
+    final windingOverrides = keepOverrides
+        ? current!.windingOverrides
+        : const <int, StringWinding>{};
+    final directionOverrides = keepOverrides
+        ? current!.directionOverrides
+        : const <int, PegRotationDirection>{};
+    final splitCount = (widget.stringCount + 1) ~/ 2;
+    return switch (_layout) {
+      _PegSetupLayout.split => InstrumentPegProfile.split(
+        stringCount: widget.stringCount,
+        bassSideStringCount: splitCount,
+        handedness: _handedness,
+        orientation: orientation,
+        windingOverrides: windingOverrides,
+        directionOverrides: directionOverrides,
+      ),
+      _PegSetupLayout.inline => InstrumentPegProfile.inline(
+        stringCount: widget.stringCount,
+        handedness: _handedness,
+        orientation: orientation,
+        windingOverrides: windingOverrides,
+        directionOverrides: directionOverrides,
+      ),
+      _PegSetupLayout.classical => InstrumentPegProfile.classicalSplit(
+        stringCount: widget.stringCount,
+        bassSideStringCount: splitCount,
+        handedness: _handedness,
+        orientation: orientation,
+        windingOverrides: windingOverrides,
+        directionOverrides: directionOverrides,
+      ),
+    };
+  }
+}
+
+class _SetupChoiceRow extends StatelessWidget {
+  const _SetupChoiceRow({
+    super.key,
+    required this.selected,
+    required this.label,
+    required this.onTap,
+    this.detail,
+  });
+
+  final bool selected;
+  final String label;
+  final String? detail;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      selected: selected,
+      button: true,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 52),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: selected ? InstrumentColors.panel : Colors.transparent,
+            border: Border.all(
+              color: selected ? InstrumentColors.accent : InstrumentColors.line,
+            ),
+          ),
+          child: Row(
+            children: [
+              Text(
+                selected ? '[×]' : '[ ]',
+                style: TextStyle(
+                  color: selected
+                      ? InstrumentColors.accent
+                      : InstrumentColors.muted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        color: InstrumentColors.text,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (detail != null)
+                      Text(
+                        detail!,
+                        style: const TextStyle(
+                          color: InstrumentColors.muted,
+                          fontSize: 9,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _GuidancePanel extends StatelessWidget {
   const _GuidancePanel({
     required this.guidance,
     required this.semanticsLabel,
     required this.lockProgress,
+    required this.pegDirection,
+    required this.onConfigurePegGuidance,
+    required this.onVerifyPegDirection,
+    required this.onAcceptPegDirectionFlip,
+    required this.onDismissPegDirectionFlip,
     this.offsetLabel,
   });
 
@@ -618,6 +1179,11 @@ class _GuidancePanel extends StatelessWidget {
   final String semanticsLabel;
   final double lockProgress;
   final String? offsetLabel;
+  final _PegDirectionPresentation pegDirection;
+  final VoidCallback onConfigurePegGuidance;
+  final VoidCallback onVerifyPegDirection;
+  final VoidCallback onAcceptPegDirectionFlip;
+  final VoidCallback onDismissPegDirectionFlip;
 
   @override
   Widget build(BuildContext context) {
@@ -629,6 +1195,27 @@ class _GuidancePanel extends StatelessWidget {
         : guidance.coarse
         ? InstrumentColors.amber
         : InstrumentColors.text;
+    final VoidCallback? pegAction = pegDirection.pending
+        ? null
+        : pegDirection.needsSetup
+        ? onConfigurePegGuidance
+        : pegDirection.canVerify
+        ? onVerifyPegDirection
+        : onConfigurePegGuidance;
+    final pegActionKey = pegDirection.pending
+        ? null
+        : pegDirection.needsSetup
+        ? const Key('configure-peg-guidance')
+        : pegDirection.canVerify
+        ? const Key('verify-peg-direction')
+        : const Key('configure-peg-guidance');
+    final pegActionLabel = pegDirection.needsSetup
+        ? '설정'
+        : pegDirection.canVerify
+        ? pegDirection.classicalCalibration
+              ? '확인 시작'
+              : '방향 확인'
+        : '기타 설정';
     return ThrottledLiveRegion(
       label: semanticsLabel,
       child: Container(
@@ -660,13 +1247,61 @@ class _GuidancePanel extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    guidance.instruction,
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        guidance.instruction,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (!pegDirection.flipSuggested) ...[
+                        const SizedBox(height: 2),
+                        Semantics(
+                          button: pegAction != null,
+                          label: '$pegActionLabel. ${pegDirection.label}',
+                          child: InkWell(
+                            key: pegActionKey,
+                            onTap: pegAction,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 3),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      pegDirection.label,
+                                      style: TextStyle(
+                                        color: pegDirection.pending
+                                            ? InstrumentColors.amber
+                                            : InstrumentColors.muted,
+                                        fontSize: 10,
+                                        fontWeight: pegDirection.pending
+                                            ? FontWeight.w700
+                                            : FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                  if (pegAction != null) ...[
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '$pegActionLabel ›',
+                                      style: const TextStyle(
+                                        color: InstrumentColors.accent,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ],
@@ -692,6 +1327,48 @@ class _GuidancePanel extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
+              ),
+            ],
+            if (pegDirection.flipSuggested) ...[
+              const SizedBox(height: 8),
+              Container(height: 1, color: InstrumentColors.line),
+              const SizedBox(height: 6),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '방향 안내를 멈췄어요',
+                  style: TextStyle(
+                    color: InstrumentColors.amber,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 3),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '안내와 반대로 두 번 움직였습니다. 이 페그만 방향을 바꿀까요?',
+                  style: TextStyle(
+                    color: InstrumentColors.muted,
+                    fontSize: 10,
+                    height: 1.35,
+                  ),
+                ),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: onDismissPegDirectionFlip,
+                    child: const Text('그대로 유지'),
+                  ),
+                  TextButton(
+                    key: const Key('accept-peg-direction-flip'),
+                    onPressed: onAcceptPegDirectionFlip,
+                    child: const Text('이 페그만 반대로'),
+                  ),
+                ],
               ),
             ],
           ],
@@ -949,4 +1626,27 @@ String _tuneUpProgressLabel(TuneUpProgressState state) {
   return state.isComplete
       ? '$progress · 완료 ${minutes.toString().padLeft(2, '0')}:$seconds'
       : '$progress · ${minutes.toString().padLeft(2, '0')}:$seconds';
+}
+
+String _rotationDirectionLabel(PegRotationDirection direction) {
+  return switch (direction) {
+    PegRotationDirection.clockwise => '↻ 시계방향',
+    PegRotationDirection.counterClockwise => '↺ 반시계방향',
+  };
+}
+
+String _pegProfileLabel(InstrumentPegProfile profile) {
+  final layout = switch (profile.layout) {
+    HeadstockLayout.split =>
+      profile.stringCount == 6
+          ? '3+3'
+          : '${profile.bassSideStringCount}+${profile.stringCount - profile.bassSideStringCount}',
+    HeadstockLayout.inline => '${profile.stringCount}인라인',
+    HeadstockLayout.classicalSplit => '클래식 슬롯형',
+  };
+  final hand = profile.handedness == InstrumentHandedness.right ? '오른손' : '왼손';
+  final reverse = profile.orientation == HeadstockOrientation.reversed
+      ? ' · 리버스'
+      : '';
+  return '$layout · $hand$reverse';
 }
