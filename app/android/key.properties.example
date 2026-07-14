@@ -1,0 +1,5 @@
+# Copy this file to key.properties. Never commit key.properties or the keystore.
+storePassword=REPLACE_WITH_SECRET
+keyPassword=REPLACE_WITH_SECRET
+keyAlias=upload
+storeFile=C:\\secure\\toauner-upload.jks

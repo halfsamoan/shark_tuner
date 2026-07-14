@@ -54,6 +54,24 @@ function Test-FinalReleaseDocument {
     return $true
 }
 
+function Read-KeyValueFile {
+    param([string]$Path)
+
+    $values = @{}
+    foreach ($line in [IO.File]::ReadAllLines($Path)) {
+        $trimmed = $line.Trim()
+        if ($trimmed.Length -eq 0 -or $trimmed.StartsWith('#')) {
+            continue
+        }
+        $separator = $trimmed.IndexOf('=')
+        if ($separator -le 0) {
+            continue
+        }
+        $values[$trimmed.Substring(0, $separator).Trim()] = $trimmed.Substring($separator + 1).Trim()
+    }
+    return $values
+}
+
 function Get-ReleaseFindings {
     param([string]$WorkspaceRoot)
 
@@ -85,8 +103,38 @@ function Get-ReleaseFindings {
         if ($gradle -match 'signingConfig\s*=\s*signingConfigs\.getByName\("debug"\)') {
             $findings.Add((New-Finding 'android_release_signing' 'blocker' 'Android release still uses the debug signing key.'))
         }
+        elseif ($gradle -notmatch 'create\("release"\)' -or $gradle -notmatch 'signingConfig\s*=\s*signingConfigs\.getByName\("release"\)') {
+            $findings.Add((New-Finding 'android_release_signing' 'blocker' 'Android release signing configuration is missing.'))
+        }
         else {
-            $findings.Add((New-Finding 'android_release_signing' 'pass' 'Android release does not reference the debug signing key.'))
+            $propertiesPath = Join-Path $WorkspaceRoot 'app\android\key.properties'
+            if (-not (Test-Path -LiteralPath $propertiesPath -PathType Leaf)) {
+                $findings.Add((New-Finding 'android_release_signing' 'blocker' 'Android upload signing is configured, but private key.properties is missing.'))
+            }
+            else {
+                $properties = Read-KeyValueFile $propertiesPath
+                $required = @('storePassword', 'keyPassword', 'keyAlias', 'storeFile')
+                $invalid = @($required | Where-Object {
+                    -not $properties.ContainsKey($_) -or
+                    [string]::IsNullOrWhiteSpace($properties[$_]) -or
+                    $properties[$_] -match '^REPLACE_'
+                })
+                if ($invalid.Count -gt 0) {
+                    $findings.Add((New-Finding 'android_release_signing' 'blocker' "Android key.properties has missing or placeholder fields: $($invalid -join ', ')."))
+                }
+                else {
+                    $storePath = $properties['storeFile']
+                    if (-not [IO.Path]::IsPathRooted($storePath)) {
+                        $storePath = Join-Path (Join-Path $WorkspaceRoot 'app\android') $storePath
+                    }
+                    if (-not (Test-Path -LiteralPath $storePath -PathType Leaf)) {
+                        $findings.Add((New-Finding 'android_release_signing' 'blocker' 'Android key.properties points to a missing upload keystore.'))
+                    }
+                    else {
+                        $findings.Add((New-Finding 'android_release_signing' 'pass' 'Android release uses a private upload signing configuration.'))
+                    }
+                }
+            }
         }
     }
 
@@ -191,6 +239,20 @@ function Invoke-SelfTest {
             if ($codes -notcontains $code) {
                 throw "Self-test did not detect expected blocker '$code'."
             }
+        }
+
+        [IO.File]::WriteAllText(
+            (Join-Path $tempRoot 'app\android\app\build.gradle.kts'),
+            'applicationId = "app.toauner.test"`nsigningConfigs { create("release") }`nsigningConfig = signingConfigs.getByName("release")'
+        )
+        [IO.File]::WriteAllText((Join-Path $tempRoot 'app\android\upload.jks'), 'self-test')
+        [IO.File]::WriteAllText(
+            (Join-Path $tempRoot 'app\android\key.properties'),
+            "storePassword=test`nkeyPassword=test`nkeyAlias=upload`nstoreFile=upload.jks"
+        )
+        $positiveSigning = Get-ReleaseFindings $tempRoot | Where-Object code -eq 'android_release_signing'
+        if ($positiveSigning.status -ne 'pass') {
+            throw 'Self-test did not accept a private release signing configuration.'
         }
         Write-Output "release readiness self-test passed ($($expected.Count) blockers detected)"
     }
