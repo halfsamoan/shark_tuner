@@ -12,22 +12,30 @@ final class SqliteSongCatalog implements SongCatalog {
     this._database, {
     required String songsDocumentJson,
     required String tuningsDocumentJson,
+    // (Claude) optional unverified-candidate document merged in alongside the
+    // verified release catalog. Candidate rows keep their draft status, so the
+    // existing verification query filter hides them from release builds and
+    // only surfaces them when includeUnverified is true (debug/dev).
+    String? candidateSongsDocumentJson,
   }) {
     _createSchema();
     _replaceSeedData(
       songsDocumentJson: songsDocumentJson,
       tuningsDocumentJson: tuningsDocumentJson,
+      candidateSongsDocumentJson: candidateSongsDocumentJson,
     );
   }
 
   factory SqliteSongCatalog.inMemory({
     required String songsDocumentJson,
     required String tuningsDocumentJson,
+    String? candidateSongsDocumentJson, // (Claude)
   }) {
     return SqliteSongCatalog._(
       sqlite.sqlite3.openInMemory(),
       songsDocumentJson: songsDocumentJson,
       tuningsDocumentJson: tuningsDocumentJson,
+      candidateSongsDocumentJson: candidateSongsDocumentJson,
     );
   }
 
@@ -35,11 +43,13 @@ final class SqliteSongCatalog implements SongCatalog {
     required String path,
     required String songsDocumentJson,
     required String tuningsDocumentJson,
+    String? candidateSongsDocumentJson, // (Claude)
   }) {
     return SqliteSongCatalog._(
       sqlite.sqlite3.open(path),
       songsDocumentJson: songsDocumentJson,
       tuningsDocumentJson: tuningsDocumentJson,
+      candidateSongsDocumentJson: candidateSongsDocumentJson,
     );
   }
 
@@ -196,9 +206,29 @@ final class SqliteSongCatalog implements SongCatalog {
   void _replaceSeedData({
     required String songsDocumentJson,
     required String tuningsDocumentJson,
+    String? candidateSongsDocumentJson, // (Claude)
   }) {
     final tunings = _parseTunings(tuningsDocumentJson);
+    // (Claude) Merge verified release songs with optional draft candidates,
+    // skipping any candidate that duplicates a verified song by id or by
+    // normalized artist+title so debug search never shows the same song twice.
     final songs = _parseSongs(songsDocumentJson);
+    if (candidateSongsDocumentJson != null) {
+      String key(SongTuningRecord s) => '${s.artist}|${s.title}'
+          .toLowerCase()
+          .replaceAll(RegExp(r'[^a-z0-9|]'), '');
+      final seenIds = {for (final s in songs) s.id};
+      final seenKeys = {for (final s in songs) key(s)};
+      for (final candidate in _parseSongs(candidateSongsDocumentJson)) {
+        if (seenIds.contains(candidate.id) ||
+            seenKeys.contains(key(candidate))) {
+          continue;
+        }
+        seenIds.add(candidate.id);
+        seenKeys.add(key(candidate));
+        songs.add(candidate);
+      }
+    }
     final tuningKeys = {
       for (final tuning in tunings) '${tuning.id}@${tuning.version}',
     };

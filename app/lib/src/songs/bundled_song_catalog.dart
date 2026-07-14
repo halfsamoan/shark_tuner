@@ -6,6 +6,10 @@ import 'package:tuner_data/tuner_data.dart';
 
 const _songsAsset = 'assets/songs/catalog.v1.json';
 const _tuningsAsset = 'assets/songs/tunings.v1.json';
+// (Claude) Bulk draft catalog of popular guitar songs. Merged in as unverified
+// candidates: hidden from release search by the verification filter, surfaced
+// only when includeUnverified is true (debug/dev builds).
+const _candidatesAsset = 'assets/songs/candidates2000.v1.json';
 
 Future<SongCatalog> openBundledSongCatalog() async {
   final documents = await Future.wait([
@@ -13,6 +17,13 @@ Future<SongCatalog> openBundledSongCatalog() async {
     rootBundle.loadString(_tuningsAsset),
     getApplicationSupportDirectory(),
   ]);
+  // (Claude) Tolerate a missing candidate asset so the verified catalog still loads.
+  String? candidatesJson;
+  try {
+    candidatesJson = await rootBundle.loadString(_candidatesAsset);
+  } on Object {
+    candidatesJson = null;
+  }
   final supportDirectory = documents[2] as Directory;
   await supportDirectory.create(recursive: true);
   final path = [
@@ -23,5 +34,6 @@ Future<SongCatalog> openBundledSongCatalog() async {
     path: path,
     songsDocumentJson: documents[0] as String,
     tuningsDocumentJson: documents[1] as String,
+    candidateSongsDocumentJson: candidatesJson,
   );
 }

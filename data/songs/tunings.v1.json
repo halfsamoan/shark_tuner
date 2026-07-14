@@ -1,86 +1,310 @@
 {
-  "schemaVersion": 1,
-  "pitchOrder": "low_to_high",
-  "tunings": [
-    {
-      "id": "guitar-6-standard",
-      "version": 1,
-      "name": "E Standard",
-      "family": "standard",
-      "stringCount": 6,
-      "midiNotes": [40, 45, 50, 55, 59, 64]
-    },
-    {
-      "id": "guitar-6-eb-standard",
-      "version": 1,
-      "name": "E-flat Standard",
-      "family": "standard",
-      "stringCount": 6,
-      "midiNotes": [39, 44, 49, 54, 58, 63]
-    },
-    {
-      "id": "guitar-6-drop-d",
-      "version": 1,
-      "name": "Drop D",
-      "family": "drop",
-      "stringCount": 6,
-      "midiNotes": [38, 45, 50, 55, 59, 64]
-    },
-    {
-      "id": "guitar-6-drop-c-sharp",
-      "version": 1,
-      "name": "Drop C-sharp",
-      "family": "drop",
-      "stringCount": 6,
-      "midiNotes": [37, 44, 49, 54, 58, 63]
-    },
-    {
-      "id": "guitar-6-d-standard",
-      "version": 1,
-      "name": "D Standard",
-      "family": "standard",
-      "stringCount": 6,
-      "midiNotes": [38, 43, 48, 53, 57, 62]
-    },
-    {
-      "id": "guitar-6-drop-c",
-      "version": 1,
-      "name": "Drop C",
-      "family": "drop",
-      "stringCount": 6,
-      "midiNotes": [36, 43, 48, 53, 57, 62]
-    },
-    {
-      "id": "guitar-6-drop-b",
-      "version": 1,
-      "name": "Drop B",
-      "family": "drop",
-      "stringCount": 6,
-      "midiNotes": [35, 42, 47, 52, 56, 61]
-    },
-    {
-      "id": "guitar-7-a-standard",
-      "version": 1,
-      "name": "7-string A Standard",
-      "family": "standard",
-      "stringCount": 7,
-      "midiNotes": [33, 38, 43, 48, 53, 57, 62]
-    },
-    {
-      "id": "guitar-8-f-standard",
-      "version": 1,
-      "name": "8-string F Standard",
-      "family": "standard",
-      "stringCount": 8,
-      "midiNotes": [29, 34, 39, 44, 49, 54, 58, 63]
-    },
-    {
-      "id": "guitar-6-dadgad",
-      "version": 1,
-      "name": "DADGAD",
-      "family": "modal",
-      "stringCount": 6,
-      "midiNotes": [38, 45, 50, 55, 57, 62]
-    }
-  ]
+ "schemaVersion": 1,
+ "pitchOrder": "low_to_high",
+ "tunings": [
+  {
+   "id": "guitar-6-standard",
+   "version": 1,
+   "name": "E Standard",
+   "family": "standard",
+   "stringCount": 6,
+   "midiNotes": [
+    40,
+    45,
+    50,
+    55,
+    59,
+    64
+   ]
+  },
+  {
+   "id": "guitar-6-eb-standard",
+   "version": 1,
+   "name": "E-flat Standard",
+   "family": "standard",
+   "stringCount": 6,
+   "midiNotes": [
+    39,
+    44,
+    49,
+    54,
+    58,
+    63
+   ]
+  },
+  {
+   "id": "guitar-6-drop-d",
+   "version": 1,
+   "name": "Drop D",
+   "family": "drop",
+   "stringCount": 6,
+   "midiNotes": [
+    38,
+    45,
+    50,
+    55,
+    59,
+    64
+   ]
+  },
+  {
+   "id": "guitar-6-drop-c-sharp",
+   "version": 1,
+   "name": "Drop C-sharp",
+   "family": "drop",
+   "stringCount": 6,
+   "midiNotes": [
+    37,
+    44,
+    49,
+    54,
+    58,
+    63
+   ]
+  },
+  {
+   "id": "guitar-6-d-standard",
+   "version": 1,
+   "name": "D Standard",
+   "family": "standard",
+   "stringCount": 6,
+   "midiNotes": [
+    38,
+    43,
+    48,
+    53,
+    57,
+    62
+   ]
+  },
+  {
+   "id": "guitar-6-drop-c",
+   "version": 1,
+   "name": "Drop C",
+   "family": "drop",
+   "stringCount": 6,
+   "midiNotes": [
+    36,
+    43,
+    48,
+    53,
+    57,
+    62
+   ]
+  },
+  {
+   "id": "guitar-6-drop-b",
+   "version": 1,
+   "name": "Drop B",
+   "family": "drop",
+   "stringCount": 6,
+   "midiNotes": [
+    35,
+    42,
+    47,
+    52,
+    56,
+    61
+   ]
+  },
+  {
+   "id": "guitar-7-a-standard",
+   "version": 1,
+   "name": "7-string A Standard",
+   "family": "standard",
+   "stringCount": 7,
+   "midiNotes": [
+    33,
+    38,
+    43,
+    48,
+    53,
+    57,
+    62
+   ]
+  },
+  {
+   "id": "guitar-8-f-standard",
+   "version": 1,
+   "name": "8-string F Standard",
+   "family": "standard",
+   "stringCount": 8,
+   "midiNotes": [
+    29,
+    34,
+    39,
+    44,
+    49,
+    54,
+    58,
+    63
+   ]
+  },
+  {
+   "id": "guitar-6-dadgad",
+   "version": 1,
+   "name": "DADGAD",
+   "family": "modal",
+   "stringCount": 6,
+   "midiNotes": [
+    38,
+    45,
+    50,
+    55,
+    57,
+    62
+   ]
+  },
+  {
+   "id": "guitar-6-c-standard",
+   "version": 1,
+   "name": "C Standard",
+   "family": "standard",
+   "stringCount": 6,
+   "midiNotes": [
+    36,
+    41,
+    46,
+    51,
+    55,
+    60
+   ]
+  },
+  {
+   "id": "guitar-6-b-standard",
+   "version": 1,
+   "name": "B Standard",
+   "family": "standard",
+   "stringCount": 6,
+   "midiNotes": [
+    35,
+    40,
+    45,
+    50,
+    54,
+    59
+   ]
+  },
+  {
+   "id": "guitar-6-cs-standard",
+   "version": 1,
+   "name": "C# Standard",
+   "family": "standard",
+   "stringCount": 6,
+   "midiNotes": [
+    37,
+    42,
+    47,
+    52,
+    56,
+    61
+   ]
+  },
+  {
+   "id": "guitar-6-drop-a",
+   "version": 1,
+   "name": "Drop A",
+   "family": "drop",
+   "stringCount": 6,
+   "midiNotes": [
+    33,
+    40,
+    45,
+    50,
+    54,
+    59
+   ]
+  },
+  {
+   "id": "guitar-6-double-drop-d",
+   "version": 1,
+   "name": "Double Drop D",
+   "family": "drop",
+   "stringCount": 6,
+   "midiNotes": [
+    38,
+    45,
+    50,
+    55,
+    59,
+    62
+   ]
+  },
+  {
+   "id": "guitar-6-open-g",
+   "version": 1,
+   "name": "Open G",
+   "family": "open",
+   "stringCount": 6,
+   "midiNotes": [
+    38,
+    43,
+    50,
+    55,
+    59,
+    62
+   ]
+  },
+  {
+   "id": "guitar-6-open-d",
+   "version": 1,
+   "name": "Open D",
+   "family": "open",
+   "stringCount": 6,
+   "midiNotes": [
+    38,
+    45,
+    50,
+    54,
+    57,
+    62
+   ]
+  },
+  {
+   "id": "guitar-6-open-e",
+   "version": 1,
+   "name": "Open E",
+   "family": "open",
+   "stringCount": 6,
+   "midiNotes": [
+    40,
+    47,
+    52,
+    56,
+    59,
+    64
+   ]
+  },
+  {
+   "id": "guitar-6-open-c",
+   "version": 1,
+   "name": "Open C",
+   "family": "open",
+   "stringCount": 6,
+   "midiNotes": [
+    36,
+    43,
+    48,
+    55,
+    60,
+    64
+   ]
+  },
+  {
+   "id": "guitar-7-drop-a",
+   "version": 1,
+   "name": "7-string Drop A",
+   "family": "drop",
+   "stringCount": 7,
+   "midiNotes": [
+    33,
+    40,
+    45,
+    50,
+    55,
+    59,
+    64
+   ]
+  }
+ ]
 }

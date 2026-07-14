@@ -71,6 +71,8 @@ flutter:
   assets:
     - assets/songs/catalog.v1.json
     - assets/songs/tunings.v1.json
+    - assets/songs/candidates2000.v1.json
+    - assets/songs/song_bpm.v1.json
     - assets/fonts/licenses/
 
   fonts:
