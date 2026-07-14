@@ -42,7 +42,6 @@ class PrecisionTunerScreen extends StatefulWidget {
 class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   var _selectedIndex = 0;
   var _manualTarget = false;
-  var _autoProgressTarget = false;
   var _coarseMode = false;
   var _completionShown = false;
   double? _displayCents;
@@ -104,7 +103,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     setState(() {
       _liveState = state;
       _updateDisplayCents(state.cents);
-      if (!_manualTarget && !_autoProgressTarget && detectedTarget != null) {
+      if (!_manualTarget && detectedTarget != null) {
         final index = widget.tuning.strings.indexWhere(
           (target) => target.stringNumber == detectedTarget.stringNumber,
         );
@@ -164,11 +163,9 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
       setState(() {
         _selectedIndex = nextIndex;
         _manualTarget = false;
-        _autoProgressTarget = true;
         _celebratingStringNumber = null;
         _displayCents = null;
       });
-      _engine.setManualTarget(_selected.stringNumber);
     });
   }
 
@@ -206,17 +203,23 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   void _toggleTarget(int index) {
     _autoAdvanceTimer?.cancel();
     setState(() {
-      if ((_manualTarget || _autoProgressTarget) && _selectedIndex == index) {
+      if (_manualTarget && _selectedIndex == index) {
         _manualTarget = false;
-        _autoProgressTarget = false;
         _engine.setManualTarget(null);
       } else {
         _selectedIndex = index;
         _manualTarget = true;
-        _autoProgressTarget = false;
         _engine.setManualTarget(_selected.stringNumber);
       }
     });
+  }
+
+  void _resumeAutoDetection() {
+    if (!_manualTarget) {
+      return;
+    }
+    setState(() => _manualTarget = false);
+    _engine.setManualTarget(null);
   }
 
   Future<void> _retryInput() async {
@@ -332,10 +335,33 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                 ),
               ),
               const Spacer(),
-              Text(
-                '${_selected.label} · ${_selected.stringNumber}번 줄 · ${_targetModeLabel()}',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.labelSmall,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Flexible(
+                    child: Text(
+                      '${_selected.label} · ${_selected.stringNumber}번 줄 · ${_targetModeLabel()}',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.labelSmall,
+                    ),
+                  ),
+                  if (_manualTarget) ...[
+                    const SizedBox(width: 6),
+                    TextButton(
+                      key: const Key('resume-auto-detection'),
+                      onPressed: _resumeAutoDetection,
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size(0, 28),
+                        padding: const EdgeInsets.symmetric(horizontal: 7),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text(
+                        '자동 인식으로 전환',
+                        style: TextStyle(fontSize: 9),
+                      ),
+                    ),
+                  ],
+                ],
               ),
               const SizedBox(height: 6),
               Text(
@@ -444,9 +470,6 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   String _targetModeLabel() {
     if (_manualTarget) {
       return '직접 선택';
-    }
-    if (_autoProgressTarget) {
-      return '다음 줄';
     }
     return '자동 인식';
   }

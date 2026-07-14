@@ -196,11 +196,59 @@ void main() {
 
     expect(find.text('6현 모두 완료!'), findsOneWidget);
     expect(find.text('이 튜닝으로 연주 가능한 곡 1개'), findsOneWidget);
-    expect(engine.manualTargets, containsAllInOrder([5, 4, 3, 2, 1]));
+    expect(engine.manualTargets, isEmpty);
     expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
 
     await tester.tap(find.text('완료'));
     await tester.pumpAndSettle();
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+  });
+
+  testWidgets('manual string focus exposes a clear return to auto detection', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final engine = _ScriptedTunerEngine();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildInstrumentTheme(),
+        home: PrecisionTunerScreen(
+          match: _FakeSongCatalog.verifiedMatch,
+          catalog: _FakeSongCatalog(
+            currentMatch: _FakeSongCatalog.verifiedMatch,
+          ),
+          tunerEngineFactory: () => engine,
+          includeUnverifiedSongs: false,
+        ),
+      ),
+    );
+    await _pumpFrames(tester);
+
+    final sixthStringChip = find.byWidgetPredicate(
+      (widget) => widget is TuningNoteCell && widget.stringNumber == 6,
+    );
+    await tester.tap(sixthStringChip);
+    await tester.pump();
+    expect(find.textContaining('직접 선택'), findsOneWidget);
+    expect(find.byKey(const Key('resume-auto-detection')), findsOneWidget);
+    expect(engine.manualTargets, [6]);
+
+    engine.emit(_stateForString(3, cents: -12));
+    await tester.pump();
+    expect(find.textContaining('E♭2 · 6번 줄 · 직접 선택'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('resume-auto-detection')));
+    await tester.pump();
+    expect(engine.manualTargets, [6, null]);
+    engine.emit(_stateForString(3, cents: -12));
+    await tester.pump();
+    expect(find.textContaining('G♭3 · 3번 줄 · 자동 인식'), findsOneWidget);
+
     await tester.pumpWidget(const SizedBox.shrink());
     await _pumpFrames(tester);
   });
