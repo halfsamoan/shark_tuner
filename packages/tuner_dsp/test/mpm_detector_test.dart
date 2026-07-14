@@ -5,6 +5,7 @@ import 'package:test/test.dart';
 import 'package:tuner_dsp/tuner_dsp.dart';
 
 import 'support/synthetic_pitch_corpus.dart';
+import 'support/time_domain_mpm_reference.dart';
 
 void main() {
   const sampleRate = TunerDspConfig.sampleRateHz;
@@ -77,6 +78,52 @@ void main() {
       samples[100] = double.nan;
 
       expect(detector.detect(samples, sampleRate: sampleRate), isNull);
+    });
+
+    test('FFT path matches a direct time-domain MPM reference', () {
+      const reference = TimeDomainMpmReference();
+      final cases = <({double frequencyHz, int windowSamples, int waveform})>[
+        (frequencyHz: 82.4069, windowSamples: 4096, waveform: 0),
+        (frequencyHz: 110 * 1.009866, windowSamples: 4096, waveform: 1),
+        (frequencyHz: 55, windowSamples: 8192, waveform: 2),
+        (frequencyHz: 329.6276, windowSamples: 4096, waveform: 1),
+      ];
+
+      for (final testCase in cases) {
+        final samples = Float64List.fromList(
+          List<double>.generate(testCase.windowSamples, (index) {
+            final phase =
+                2 * math.pi * testCase.frequencyHz * index / sampleRate;
+            return switch (testCase.waveform) {
+              0 => .7 * math.sin(phase + .31),
+              1 =>
+                .6 * math.sin(phase + .21) +
+                    .24 * math.sin(2 * phase + .77) +
+                    .08 * math.sin(3 * phase + .13),
+              _ =>
+                .28 * math.sin(phase + .2) +
+                    .72 * math.sin(2 * phase + .7) +
+                    .2 * math.sin(3 * phase + 1.1),
+            };
+          }),
+        );
+
+        final fftEstimate = detector.detect(samples, sampleRate: sampleRate);
+        final directEstimate = reference.detect(
+          samples,
+          sampleRate: sampleRate,
+        );
+
+        expect(fftEstimate, isNotNull);
+        expect(directEstimate, isNotNull);
+        expect(
+          fftEstimate!.centsFrom(directEstimate!.frequencyHz).abs(),
+          lessThan(.01),
+          reason:
+              '${testCase.frequencyHz} Hz / ${testCase.windowSamples} samples',
+        );
+        expect(fftEstimate.clarity, closeTo(directEstimate.clarity, 1e-7));
+      }
     });
   });
 }
