@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:toauner_app/main.dart';
 import 'package:toauner_app/src/app/instrument_theme.dart';
+import 'package:toauner_app/src/string_care/string_care_model.dart';
+import 'package:toauner_app/src/string_care/string_care_screen.dart';
 import 'package:toauner_app/src/tuner/live_tuner_engine.dart';
 import 'package:toauner_app/src/tuner/precision_tuner_screen.dart';
 import 'package:toauner_app/src/tuner/reference_tone_player.dart';
@@ -13,6 +15,41 @@ import 'package:tuner_data/tuner_data.dart';
 import 'package:tuner_domain/tuner_domain.dart';
 
 void main() {
+  testWidgets('home surfaces an overdue string check and opens its log', (
+    tester,
+  ) async {
+    final catalog = _FakeSongCatalog();
+    final ledger = StringCareLedger.empty()
+        .withReminderIntervalDays(30)
+        .recordInstallation(
+          id: 'old-set',
+          installedOn: DateTime.utc(2026, 6, 1),
+          recordedAtUtc: DateTime.utc(2026, 6, 1),
+          gaugeLabel: '10–46',
+        );
+
+    await tester.pumpWidget(
+      ToaunerApp(
+        catalogLoader: () async => catalog,
+        tunerEngineFactory: _FakeTunerEngine.new,
+        includeUnverifiedSongs: false,
+        stringCareLoader: () async => ledger,
+        stringCareSaver: (_) async {},
+        stringCareNow: () => DateTime(2026, 7, 14),
+      ),
+    );
+    await _pumpFrames(tester);
+
+    expect(find.text('줄 교체 점검 · 13일 지남'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('string-care-entry')));
+    await _pumpFrames(tester);
+    expect(find.byType(StringCareScreen), findsOneWidget);
+    expect(find.textContaining('교체 알림 13일 지남'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+  });
+
   testWidgets('opens privacy and app information from the home header', (
     tester,
   ) async {
@@ -34,6 +71,7 @@ void main() {
 
     expect(find.text('개인정보 및 앱 정보'), findsOneWidget);
     expect(find.textContaining('기기 안에서 실시간으로 분석'), findsOneWidget);
+    expect(find.text('설치일은 이 기기에만 저장합니다'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await _pumpFrames(tester);
@@ -112,6 +150,8 @@ void main() {
     expect(find.text('추천 곡'), findsOneWidget);
     expect(find.text('Eruption'), findsOneWidget);
 
+    await tester.ensureVisible(find.byKey(const Key('show-all-songs')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('show-all-songs')));
     await _pumpFrames(tester);
 

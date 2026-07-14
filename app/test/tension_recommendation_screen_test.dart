@@ -1,10 +1,57 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:toauner_app/src/app/instrument_theme.dart';
+import 'package:toauner_app/src/string_care/string_care_model.dart';
+import 'package:toauner_app/src/string_care/string_care_screen.dart';
 import 'package:toauner_app/src/tension/tension_recommendation_screen.dart';
 import 'package:tuner_domain/tuner_domain.dart';
 
 void main() {
+  testWidgets('records a recommended set in the local string log', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    var ledger = StringCareLedger.empty();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildInstrumentTheme(),
+        home: TensionRecommendationScreen(
+          tuning: BuiltInTunings.dropC,
+          stringCareLoader: () async => ledger,
+          stringCareSaver: (value) async => ledger = value,
+          stringCareNow: () => DateTime(2026, 7, 14, 9),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView), const Offset(0, -900));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('record-gauge-installation-01')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(StringCareScreen), findsOneWidget);
+    expect(find.widgetWithText(TextField, '11–56'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('record-string-installation')),
+      200,
+      scrollable: find
+          .descendant(
+            of: find.byType(StringCareScreen),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.tap(find.byKey(const Key('record-string-installation')));
+    await tester.pumpAndSettle();
+
+    expect(ledger.activeInstallation!.gaugeLabel, '11–56');
+    expect(ledger.activeInstallation!.tuningId, BuiltInTunings.dropC.id);
+  });
+
   testWidgets(
     'shows three sourced Drop C recommendations and string tensions',
     (tester) async {
