@@ -56,3 +56,24 @@ NSynth pitch labels are nominal MIDI notes, not calibrated sub-cent reference
 frequencies. Notes below a physical instrument's range may also originate from
 sample-library pitch shifting. They are used for detector robustness and
 sample-rate behavior, not as evidence for live low-string accuracy.
+
+## String tension reference facts
+
+- Official reference: [Stringjoy String Tension Calculator](https://tension.stringjoy.com/),
+  nickel-wound electric-guitar measurements and the published ideal-string
+  calculation, checked 2026-07-14
+- Formula cross-check: D'Addario,
+  [*All About String Tension*](https://www.daddario.com/blogs/guitar/all-about-string-tension),
+  using `T = UW × (2 × L × F)² / 386.4`
+- Local model: `stringjoy-nickel-roundwound-log-fit` version 1
+- Use: selected physical measurements were used as calibration facts for a
+  project-owned, bounded piecewise log interpolation model. toauner does not
+  vendor the calculator source code, reproduce its full measurement table, or
+  reproduce its page design or text.
+- Verification: twenty official calculator outputs rounded to 0.1 lbf are
+  stored as test expectations; every model result must remain within 3%.
+
+String and manufacturer names remain trademarks of their owners. toauner is
+not affiliated with or endorsed by Stringjoy or D'Addario. The recommended
+generic sets are engineering estimates and do not claim identical feel across
+brands, core shapes, or winding materials.
