@@ -70,6 +70,21 @@ flutter:
   assets:
     - assets/songs/catalog.v1.json
     - assets/songs/tunings.v1.json
+    - assets/fonts/licenses/
+
+  fonts:
+    - family: D2Coding
+      fonts:
+        - asset: assets/fonts/D2Coding-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/D2Coding-Bold.ttf
+          weight: 700
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/Pretendard-Regular.otf
+          weight: 400
+        - asset: assets/fonts/Pretendard-SemiBold.otf
+          weight: 600
 
   # To add assets to your application, add an assets section, like this:
   # assets:
