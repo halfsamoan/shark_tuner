@@ -298,30 +298,32 @@ class _TimeSignatureRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 14),
       child: Row(
         children: [
-          SizedBox(
-            width: 96,
-            child: Text(
-              '박자',
-              style: InstrumentTypeTheme.standard.body.copyWith(
-                color: InstrumentColors.textSecondary,
-              ),
+          Text(
+            '박자',
+            style: InstrumentTypeTheme.standard.body.copyWith(
+              color: InstrumentColors.textSecondary,
             ),
           ),
-          for (final (value, label) in _timeSignatures)
-            Padding(
-              padding: const EdgeInsets.only(right: 10),
-              child: InkWell(
-                onTap: () => onChanged(value),
-                child: Text(
-                  beats == value ? '[$label]' : ' $label ',
-                  style: _mono.copyWith(
-                    color: beats == value
-                        ? InstrumentColors.accent
-                        : InstrumentColors.textSecondary,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                for (final (value, label) in _timeSignatures)
+                  InkWell(
+                    onTap: () => onChanged(value),
+                    child: Text(
+                      beats == value ? '[$label]' : label,
+                      style: _mono.copyWith(
+                        color: beats == value
+                            ? InstrumentColors.accent
+                            : InstrumentColors.textSecondary,
+                      ),
+                    ),
                   ),
-                ),
-              ),
+              ],
             ),
+          ),
         ],
       ),
     );
