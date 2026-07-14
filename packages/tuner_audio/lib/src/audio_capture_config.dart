@@ -1,8 +1,24 @@
+/// Platform families whose capture source policy differs.
+enum AudioCapturePlatform { android, ios, other }
+
 /// Platform input source preferences, in fallback order.
-enum AudioInputSource { unprocessed, voiceRecognition }
+enum AudioInputSource { unprocessed, voiceRecognition, platformDefault }
 
 /// Immutable request for a normalized mono PCM capture session.
 final class AudioCaptureConfig {
+  factory AudioCaptureConfig.forPlatform(AudioCapturePlatform platform) {
+    return AudioCaptureConfig(
+      sourcePreference: switch (platform) {
+        AudioCapturePlatform.android => const [
+          AudioInputSource.unprocessed,
+          AudioInputSource.voiceRecognition,
+        ],
+        AudioCapturePlatform.ios ||
+        AudioCapturePlatform.other => const [AudioInputSource.platformDefault],
+      },
+    );
+  }
+
   AudioCaptureConfig({
     this.requestedSampleRate = 48000,
     this.channelCount = 1,

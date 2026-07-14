@@ -24,4 +24,23 @@ void main() {
       throwsUnsupportedError,
     );
   });
+
+  test('uses Android fallback sources only on Android', () {
+    expect(
+      AudioCaptureConfig.forPlatform(
+        AudioCapturePlatform.android,
+      ).sourcePreference,
+      [AudioInputSource.unprocessed, AudioInputSource.voiceRecognition],
+    );
+    expect(
+      AudioCaptureConfig.forPlatform(AudioCapturePlatform.ios).sourcePreference,
+      [AudioInputSource.platformDefault],
+    );
+    expect(
+      AudioCaptureConfig.forPlatform(
+        AudioCapturePlatform.other,
+      ).sourcePreference,
+      [AudioInputSource.platformDefault],
+    );
+  });
 }

@@ -1,12 +1,25 @@
 import 'dart:math' as math;
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:toauner_app/src/tuner/live_tuner_engine.dart';
 import 'package:tuner_audio/tuner_audio.dart';
 import 'package:tuner_domain/tuner_domain.dart';
 
 void main() {
+  test('maps Android and iOS to distinct capture source policies', () {
+    expect(
+      audioCaptureConfigForTargetPlatform(
+        TargetPlatform.android,
+      ).sourcePreference,
+      [AudioInputSource.unprocessed, AudioInputSource.voiceRecognition],
+    );
+    expect(
+      audioCaptureConfigForTargetPlatform(TargetPlatform.iOS).sourcePreference,
+      [AudioInputSource.platformDefault],
+    );
+  });
+
   test(
     'runs PCM capture and MPM stabilization outside the UI isolate',
     () async {

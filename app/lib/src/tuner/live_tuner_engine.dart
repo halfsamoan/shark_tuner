@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:isolate';
 import 'dart:math' as math;
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:tuner_audio/tuner_audio.dart';
 import 'package:tuner_domain/tuner_domain.dart';
 import 'package:tuner_dsp/tuner_dsp.dart';
@@ -150,6 +150,9 @@ typedef TunerEngineFactory = TunerEngine Function();
 TunerEngine createLiveTunerEngine() {
   return IsolateTunerEngine(
     audioCapture: RecordAudioCapture(),
+    audioCaptureConfig: audioCaptureConfigForTargetPlatform(
+      defaultTargetPlatform,
+    ),
     lockConfig: const InTuneLockConfig(
       toleranceCents: 5,
       releaseToleranceCents: 7,
@@ -157,13 +160,26 @@ TunerEngine createLiveTunerEngine() {
   );
 }
 
+AudioCaptureConfig audioCaptureConfigForTargetPlatform(
+  TargetPlatform platform,
+) {
+  return AudioCaptureConfig.forPlatform(switch (platform) {
+    TargetPlatform.android => AudioCapturePlatform.android,
+    TargetPlatform.iOS => AudioCapturePlatform.ios,
+    _ => AudioCapturePlatform.other,
+  });
+}
+
 final class IsolateTunerEngine implements TunerEngine {
   IsolateTunerEngine({
     required this._audioCapture,
+    AudioCaptureConfig? audioCaptureConfig,
     this.lockConfig = const InTuneLockConfig(),
-  }) : _lockTracker = InTuneLockTracker(config: lockConfig);
+  }) : audioCaptureConfig = audioCaptureConfig ?? AudioCaptureConfig(),
+       _lockTracker = InTuneLockTracker(config: lockConfig);
 
   final AudioCapture _audioCapture;
+  final AudioCaptureConfig audioCaptureConfig;
   final InTuneLockConfig lockConfig;
   final _states = StreamController<LiveTunerState>.broadcast();
   final _selector = AutomaticStringSelector();
@@ -223,7 +239,7 @@ final class IsolateTunerEngine implements TunerEngine {
     try {
       final dsp = await _DspIsolate.spawn();
       _dsp = dsp;
-      final session = await _audioCapture.start(AudioCaptureConfig());
+      final session = await _audioCapture.start(audioCaptureConfig);
       dsp.configure(
         sampleRate: session.actualSampleRate,
         windowSamples: windowSamples,

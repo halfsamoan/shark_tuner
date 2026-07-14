@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:record/record.dart';
 import 'package:tuner_audio/src/record_stream_driver.dart';
 import 'package:tuner_audio/tuner_audio.dart';
 
@@ -75,6 +76,50 @@ void main() {
       expect(driver.permissionRequests, [false]);
       expect(driver.startedSources, isEmpty);
       await capture.dispose();
+    });
+  });
+
+  group('tuner record configuration', () {
+    test('keeps mobile DSP input unprocessed and interruption-resilient', () {
+      final config = buildTunerRecordConfig(
+        AudioCaptureConfig.forPlatform(AudioCapturePlatform.ios),
+        AudioInputSource.platformDefault,
+      );
+
+      expect(config.encoder, AudioEncoder.pcm16bits);
+      expect(config.sampleRate, 48000);
+      expect(config.numChannels, 1);
+      expect(config.autoGain, isFalse);
+      expect(config.echoCancel, isFalse);
+      expect(config.noiseSuppress, isFalse);
+      expect(config.androidConfig.manageBluetooth, isFalse);
+      expect(
+        config.androidConfig.audioSource,
+        AndroidAudioSource.defaultSource,
+      );
+      expect(config.iosConfig.categoryOptions, isEmpty);
+      expect(config.audioInterruption, AudioInterruptionMode.pauseResume);
+    });
+
+    test('maps both Android fallback candidates explicitly', () {
+      final config = AudioCaptureConfig.forPlatform(
+        AudioCapturePlatform.android,
+      );
+
+      expect(
+        buildTunerRecordConfig(
+          config,
+          AudioInputSource.unprocessed,
+        ).androidConfig.audioSource,
+        AndroidAudioSource.unprocessed,
+      );
+      expect(
+        buildTunerRecordConfig(
+          config,
+          AudioInputSource.voiceRecognition,
+        ).androidConfig.audioSource,
+        AndroidAudioSource.voiceRecognition,
+      );
     });
   });
 }

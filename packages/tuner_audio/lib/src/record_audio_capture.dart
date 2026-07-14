@@ -298,22 +298,7 @@ final class RecordPackageStreamDriver implements RecordStreamDriver {
     await _recorder.setOnConfigChanged((adjusted) {
       actualSampleRate = adjusted.sampleRate;
     });
-    final recordConfig = RecordConfig(
-      encoder: AudioEncoder.pcm16bits,
-      sampleRate: config.requestedSampleRate,
-      numChannels: config.channelCount,
-      autoGain: config.enableAutomaticGainControl,
-      echoCancel: config.enableEchoCancellation,
-      noiseSuppress: config.enableNoiseSuppression,
-      androidConfig: AndroidRecordConfig(
-        manageBluetooth: false,
-        audioSource: switch (source) {
-          AudioInputSource.unprocessed => AndroidAudioSource.unprocessed,
-          AudioInputSource.voiceRecognition =>
-            AndroidAudioSource.voiceRecognition,
-        },
-      ),
-    );
+    final recordConfig = buildTunerRecordConfig(config, source);
     final bytes = await _recorder.startStream(recordConfig);
     return RecordDriverStream(
       bytes: bytes,
@@ -329,4 +314,34 @@ final class RecordPackageStreamDriver implements RecordStreamDriver {
 
   @override
   Future<void> dispose() => _recorder.dispose();
+}
+
+/// Builds the native recorder request shared by the Android and iOS adapters.
+///
+/// Android source selection is explicit. iOS deliberately avoids Bluetooth,
+/// speaker-routing, AGC, echo cancellation, and noise suppression so the
+/// built-in microphone remains the predictable precision-tuning path.
+RecordConfig buildTunerRecordConfig(
+  AudioCaptureConfig config,
+  AudioInputSource source,
+) {
+  return RecordConfig(
+    encoder: AudioEncoder.pcm16bits,
+    sampleRate: config.requestedSampleRate,
+    numChannels: config.channelCount,
+    autoGain: config.enableAutomaticGainControl,
+    echoCancel: config.enableEchoCancellation,
+    noiseSuppress: config.enableNoiseSuppression,
+    androidConfig: AndroidRecordConfig(
+      manageBluetooth: false,
+      audioSource: switch (source) {
+        AudioInputSource.unprocessed => AndroidAudioSource.unprocessed,
+        AudioInputSource.voiceRecognition =>
+          AndroidAudioSource.voiceRecognition,
+        AudioInputSource.platformDefault => AndroidAudioSource.defaultSource,
+      },
+    ),
+    iosConfig: const IosRecordConfig(categoryOptions: []),
+    audioInterruption: AudioInterruptionMode.pauseResume,
+  );
 }
