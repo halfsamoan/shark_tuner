@@ -13,6 +13,7 @@ import '../stability/stability_check_screen.dart';
 import '../ui/instrument_widgets.dart';
 import '../ui/throttled_live_region.dart';
 import 'live_tuner_engine.dart';
+import 'reference_tone_player.dart';
 import 'tuning_guidance.dart';
 
 class PrecisionTunerScreen extends StatefulWidget {
@@ -28,6 +29,7 @@ class PrecisionTunerScreen extends StatefulWidget {
     this.setScreenAwake = setToaunerScreenAwake,
     this.loadInstrumentProfile = loadInstrumentPegProfile,
     this.saveInstrumentProfile = saveInstrumentPegProfile,
+    this.referenceTonePlayerFactory = createReferenceTonePlayer,
   }) : assert(
          (match == null) != (directTuning == null),
          'Provide exactly one of match or directTuning.',
@@ -43,6 +45,7 @@ class PrecisionTunerScreen extends StatefulWidget {
   final ScreenAwakeSetter setScreenAwake;
   final InstrumentProfileLoader loadInstrumentProfile;
   final InstrumentProfileSaver saveInstrumentProfile;
+  final ReferenceTonePlayerFactory referenceTonePlayerFactory;
 
   TuningDefinition get tuning => match?.tuning ?? directTuning!;
   SongTuningRecord? get song => match?.song;
@@ -60,6 +63,10 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   var _stabilityCheckOpen = false;
   var _needsMicrophonePrimer = false;
   var _checkingMicrophonePermission = true;
+  var _referenceTonePlaying = false;
+  var _referenceToneBusy = false;
+  var _resumeInputAfterReferenceTone = false;
+  var _inputSessionStarted = false;
   double? _displayCents;
   int? _celebratingStringNumber;
   InstrumentPegProfile? _instrumentProfile;
@@ -69,6 +76,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   int? _flipSuggestedStringNumber;
   Timer? _autoAdvanceTimer;
   late final TunerEngine _engine;
+  late final ReferenceTonePlayer _referenceTonePlayer;
   late final StreamSubscription<LiveTunerState> _engineSubscription;
   late final Stopwatch _tuneUpStopwatch;
   late final TuneUpProgressTracker _tuneUpTracker;
@@ -78,6 +86,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   void initState() {
     super.initState();
     _engine = widget.tunerEngineFactory();
+    _referenceTonePlayer = widget.referenceTonePlayerFactory();
     _liveState = _engine.current;
     _updateDisplayCents(_liveState.cents);
     _tuneUpStopwatch = Stopwatch();
@@ -97,6 +106,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     _autoAdvanceTimer?.cancel();
     _tuneUpStopwatch.stop();
     unawaited(_engineSubscription.cancel());
+    unawaited(_referenceTonePlayer.dispose());
     unawaited(_engine.dispose());
     unawaited(widget.setScreenAwake(false));
     super.dispose();
@@ -159,6 +169,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
       _tuneUpStopwatch.start();
     }
     await _engine.start(widget.tuning);
+    _inputSessionStarted = true;
   }
 
   Future<void> _enableMicrophone() async {
@@ -488,6 +499,106 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
         _engine.setManualTarget(_selected.stringNumber);
       }
     });
+    if (_referenceTonePlaying) {
+      unawaited(_switchReferenceToneToSelected());
+    }
+  }
+
+  Future<void> _toggleReferenceTone() async {
+    if (_referenceToneBusy) {
+      return;
+    }
+    if (_referenceTonePlaying) {
+      await _stopReferenceTone(resumeInput: true);
+      return;
+    }
+
+    final resumeInput = _inputSessionStarted;
+    final requestedStringNumber = _selected.stringNumber;
+    final requestedFrequencyHz = _targetHz;
+    setState(() => _referenceToneBusy = true);
+    try {
+      if (resumeInput) {
+        await _engine.stop();
+        _inputSessionStarted = false;
+      }
+      await _referenceTonePlayer.play(requestedFrequencyHz);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _referenceToneBusy = false;
+        _referenceTonePlaying = true;
+        _resumeInputAfterReferenceTone = resumeInput;
+      });
+      if (_selected.stringNumber != requestedStringNumber) {
+        unawaited(_switchReferenceToneToSelected());
+      }
+    } on Object {
+      if (resumeInput && mounted) {
+        await _startInput();
+      }
+      if (!mounted) {
+        return;
+      }
+      setState(() => _referenceToneBusy = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('레퍼런스 톤을 재생하지 못했습니다.')));
+    }
+  }
+
+  Future<void> _switchReferenceToneToSelected() async {
+    if (_referenceToneBusy || !_referenceTonePlaying) {
+      return;
+    }
+    final requestedStringNumber = _selected.stringNumber;
+    final requestedFrequencyHz = _targetHz;
+    setState(() => _referenceToneBusy = true);
+    try {
+      await _referenceTonePlayer.play(requestedFrequencyHz);
+      if (mounted) {
+        setState(() => _referenceToneBusy = false);
+        if (_selected.stringNumber != requestedStringNumber) {
+          unawaited(_switchReferenceToneToSelected());
+        }
+      }
+    } on Object {
+      if (mounted) {
+        setState(() => _referenceToneBusy = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('선택한 음을 재생하지 못했습니다.')));
+        await _stopReferenceTone(resumeInput: true);
+      }
+    }
+  }
+
+  Future<void> _stopReferenceTone({required bool resumeInput}) async {
+    if (_referenceToneBusy) {
+      return;
+    }
+    setState(() => _referenceToneBusy = true);
+    try {
+      await _referenceTonePlayer.stop();
+    } on Object {
+      // Capture recovery is more important than surfacing a stop error.
+    }
+    final shouldResume =
+        resumeInput &&
+        _resumeInputAfterReferenceTone &&
+        !_needsMicrophonePrimer;
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _referenceToneBusy = false;
+      _referenceTonePlaying = false;
+      _resumeInputAfterReferenceTone = false;
+    });
+    if (shouldResume) {
+      await _startInput();
+    }
   }
 
   void _resumeAutoDetection() {
@@ -500,10 +611,11 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
 
   Future<void> _retryInput() async {
     await _engine.stop();
+    _inputSessionStarted = false;
     if (!mounted) {
       return;
     }
-    await _engine.start(widget.tuning);
+    await _startInput();
   }
 
   void _showDiagnostics() {
@@ -524,8 +636,19 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   Widget build(BuildContext context) {
     final tuning = widget.tuning;
     final progress = _tuneUpTracker.state;
-    final lockedNow = _celebratingStringNumber == _selected.stringNumber;
-    final guidance = lockedNow
+    final lockedNow =
+        !_referenceTonePlaying &&
+        _celebratingStringNumber == _selected.stringNumber;
+    final presentedCents = _referenceTonePlaying ? null : _displayCents;
+    final guidance = _referenceTonePlaying
+        ? TuningGuidance(
+            direction: TuningDirection.hold,
+            headline: '${_selected.label} 레퍼런스 톤 재생 중',
+            instruction: '스피커 음을 듣고 줄의 목표 높이를 익혀보세요',
+            coarse: false,
+            kind: GuidanceSlotKind.settling,
+          )
+        : lockedNow
         ? TuningGuidance(
             direction: TuningDirection.hold,
             headline: '$_celebratingStringNumber번 줄 완료',
@@ -535,14 +658,16 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
             coarse: false,
           )
         : guidanceForLiveInput(
-            cents: _displayCents,
+            cents: presentedCents,
             rmsDb: _liveState.rmsDb,
             clarity: _liveState.clarity,
             expectedStringNumber: _selected.stringNumber,
             heardStringNumber: _liveState.heardTarget?.stringNumber,
             coarseMode: _coarseMode,
           );
-    final pegDirection = _pegDirectionPresentation(guidance);
+    final pegDirection = _referenceTonePlaying
+        ? const _PegDirectionPresentation(label: '스피커 재생 중 · 마이크 일시 중지')
+        : _pegDirectionPresentation(guidance);
     final usesLargeText = MediaQuery.textScalerOf(context).scale(1) > 1.3;
     return Scaffold(
       appBar: const InstrumentHeaderBar(section: '정밀 튜너', showBack: true),
@@ -620,7 +745,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -653,7 +778,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      _formatMeasuredCents(_displayCents, coarse: _coarseMode),
+                      _formatMeasuredCents(presentedCents, coarse: _coarseMode),
                       textAlign: TextAlign.center,
                       style: InstrumentTypeTheme.standard.centsHero.copyWith(
                         color: lockedNow
@@ -675,18 +800,19 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 8),
                     PitchTape(
-                      cents: _displayCents,
+                      cents: presentedCents,
                       locked: lockedNow,
                       status: _tapeStatus(_liveState),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
                         Flexible(
                           child: Text(
-                            _liveState.frequencyHz == null
+                            _referenceTonePlaying ||
+                                    _liveState.frequencyHz == null
                                 ? '— Hz'
                                 : '${_liveState.frequencyHz!.toStringAsFixed(2)} Hz',
                             maxLines: usesLargeText ? 2 : 1,
@@ -700,20 +826,17 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                         ),
                         const SizedBox(width: 8),
                         Flexible(
-                          child: Text(
-                            '목표 ${_targetHz.toStringAsFixed(2)} Hz',
-                            maxLines: usesLargeText ? 2 : 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.end,
-                            style: InstrumentTypeTheme.standard.status.copyWith(
-                              color: InstrumentColors.muted,
-                              fontWeight: FontWeight.w500,
-                            ),
+                          child: _ReferenceToneControl(
+                            frequencyHz: _targetHz,
+                            noteLabel: _selected.label,
+                            playing: _referenceTonePlaying,
+                            busy: _referenceToneBusy,
+                            onPressed: _toggleReferenceTone,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     if (_liveState.status == LiveTunerStatus.permissionDenied ||
                         _liveState.status == LiveTunerStatus.unavailable) ...[
                       _InputErrorNotice(
@@ -730,7 +853,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                       semanticsLabel: spokenTunerStatus(
                         stringNumber: _selected.stringNumber,
                         noteLabel: _selected.label,
-                        cents: _displayCents,
+                        cents: presentedCents,
                         guidance: guidance,
                       ),
                       lockProgress: _liveState.lockProgress,
@@ -786,10 +909,14 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
         ],
       ),
       bottomNavigationBar: InstrumentStatusBar(
-        state: _statusBarState(_liveState),
+        state: _referenceTonePlaying
+            ? 'REF ${_selected.label} 재생 중'
+            : _statusBarState(_liveState),
         detail:
             '${tuning.name.toUpperCase()} │ A4 ${tuning.referenceA4Hz.toStringAsFixed(0)}',
-        active: _liveState.status == LiveTunerStatus.listening,
+        active:
+            _referenceTonePlaying ||
+            _liveState.status == LiveTunerStatus.listening,
       ),
     );
   }
@@ -848,6 +975,70 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     return _PegDirectionPresentation(
       label: '헤드스톡 정면에서 ${_rotationDirectionLabel(direction)}',
       canVerify: _liveState.cents?.isFinite ?? false,
+    );
+  }
+}
+
+class _ReferenceToneControl extends StatelessWidget {
+  const _ReferenceToneControl({
+    required this.frequencyHz,
+    required this.noteLabel,
+    required this.playing,
+    required this.busy,
+    required this.onPressed,
+  });
+
+  final double frequencyHz;
+  final String noteLabel;
+  final bool playing;
+  final bool busy;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = playing
+        ? InstrumentColors.accent
+        : InstrumentColors.information;
+    final action = playing ? '정지' : '재생';
+    return Semantics(
+      label: '$noteLabel 레퍼런스 톤 $action',
+      button: true,
+      enabled: !busy,
+      toggled: playing,
+      excludeSemantics: true,
+      child: OutlinedButton(
+        key: const Key('reference-tone-toggle'),
+        onPressed: busy ? null : onPressed,
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(0, 48),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          foregroundColor: color,
+          disabledForegroundColor: InstrumentColors.muted,
+          side: BorderSide(
+            color: playing
+                ? InstrumentColors.phosphorEdge
+                : InstrumentColors.line,
+          ),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(
+              Radius.circular(InstrumentMetrics.radius2),
+            ),
+          ),
+        ),
+        child: Text(
+          busy
+              ? 'REF 준비 중'
+              : playing
+              ? '█ REF $noteLabel 정지'
+              : 'REF ${frequencyHz.toStringAsFixed(2)} Hz',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: InstrumentTypeTheme.standard.status.copyWith(
+            color: busy ? InstrumentColors.muted : color,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
     );
   }
 }
