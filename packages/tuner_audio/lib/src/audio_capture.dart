@@ -5,6 +5,9 @@ import 'audio_capture_session.dart';
 abstract interface class AudioCapture {
   bool get isCapturing;
 
+  /// Checks microphone permission without prompting unless [request] is true.
+  Future<bool> hasPermission({bool request = false});
+
   Future<AudioCaptureSession> start(AudioCaptureConfig config);
 
   Future<void> stop();

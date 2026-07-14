@@ -6,6 +6,7 @@ import 'package:tuner_data/tuner_data.dart';
 import 'package:tuner_domain/tuner_domain.dart';
 
 import '../app/instrument_theme.dart';
+import '../settings/app_settings.dart';
 import '../ui/instrument_widgets.dart';
 import 'live_tuner_engine.dart';
 import 'tuning_guidance.dart';
@@ -19,6 +20,7 @@ class PrecisionTunerScreen extends StatefulWidget {
     this.match,
     this.directTuning,
     this.directLabel = '바로 튜닝',
+    this.openAppSettings = openToaunerAppSettings,
   }) : assert(
          (match == null) != (directTuning == null),
          'Provide exactly one of match or directTuning.',
@@ -30,6 +32,7 @@ class PrecisionTunerScreen extends StatefulWidget {
   final SongCatalog catalog;
   final TunerEngineFactory tunerEngineFactory;
   final bool includeUnverifiedSongs;
+  final AppSettingsLauncher openAppSettings;
 
   TuningDefinition get tuning => match?.tuning ?? directTuning!;
   SongTuningRecord? get song => match?.song;
@@ -44,6 +47,8 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   var _manualTarget = false;
   var _coarseMode = false;
   var _completionShown = false;
+  var _needsMicrophonePrimer = false;
+  var _checkingMicrophonePermission = true;
   double? _displayCents;
   int? _celebratingStringNumber;
   Timer? _autoAdvanceTimer;
@@ -59,14 +64,14 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     _engine = widget.tunerEngineFactory();
     _liveState = _engine.current;
     _updateDisplayCents(_liveState.cents);
-    _tuneUpStopwatch = Stopwatch()..start();
+    _tuneUpStopwatch = Stopwatch();
     _tuneUpTracker = TuneUpProgressTracker(
       expectedStringNumbers: widget.tuning.strings.map(
         (string) => string.stringNumber,
       ),
     );
     _engineSubscription = _engine.states.listen(_handleEngineState);
-    unawaited(_engine.start(widget.tuning));
+    unawaited(_prepareInput());
   }
 
   @override
@@ -84,6 +89,42 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     referenceA4Hz: widget.tuning.referenceA4Hz,
     centsOffset: widget.tuning.centsOffset,
   );
+
+  Future<void> _prepareInput() async {
+    var granted = false;
+    try {
+      granted = await _engine.hasMicrophonePermission();
+    } on Object {
+      granted = false;
+    }
+    if (!mounted) {
+      return;
+    }
+    if (granted) {
+      setState(() => _checkingMicrophonePermission = false);
+      await _startInput();
+      return;
+    }
+    setState(() {
+      _checkingMicrophonePermission = false;
+      _needsMicrophonePrimer = true;
+    });
+  }
+
+  Future<void> _startInput() async {
+    if (!_tuneUpStopwatch.isRunning) {
+      _tuneUpStopwatch.start();
+    }
+    await _engine.start(widget.tuning);
+  }
+
+  Future<void> _enableMicrophone() async {
+    if (_checkingMicrophonePermission) {
+      return;
+    }
+    setState(() => _needsMicrophonePrimer = false);
+    await _startInput();
+  }
 
   void _handleEngineState(LiveTunerState state) {
     if (!mounted) {
@@ -265,198 +306,210 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
           );
     return Scaffold(
       appBar: const InstrumentHeaderBar(section: '정밀 튜너', showBack: true),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
-          child: Column(
-            children: [
-              Container(
-                height: 34,
-                alignment: Alignment.centerLeft,
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                decoration: BoxDecoration(
-                  color: InstrumentColors.chrome,
-                  border: Border.all(color: InstrumentColors.line),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${widget.sessionLabel.toUpperCase()}  /  ${tuning.name.toUpperCase()}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: InstrumentColors.muted,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    if (widget.includeUnverifiedSongs)
-                      TextButton(
-                        key: const Key('dev-diagnostics'),
-                        onPressed: _showDiagnostics,
-                        style: TextButton.styleFrom(
-                          minimumSize: const Size(0, 30),
-                          padding: const EdgeInsets.symmetric(horizontal: 6),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: const Text(
-                          'DEV·진단',
-                          style: TextStyle(fontSize: 9),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    for (
-                      var index = 0;
-                      index < tuning.strings.length;
-                      index++
-                    ) ...[
-                      TuningNoteCell(
-                        label: tuning.strings[index].label,
-                        stringNumber: tuning.strings[index].stringNumber,
-                        active: _selectedIndex == index,
-                        completed: progress.lockedStringNumbers.contains(
-                          tuning.strings[index].stringNumber,
-                        ),
-                        onTap: () => _toggleTarget(index),
-                      ),
-                      if (index != tuning.strings.length - 1)
-                        const SizedBox(width: 8),
-                    ],
-                  ],
-                ),
-              ),
-              const Spacer(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
+              child: Column(
                 children: [
-                  Flexible(
-                    child: Text(
-                      '${_selected.label} · ${_selected.stringNumber}번 줄 · ${_targetModeLabel()}',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.labelSmall,
+                  Container(
+                    height: 34,
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: InstrumentColors.chrome,
+                      border: Border.all(color: InstrumentColors.line),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${widget.sessionLabel.toUpperCase()}  /  ${tuning.name.toUpperCase()}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: InstrumentColors.muted,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        if (widget.includeUnverifiedSongs)
+                          TextButton(
+                            key: const Key('dev-diagnostics'),
+                            onPressed: _showDiagnostics,
+                            style: TextButton.styleFrom(
+                              minimumSize: const Size(0, 30),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                              ),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: const Text(
+                              'DEV·진단',
+                              style: TextStyle(fontSize: 9),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                  if (_manualTarget) ...[
-                    const SizedBox(width: 6),
-                    TextButton(
-                      key: const Key('resume-auto-detection'),
-                      onPressed: _resumeAutoDetection,
-                      style: TextButton.styleFrom(
-                        minimumSize: const Size(0, 28),
-                        padding: const EdgeInsets.symmetric(horizontal: 7),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: const Text(
-                        '자동 인식으로 전환',
-                        style: TextStyle(fontSize: 9),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                _formatMeasuredCents(_displayCents, coarse: _coarseMode),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: lockedNow
-                      ? InstrumentColors.accent
-                      : _coarseMode
-                      ? InstrumentColors.amber
-                      : InstrumentColors.text,
-                  fontSize: _coarseMode ? 52 : 62,
-                  height: 1.05,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -2,
-                ),
-              ),
-              Text(
-                guidance.headline,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: lockedNow
-                      ? InstrumentColors.accent
-                      : guidance.coarse
-                      ? InstrumentColors.amber
-                      : InstrumentColors.muted,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 14),
-              PitchTape(
-                cents: _displayCents,
-                locked: lockedNow,
-                status: _tapeStatus(_liveState),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Text(
-                    _liveState.frequencyHz == null
-                        ? '— Hz'
-                        : '${_liveState.frequencyHz!.toStringAsFixed(2)} Hz',
-                    style: const TextStyle(
-                      color: InstrumentColors.text,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
+                  const SizedBox(height: 12),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (
+                          var index = 0;
+                          index < tuning.strings.length;
+                          index++
+                        ) ...[
+                          TuningNoteCell(
+                            label: tuning.strings[index].label,
+                            stringNumber: tuning.strings[index].stringNumber,
+                            active: _selectedIndex == index,
+                            completed: progress.lockedStringNumbers.contains(
+                              tuning.strings[index].stringNumber,
+                            ),
+                            onTap: () => _toggleTarget(index),
+                          ),
+                          if (index != tuning.strings.length - 1)
+                            const SizedBox(width: 8),
+                        ],
+                      ],
                     ),
                   ),
                   const Spacer(),
-                  Flexible(
-                    child: Text(
-                      '목표 ${_targetHz.toStringAsFixed(2)} Hz',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.end,
-                      style: const TextStyle(
-                        color: InstrumentColors.muted,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          '${_selected.label} · ${_selected.stringNumber}번 줄 · ${_targetModeLabel()}',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.labelSmall,
+                        ),
                       ),
+                      if (_manualTarget) ...[
+                        const SizedBox(width: 6),
+                        TextButton(
+                          key: const Key('resume-auto-detection'),
+                          onPressed: _resumeAutoDetection,
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size(0, 28),
+                            padding: const EdgeInsets.symmetric(horizontal: 7),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: const Text(
+                            '자동 인식으로 전환',
+                            style: TextStyle(fontSize: 9),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _formatMeasuredCents(_displayCents, coarse: _coarseMode),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: lockedNow
+                          ? InstrumentColors.accent
+                          : _coarseMode
+                          ? InstrumentColors.amber
+                          : InstrumentColors.text,
+                      fontSize: _coarseMode ? 52 : 62,
+                      height: 1.05,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -2,
+                    ),
+                  ),
+                  Text(
+                    guidance.headline,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: lockedNow
+                          ? InstrumentColors.accent
+                          : guidance.coarse
+                          ? InstrumentColors.amber
+                          : InstrumentColors.muted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  PitchTape(
+                    cents: _displayCents,
+                    locked: lockedNow,
+                    status: _tapeStatus(_liveState),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Text(
+                        _liveState.frequencyHz == null
+                            ? '— Hz'
+                            : '${_liveState.frequencyHz!.toStringAsFixed(2)} Hz',
+                        style: const TextStyle(
+                          color: InstrumentColors.text,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Spacer(),
+                      Flexible(
+                        child: Text(
+                          '목표 ${_targetHz.toStringAsFixed(2)} Hz',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                          style: const TextStyle(
+                            color: InstrumentColors.muted,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  if (_liveState.status == LiveTunerStatus.permissionDenied ||
+                      _liveState.status == LiveTunerStatus.unavailable) ...[
+                    _InputErrorNotice(
+                      permissionDenied:
+                          _liveState.status == LiveTunerStatus.permissionDenied,
+                      onRetry: _retryInput,
+                      onOpenSettings: widget.openAppSettings,
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  _GuidancePanel(
+                    guidance: guidance,
+                    lockProgress: _liveState.lockProgress,
+                    offsetLabel: tuning.centsOffset == 0
+                        ? null
+                        : '곡 기준 ${_offsetLabel(tuning.centsOffset)} 적용',
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '튜닝 진행 ${progress.lockedStringCount}/${progress.expectedStringCount}',
+                    style: TextStyle(
+                      color: progress.isComplete
+                          ? InstrumentColors.accent
+                          : InstrumentColors.muted,
+                      fontSize: 11,
                     ),
                   ),
                 ],
               ),
-              const Spacer(),
-              if (_liveState.status == LiveTunerStatus.permissionDenied ||
-                  _liveState.status == LiveTunerStatus.unavailable) ...[
-                _InputErrorNotice(
-                  permissionDenied:
-                      _liveState.status == LiveTunerStatus.permissionDenied,
-                  onRetry: _retryInput,
-                ),
-                const SizedBox(height: 8),
-              ],
-              _GuidancePanel(
-                guidance: guidance,
-                lockProgress: _liveState.lockProgress,
-                offsetLabel: tuning.centsOffset == 0
-                    ? null
-                    : '곡 기준 ${_offsetLabel(tuning.centsOffset)} 적용',
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '튜닝 진행 ${progress.lockedStringCount}/${progress.expectedStringCount}',
-                style: TextStyle(
-                  color: progress.isComplete
-                      ? InstrumentColors.accent
-                      : InstrumentColors.muted,
-                  fontSize: 11,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+          if (_needsMicrophonePrimer)
+            Positioned.fill(
+              child: _MicrophonePrimer(onEnable: _enableMicrophone),
+            ),
+        ],
       ),
       bottomNavigationBar: InstrumentStatusBar(
         state: _statusBarState(_liveState),
@@ -472,6 +525,69 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
       return '직접 선택';
     }
     return '자동 인식';
+  }
+}
+
+class _MicrophonePrimer extends StatelessWidget {
+  const _MicrophonePrimer({required this.onEnable});
+
+  final Future<void> Function() onEnable;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: InstrumentColors.canvas.withValues(alpha: 0.98),
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+              decoration: BoxDecoration(
+                color: InstrumentColors.panel,
+                border: Border.all(color: InstrumentColors.line),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const InstrumentSectionLabel(
+                    '마이크 사용 안내',
+                    color: InstrumentColors.accent,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '줄 소리를 듣고 음정을 측정해요',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '소리는 기기에서만 분석되고 저장되지 않습니다. '
+                    '통화나 주변 대화를 녹음하지 않습니다.',
+                    style: TextStyle(
+                      color: InstrumentColors.muted,
+                      fontSize: 13,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      key: const Key('enable-microphone'),
+                      onPressed: onEnable,
+                      icon: const Icon(Icons.mic_rounded, size: 18),
+                      label: const Text('마이크 사용하기'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -708,10 +824,12 @@ class _InputErrorNotice extends StatelessWidget {
   const _InputErrorNotice({
     required this.permissionDenied,
     required this.onRetry,
+    required this.onOpenSettings,
   });
 
   final bool permissionDenied;
   final Future<void> Function() onRetry;
+  final AppSettingsLauncher onOpenSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -721,20 +839,31 @@ class _InputErrorNotice extends StatelessWidget {
         color: InstrumentColors.panel,
         border: Border.all(color: InstrumentColors.danger),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              permissionDenied
-                  ? '마이크 권한을 허용한 뒤 다시 시도하세요.'
-                  : '사용 가능한 마이크 입력을 찾지 못했습니다.',
-              style: const TextStyle(
-                color: InstrumentColors.danger,
-                fontSize: 11,
-              ),
+          Text(
+            permissionDenied
+                ? '설정에서 마이크를 허용해 주세요.'
+                : '사용 가능한 마이크 입력을 찾지 못했습니다.',
+            style: const TextStyle(
+              color: InstrumentColors.danger,
+              fontSize: 11,
             ),
           ),
-          TextButton(onPressed: onRetry, child: const Text('다시 시도')),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(onPressed: onRetry, child: const Text('다시 시도')),
+              if (permissionDenied)
+                TextButton(
+                  key: const Key('open-app-settings'),
+                  onPressed: onOpenSettings,
+                  child: const Text('설정 열기'),
+                ),
+            ],
+          ),
         ],
       ),
     );

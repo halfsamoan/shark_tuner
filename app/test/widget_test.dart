@@ -298,6 +298,82 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await _pumpFrames(tester);
   });
+
+  testWidgets('primes microphone use before requesting permission', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final engine = _ScriptedTunerEngine(permissionGranted: false);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildInstrumentTheme(),
+        home: PrecisionTunerScreen(
+          match: _FakeSongCatalog.verifiedMatch,
+          catalog: _FakeSongCatalog(
+            currentMatch: _FakeSongCatalog.verifiedMatch,
+          ),
+          tunerEngineFactory: () => engine,
+          includeUnverifiedSongs: false,
+        ),
+      ),
+    );
+    await _pumpFrames(tester);
+
+    expect(engine.startedTunings, isEmpty);
+    expect(find.text('줄 소리를 듣고 음정을 측정해요'), findsOneWidget);
+    expect(find.textContaining('소리는 기기에서만 분석되고 저장되지 않습니다'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('enable-microphone')));
+    await _pumpFrames(tester);
+    expect(engine.startedTunings, [_FakeSongCatalog.match.tuning.id]);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+  });
+
+  testWidgets('microphone denial offers a working app settings action', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final engine = _ScriptedTunerEngine();
+    var settingsOpened = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildInstrumentTheme(),
+        home: PrecisionTunerScreen(
+          match: _FakeSongCatalog.verifiedMatch,
+          catalog: _FakeSongCatalog(
+            currentMatch: _FakeSongCatalog.verifiedMatch,
+          ),
+          tunerEngineFactory: () => engine,
+          includeUnverifiedSongs: false,
+          openAppSettings: () async {
+            settingsOpened = true;
+            return true;
+          },
+        ),
+      ),
+    );
+    await _pumpFrames(tester);
+    engine.emit(const LiveTunerState(status: LiveTunerStatus.permissionDenied));
+    await tester.pump();
+
+    expect(find.text('설정에서 마이크를 허용해 주세요.'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('open-app-settings')));
+    await tester.pump();
+    expect(settingsOpened, isTrue);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+  });
 }
 
 LiveTunerState _stateForString(
@@ -357,6 +433,9 @@ final class _FakeTunerEngine implements TunerEngine {
   Stream<LiveTunerState> get states => const Stream.empty();
 
   @override
+  Future<bool> hasMicrophonePermission() async => true;
+
+  @override
   Future<void> dispose() async {}
 
   @override
@@ -370,8 +449,12 @@ final class _FakeTunerEngine implements TunerEngine {
 }
 
 final class _ScriptedTunerEngine implements TunerEngine {
+  _ScriptedTunerEngine({this.permissionGranted = true});
+
+  final bool permissionGranted;
   final _states = StreamController<LiveTunerState>.broadcast(sync: true);
   final manualTargets = <int?>[];
+  final startedTunings = <String>[];
   LiveTunerState _current = LiveTunerState.idle;
 
   void emit(LiveTunerState state) {
@@ -386,6 +469,9 @@ final class _ScriptedTunerEngine implements TunerEngine {
   Stream<LiveTunerState> get states => _states.stream;
 
   @override
+  Future<bool> hasMicrophonePermission() async => permissionGranted;
+
+  @override
   Future<void> dispose() => _states.close();
 
   @override
@@ -394,7 +480,9 @@ final class _ScriptedTunerEngine implements TunerEngine {
   }
 
   @override
-  Future<void> start(TuningDefinition tuning) async {}
+  Future<void> start(TuningDefinition tuning) async {
+    startedTunings.add(tuning.id);
+  }
 
   @override
   Future<void> stop() async {}

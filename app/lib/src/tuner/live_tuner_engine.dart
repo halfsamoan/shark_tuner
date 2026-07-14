@@ -106,6 +106,7 @@ abstract interface class TunerEngine {
   LiveTunerState get current;
   Stream<LiveTunerState> get states;
 
+  Future<bool> hasMicrophonePermission();
   Future<void> start(TuningDefinition tuning);
   void setManualTarget(int? stringNumber);
   Future<void> stop();
@@ -150,6 +151,11 @@ final class IsolateTunerEngine implements TunerEngine {
 
   @override
   Stream<LiveTunerState> get states => _states.stream;
+
+  @override
+  Future<bool> hasMicrophonePermission() {
+    return _audioCapture.hasPermission();
+  }
 
   @override
   Future<void> start(TuningDefinition tuning) async {

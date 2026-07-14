@@ -4,7 +4,7 @@ import 'audio_capture_config.dart';
 
 /// Low-level adapter used to isolate the third-party recorder from our policy.
 abstract interface class RecordStreamDriver {
-  Future<bool> hasPermission();
+  Future<bool> hasPermission({bool request = false});
 
   Future<RecordDriverStream> start(
     AudioCaptureConfig config,

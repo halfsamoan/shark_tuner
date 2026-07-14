@@ -63,6 +63,19 @@ void main() {
       expect(driver.startedSources, isEmpty);
       await capture.dispose();
     });
+
+    test('checks permission without requesting it for UI priming', () async {
+      final driver = _FakeRecordStreamDriver(
+        permissionGranted: false,
+        streams: const {},
+      );
+      final capture = RecordAudioCapture.withDriver(driver);
+
+      expect(await capture.hasPermission(), isFalse);
+      expect(driver.permissionRequests, [false]);
+      expect(driver.startedSources, isEmpty);
+      await capture.dispose();
+    });
   });
 }
 
@@ -86,10 +99,14 @@ final class _FakeRecordStreamDriver implements RecordStreamDriver {
   final bool permissionGranted;
   final Map<AudioInputSource, Stream<Uint8List>> streams;
   final startedSources = <AudioInputSource>[];
+  final permissionRequests = <bool>[];
   var stopCount = 0;
 
   @override
-  Future<bool> hasPermission() async => permissionGranted;
+  Future<bool> hasPermission({bool request = false}) async {
+    permissionRequests.add(request);
+    return permissionGranted;
+  }
 
   @override
   Future<RecordDriverStream> start(

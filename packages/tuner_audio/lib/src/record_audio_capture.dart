@@ -77,6 +77,14 @@ final class RecordAudioCapture implements AudioCapture {
   bool get isCapturing => _isCapturing;
 
   @override
+  Future<bool> hasPermission({bool request = false}) {
+    if (_isDisposed) {
+      throw StateError('Audio capture has been disposed.');
+    }
+    return _driver.hasPermission(request: request);
+  }
+
+  @override
   Future<AudioCaptureSession> start(AudioCaptureConfig config) async {
     if (_isDisposed) {
       throw StateError('Audio capture has been disposed.');
@@ -84,7 +92,7 @@ final class RecordAudioCapture implements AudioCapture {
     if (_isCapturing) {
       throw StateError('Audio capture is already running.');
     }
-    if (!await _driver.hasPermission()) {
+    if (!await _driver.hasPermission(request: true)) {
       throw const MicrophonePermissionDeniedException();
     }
 
@@ -277,7 +285,9 @@ final class RecordPackageStreamDriver implements RecordStreamDriver {
   final AudioRecorder _recorder;
 
   @override
-  Future<bool> hasPermission() => _recorder.hasPermission();
+  Future<bool> hasPermission({bool request = false}) {
+    return _recorder.hasPermission(request: request);
+  }
 
   @override
   Future<RecordDriverStream> start(

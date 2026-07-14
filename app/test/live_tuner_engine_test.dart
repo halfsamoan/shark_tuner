@@ -198,6 +198,11 @@ final class _FakeAudioCapture implements AudioCapture {
   bool get isCapturing => _capturing;
 
   @override
+  Future<bool> hasPermission({bool request = false}) async {
+    return startError is! MicrophonePermissionDeniedException;
+  }
+
+  @override
   Future<AudioCaptureSession> start(AudioCaptureConfig config) async {
     final error = startError;
     if (error != null) {
