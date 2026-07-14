@@ -7,6 +7,7 @@ import 'package:toauner_app/src/app/instrument_theme.dart';
 import 'package:toauner_app/src/tuner/live_tuner_engine.dart';
 import 'package:toauner_app/src/tuner/precision_tuner_screen.dart';
 import 'package:toauner_app/src/tuner/reference_tone_player.dart';
+import 'package:toauner_app/src/tuner/stage_mode_screen.dart';
 import 'package:toauner_app/src/ui/instrument_widgets.dart';
 import 'package:tuner_data/tuner_data.dart';
 import 'package:tuner_domain/tuner_domain.dart';
@@ -845,6 +846,31 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await _pumpFrames(tester);
     expect(awakeStates, [true, false]);
+  });
+
+  testWidgets('opens stage mode on the existing tuner engine', (tester) async {
+    final catalog = _FakeSongCatalog();
+    final engine = _ScriptedTunerEngine();
+
+    await tester.pumpWidget(
+      ToaunerApp(
+        catalogLoader: () async => catalog,
+        tunerEngineFactory: () => engine,
+        includeUnverifiedSongs: false,
+      ),
+    );
+    await _pumpFrames(tester);
+    await tester.tap(find.byKey(const Key('quick-tune-standard')));
+    await _pumpFrames(tester);
+
+    await tester.tap(find.byKey(const Key('open-stage-mode')));
+    await _pumpFrames(tester);
+    expect(find.byType(StageModeScreen), findsOneWidget);
+    expect(find.text('E2'), findsOneWidget);
+    expect(engine.startedTunings, ['guitar-6-standard']);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
   });
 
   testWidgets('reference tone pauses capture and follows the selected string', (
