@@ -22,24 +22,59 @@ void main() {
       expect(frame.stabilized, isNull);
     });
 
-    test('corrects an f/2 estimate against all semitone-down targets', () {
+    test(
+      'does not promote a truly octave-low D3 to the target at cold start',
+      () {
+        final d3Hz = _midiFrequencies([50]).single;
+        final pipeline = PitchTrackingPipeline(
+          targetFrequenciesHz: _midiFrequencies([40, 45, 50, 55, 59, 64]),
+        );
+
+        PitchTrackingFrame? frame;
+        for (var index = 0; index < 3; index++) {
+          frame = pipeline.process(_estimate(d3Hz / 2));
+        }
+
+        expect(frame!.octaveSanity!.kind, OctaveCorrectionKind.none);
+        expect(frame.octaveSanity!.frequencyMultiplier, 1);
+        expect(frame.stabilized, isNotNull);
+        expect(frame.stabilized!.frequencyHz, closeTo(d3Hz / 2, 0.01));
+      },
+    );
+
+    test('uses a recent stable anchor for an f/2 detector error', () {
       final pipeline = PitchTrackingPipeline(
         targetFrequenciesHz: _midiFrequencies([39, 44, 49, 54, 58, 63]),
       );
 
-      PitchTrackingFrame? frame;
       for (var index = 0; index < 3; index++) {
-        frame = pipeline.process(_estimate(116.54094));
+        pipeline.process(_estimate(233.08188));
       }
 
-      expect(frame!.octaveSanity!.kind, OctaveCorrectionKind.rawHalfFrequency);
+      final frame = pipeline.process(_estimate(116.54094));
+
+      expect(frame.octaveSanity!.kind, OctaveCorrectionKind.rawHalfFrequency);
+      expect(frame.octaveSanity!.anchor, OctaveSanityAnchor.previousStable);
       expect(frame.octaveSanity!.frequencyMultiplier, 2);
       expect(
         frame.octaveSanity!.estimate.frequencyHz,
         closeTo(233.08188, 0.01),
       );
-      expect(frame.stabilized, isNotNull);
-      expect(frame.stabilized!.frequencyHz, closeTo(233.08188, 0.01));
+    });
+
+    test('expires the previous-stable octave anchor after silence', () {
+      final pipeline = PitchTrackingPipeline(targetFrequenciesHz: const []);
+      for (var index = 0; index < 3; index++) {
+        pipeline.process(_estimate(110));
+      }
+      for (var index = 0; index < 3; index++) {
+        pipeline.process(null);
+      }
+
+      final frame = pipeline.process(_estimate(55));
+
+      expect(frame.octaveSanity!.kind, OctaveCorrectionKind.none);
+      expect(frame.octaveSanity!.anchor, OctaveSanityAnchor.none);
     });
 
     test(

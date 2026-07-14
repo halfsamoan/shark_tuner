@@ -83,10 +83,15 @@ final class PitchTrackingPipeline {
   final EstimateStabilizerConfig stabilizerConfig;
   final EstimateStabilizer _stabilizer;
   double? _previousStableFrequencyHz;
+  int _missingTrustedFrames = 0;
 
   PitchTrackingFrame process(PitchEstimate? rawEstimate) {
     if (!_isTrusted(rawEstimate)) {
+      _missingTrustedFrames++;
       _stabilizer.add(null);
+      if (_missingTrustedFrames >= stabilizerConfig.missingFramesBeforeReset) {
+        _previousStableFrequencyHz = null;
+      }
       return PitchTrackingFrame(
         confidenceAccepted: false,
         octaveSanity: null,
@@ -95,6 +100,7 @@ final class PitchTrackingPipeline {
       );
     }
 
+    _missingTrustedFrames = 0;
     final octaveSanity = _applyOctaveSanity(rawEstimate!);
     final stabilized = _stabilizer.add(octaveSanity.estimate);
     if (stabilized != null) {
@@ -111,6 +117,7 @@ final class PitchTrackingPipeline {
   void reset() {
     _stabilizer.reset();
     _previousStableFrequencyHz = null;
+    _missingTrustedFrames = 0;
   }
 
   bool _isTrusted(PitchEstimate? estimate) {
@@ -156,7 +163,12 @@ final class PitchTrackingPipeline {
         candidate.frequencyHz,
         targetFrequenciesHz,
       );
-      if (candidateDistance <=
+      // A target alone cannot distinguish a detector f/2 error from a string
+      // that is physically tuned one octave too low. Cold-start target snaps
+      // therefore only correct 2f -> f. Upward correction needs a recent
+      // previous-stable anchor and is evaluated below.
+      if (candidate.multiplier < 1 &&
+          candidateDistance <=
               octaveConfig.maximumCorrectedTargetDistanceCents &&
           rawTargetDistance - candidateDistance >=
               octaveConfig.minimumTargetImprovementCents) {
