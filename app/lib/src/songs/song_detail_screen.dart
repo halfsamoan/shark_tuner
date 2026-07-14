@@ -3,6 +3,8 @@ import 'package:tuner_data/tuner_data.dart';
 import 'package:tuner_domain/tuner_domain.dart';
 
 import '../app/instrument_theme.dart';
+import '../metronome/metronome_screen.dart'; // (Claude)
+import '../metronome/song_bpm.dart'; // (Claude)
 import '../tension/tension_recommendation_screen.dart';
 import '../tuner/live_tuner_engine.dart';
 import '../tuner/precision_tuner_screen.dart';
@@ -106,6 +108,8 @@ class SongDetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 22),
+            _MetronomeEntry(songId: song.id), // (Claude)
+            const SizedBox(height: 22),
             _TensionRecommendationEntry(
               tuning: tuning,
               onPressed: () {
@@ -153,6 +157,78 @@ class SongDetailScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _MetronomeEntry extends StatelessWidget {
+  const _MetronomeEntry({required this.songId});
+
+  final String songId;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Map<String, int>>(
+      future: loadSongBpmIndex(),
+      builder: (context, snapshot) {
+        final bpm = snapshot.data?[songId];
+        return Semantics(
+          button: true,
+          label: bpm == null ? '메트로놈 열기' : '$bpm BPM 메트로놈 열기',
+          child: InkWell(
+            key: const Key('song-metronome-cta'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => MetronomeScreen(initialBpm: bpm ?? 120),
+              ),
+            ),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(12, 11, 10, 11),
+              decoration: const BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: InstrumentColors.line),
+                  bottom: BorderSide(color: InstrumentColors.line),
+                  left: BorderSide(color: InstrumentColors.accent, width: 3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '메트로놈',
+                          style: InstrumentTypeTheme.standard.caption.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          bpm == null
+                              ? '탭 템포로 이 곡 속도를 맞춰보세요'
+                              : '이 곡 속도에 맞춰 연습하세요',
+                          style: InstrumentTypeTheme.standard.status.copyWith(
+                            color: InstrumentColors.muted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    bpm == null ? '♩ 열기 ›' : '♩ = $bpm ›',
+                    style: InstrumentTypeTheme.standard.status.copyWith(
+                      fontFamily: 'D2Coding',
+                      color: InstrumentColors.accent,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
