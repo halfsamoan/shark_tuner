@@ -62,6 +62,38 @@ void main() {
     await _pumpFrames(tester);
   });
 
+  testWidgets('zero-result search offers a useful recovery path', (
+    tester,
+  ) async {
+    final catalog = _FakeSongCatalog();
+
+    await tester.pumpWidget(
+      ToaunerApp(
+        catalogLoader: () async => catalog,
+        tunerEngineFactory: _FakeTunerEngine.new,
+        includeUnverifiedSongs: true,
+      ),
+    );
+    await _pumpFrames(tester);
+
+    await tester.enterText(find.byType(EditableText), 'unknown song');
+    await _pumpFrames(tester);
+
+    expect(find.text('검색 결과가 없습니다.'), findsOneWidget);
+    expect(find.text('추천 곡'), findsOneWidget);
+    expect(find.text('Eruption'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('show-all-songs')));
+    await _pumpFrames(tester);
+
+    final input = tester.widget<EditableText>(find.byType(EditableText));
+    expect(input.controller.text, isEmpty);
+    expect(find.text('Eruption'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+  });
+
   testWidgets('opens the standard tuner without choosing a song', (
     tester,
   ) async {
@@ -673,7 +705,7 @@ final class _FakeSongCatalog implements SongCatalog {
   }) async {
     final normalized = query.trim().toLowerCase();
     if (normalized.isEmpty) {
-      return const [];
+      return [currentMatch];
     }
     if (currentMatch.song.title.toLowerCase().contains(normalized) ||
         currentMatch.song.artist.toLowerCase().contains(normalized)) {

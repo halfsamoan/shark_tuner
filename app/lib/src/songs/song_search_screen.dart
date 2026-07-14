@@ -28,8 +28,10 @@ class SongSearchScreen extends StatefulWidget {
 }
 
 class _SongSearchScreenState extends State<SongSearchScreen> {
+  final TextEditingController _searchController = TextEditingController();
   SongCatalog? _catalog;
   List<SongTuningMatch> _results = const [];
+  List<SongTuningMatch> _popularResults = const [];
   bool _loading = true;
   Object? _error;
   int _requestId = 0;
@@ -77,6 +79,9 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
       if (mounted && requestId == _requestId) {
         setState(() {
           _results = results;
+          if (query.trim().isEmpty) {
+            _popularResults = results.take(3).toList(growable: false);
+          }
           _loading = false;
         });
       }
@@ -92,6 +97,7 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     final catalog = _catalog;
     if (catalog != null) {
       unawaited(catalog.close());
@@ -123,6 +129,7 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
             ),
             const SizedBox(height: 20),
             TextField(
+              controller: _searchController,
               autofocus: false,
               style: const TextStyle(
                 color: InstrumentColors.text,
@@ -147,24 +154,14 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
             if (_loading) const LinearProgressIndicator(minHeight: 2),
             if (_error != null) _CatalogError(onRetry: () => _load()),
             if (!_loading && _error == null && _results.isEmpty)
-              const _EmptyResults(),
+              _EmptyResults(
+                popularResults: _popularResults,
+                onShowAll: _showAllSongs,
+                onSongSelected: _openSong,
+              ),
             if (_error == null)
               for (final match in _results)
-                _SongResultRow(
-                  match: match,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => SongDetailScreen(
-                          match: match,
-                          catalog: _catalog!,
-                          tunerEngineFactory: widget.tunerEngineFactory,
-                          includeUnverifiedSongs: widget.includeUnverifiedSongs,
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                _SongResultRow(match: match, onTap: () => _openSong(match)),
             if (widget.includeUnverifiedSongs) ...[
               const SizedBox(height: 16),
               const Text(
@@ -202,6 +199,25 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
           directTuning: tuning,
           directLabel: '바로 튜닝',
           catalog: catalog,
+          tunerEngineFactory: widget.tunerEngineFactory,
+          includeUnverifiedSongs: widget.includeUnverifiedSongs,
+        ),
+      ),
+    );
+  }
+
+  void _showAllSongs() {
+    _searchController.clear();
+    FocusScope.of(context).unfocus();
+    unawaited(_search(''));
+  }
+
+  void _openSong(SongTuningMatch match) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SongDetailScreen(
+          match: match,
+          catalog: _catalog!,
           tunerEngineFactory: widget.tunerEngineFactory,
           includeUnverifiedSongs: widget.includeUnverifiedSongs,
         ),
@@ -362,17 +378,52 @@ class _SongResultRow extends StatelessWidget {
 }
 
 class _EmptyResults extends StatelessWidget {
-  const _EmptyResults();
+  const _EmptyResults({
+    required this.popularResults,
+    required this.onShowAll,
+    required this.onSongSelected,
+  });
+
+  final List<SongTuningMatch> popularResults;
+  final VoidCallback onShowAll;
+  final ValueChanged<SongTuningMatch> onSongSelected;
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 36),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 28),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Icon(Icons.search_off_rounded, color: InstrumentColors.muted),
-          SizedBox(height: 10),
-          Text('검색 결과가 없습니다.', style: TextStyle(color: InstrumentColors.muted)),
+          const Icon(Icons.search_off_rounded, color: InstrumentColors.muted),
+          const SizedBox(height: 10),
+          const Text(
+            '검색 결과가 없습니다.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: InstrumentColors.text),
+          ),
+          const SizedBox(height: 5),
+          const Text(
+            '곡명 철자를 확인하거나 아티스트 이름으로 찾아보세요.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: InstrumentColors.muted, fontSize: 12),
+          ),
+          const SizedBox(height: 14),
+          Center(
+            child: OutlinedButton.icon(
+              key: const Key('show-all-songs'),
+              onPressed: onShowAll,
+              icon: const Icon(Icons.refresh_rounded, size: 17),
+              label: const Text('전체 곡 다시 보기'),
+            ),
+          ),
+          if (popularResults.isNotEmpty) ...[
+            const SizedBox(height: 28),
+            const InstrumentSectionLabel('추천 곡'),
+            const SizedBox(height: 8),
+            for (final match in popularResults)
+              _SongResultRow(match: match, onTap: () => onSongSelected(match)),
+          ],
         ],
       ),
     );
