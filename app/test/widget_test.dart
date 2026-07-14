@@ -44,7 +44,7 @@ void main() {
 
     expect(find.text('E-flat Standard'), findsOneWidget);
     expect(find.text('+20 cents'), findsOneWidget);
-    expect(find.text('사람 검증 필요'), findsOneWidget);
+    expect(find.text('DEV·사람 검증 필요'), findsOneWidget);
 
     final stickyCta = find.byKey(const Key('song-tune-cta'));
     expect(stickyCta, findsOneWidget);
@@ -141,6 +141,52 @@ void main() {
       ),
       isTrue,
     );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+  });
+
+  testWidgets('release song flow exposes trust without internal vocabulary', (
+    tester,
+  ) async {
+    final catalog = _FakeSongCatalog(
+      currentMatch: _FakeSongCatalog.verifiedMatch,
+    );
+
+    await tester.pumpWidget(
+      ToaunerApp(
+        catalogLoader: () async => catalog,
+        tunerEngineFactory: _FakeTunerEngine.new,
+        includeUnverifiedSongs: false,
+      ),
+    );
+    await _pumpFrames(tester);
+    await tester.enterText(find.byType(EditableText), 'Eruption');
+    await _pumpFrames(tester);
+    final eruptionResult = find.descendant(
+      of: find.byType(InkWell),
+      matching: find.text('Eruption'),
+    );
+    await tester.tap(eruptionResult);
+    await _pumpFrames(tester);
+
+    expect(find.text('검증된 튜닝 ✓'), findsWidgets);
+    for (final internalCopy in [
+      '버전',
+      '@1',
+      'DEV·',
+      '사람 검증',
+      '출처 확인 전 후보',
+      'FTS5',
+      'UNPROCESSED',
+      'VOICE_RECOGNITION',
+      'DSP',
+      'isolate',
+      'samples',
+      'DEVELOPMENT',
+    ]) {
+      expect(find.textContaining(internalCopy), findsNothing);
+    }
 
     await tester.pumpWidget(const SizedBox.shrink());
     await _pumpFrames(tester);

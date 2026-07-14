@@ -190,15 +190,24 @@ class DefinitionRow extends StatelessWidget {
 }
 
 class VerificationBadge extends StatelessWidget {
-  const VerificationBadge({super.key, required this.status});
+  const VerificationBadge({
+    super.key,
+    required this.status,
+    this.showDevelopmentStatus = false,
+  });
 
   final SongVerificationStatus status;
+  final bool showDevelopmentStatus;
 
   @override
   Widget build(BuildContext context) {
     final verified = status == SongVerificationStatus.verified;
     final color = verified ? InstrumentColors.accent : InstrumentColors.amber;
-    final label = verified ? '출처 검증 완료' : '사람 검증 필요';
+    final label = verified
+        ? '검증된 튜닝 ✓'
+        : showDevelopmentStatus
+        ? 'DEV·사람 검증 필요'
+        : '확인 중';
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [

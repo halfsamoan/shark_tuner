@@ -47,7 +47,10 @@ class SongDetailScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                VerificationBadge(status: song.verificationStatus),
+                VerificationBadge(
+                  status: song.verificationStatus,
+                  showDevelopmentStatus: includeUnverifiedSongs,
+                ),
               ],
             ),
             const SizedBox(height: 24),
@@ -74,7 +77,11 @@ class SongDetailScreen extends StatelessWidget {
                   ? InstrumentColors.text
                   : InstrumentColors.accent,
             ),
-            DefinitionRow(label: '버전', value: '${tuning.id}@${tuning.version}'),
+            if (includeUnverifiedSongs)
+              DefinitionRow(
+                label: 'DEV·버전',
+                value: '${tuning.id}@${tuning.version}',
+              ),
             const SizedBox(height: 22),
             const InstrumentSectionLabel('Open strings  ·  low → high'),
             const SizedBox(height: 10),
@@ -93,7 +100,10 @@ class SongDetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 22),
-            _VerificationNotice(song: song),
+            _VerificationNotice(
+              song: song,
+              showDevelopmentStatus: includeUnverifiedSongs,
+            ),
             const SizedBox(height: 32),
           ],
         ),
@@ -168,9 +178,13 @@ class _StickyTuneBar extends StatelessWidget {
 }
 
 class _VerificationNotice extends StatelessWidget {
-  const _VerificationNotice({required this.song});
+  const _VerificationNotice({
+    required this.song,
+    required this.showDevelopmentStatus,
+  });
 
   final SongTuningRecord song;
+  final bool showDevelopmentStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -193,7 +207,11 @@ class _VerificationNotice extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            verified ? '독립 출처 검증 완료' : '출처 확인 전 후보 데이터',
+            verified
+                ? '검증된 튜닝 ✓'
+                : showDevelopmentStatus
+                ? 'DEV·출처 확인 전 후보 데이터'
+                : '튜닝 확인 중',
             style: TextStyle(
               color: verified
                   ? InstrumentColors.accent
@@ -205,8 +223,10 @@ class _VerificationNotice extends StatelessWidget {
           const SizedBox(height: 5),
           Text(
             verified
-                ? '${song.sources.length}개 출처를 사람이 확인했습니다.'
-                : '독립 출처 2개와 사람 검증 전에는 출시 카탈로그에 포함되지 않습니다.',
+                ? '독립 출처 ${song.sources.length}개를 확인했습니다.'
+                : showDevelopmentStatus
+                ? 'DEV·독립 출처와 사람 검증 전에는 출시 곡에 포함되지 않습니다.'
+                : '확인이 끝난 곡만 검색 결과에 표시됩니다.',
             style: const TextStyle(
               color: InstrumentColors.muted,
               fontSize: 11,

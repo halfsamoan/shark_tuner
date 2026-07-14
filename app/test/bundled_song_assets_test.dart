@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -16,6 +17,23 @@ void main() {
       expect(bundled, canonical);
     });
   }
+
+  test('release catalog ships all twenty explicitly verified songs', () async {
+    final bundled =
+        jsonDecode(await rootBundle.loadString('assets/songs/catalog.v1.json'))
+            as Map<String, dynamic>;
+    final songs = bundled['songs']! as List<dynamic>;
+
+    expect(songs, hasLength(20));
+    expect(bundled['shippingEligible'], isTrue);
+    expect(
+      songs.every(
+        (song) =>
+            (song as Map<String, dynamic>)['verificationStatus'] == 'verified',
+      ),
+      isTrue,
+    );
+  });
 }
 
 File _workspaceFile(String relativePath) {
