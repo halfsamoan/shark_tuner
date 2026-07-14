@@ -17,9 +17,9 @@ When sources disagree, product behavior remains fixed and the playbook replaces 
 
 ### Code
 
-- Flutter has one flat `InstrumentColors` palette and no `ThemeExtension`.
-- Text sizes are distributed across screens instead of using the six playbook roles.
-- The app does not bundle D2Coding or Pretendard yet, so device rendering currently uses platform fallback fonts.
+- Flutter exposes `TerminalTheme`, `InstrumentTypeTheme`, `InstrumentMetrics`, and `InstrumentMotion` as the code-side token contract.
+- The six playbook text roles are defined and tested, but individual screens still contain legacy literal sizes that must migrate to those roles.
+- D2Coding and Pretendard are bundled in the Flutter app. Figma still needs those fonts available in its editing environment before final text styles are created.
 - Shared Flutter widgets cover header, status bar, section label, definition row, verification badge, note cell, and pitch tape.
 - Note and meter behavior exists, but the public widgets do not yet expose the playbook's complete named state sets.
 - No `.figma.ts`, `.figma.js`, or Code Connect mapping exists.
@@ -27,7 +27,7 @@ When sources disagree, product behavior remains fixed and the playbook replaces 
 ### Figma file
 
 - Pages: `Page 1`, `00 Components`, `01 Product Flow`.
-- Local variables, paint styles, text styles, grid styles, and effect styles: none.
+- Four local variable collections and 49 variables were created in the prior Phase 1 run; their returned IDs are recorded in `reports/design/figma-state-toauner-v1.json`.
 - Existing components:
   - `Button/Primary`
   - `Button/Tool`
@@ -71,10 +71,10 @@ When sources disagree, product behavior remains fixed and the playbook replaces 
 
 ## Conflicts and blockers
 
-1. **Font availability:** the approved fonts are absent in both the Figma plugin environment and the Flutter bundle. Do not silently substitute a look-alike. Flutter can bundle the OFL releases; Figma requires local font installation or an explicit temporary fallback decision.
-2. **Dirty playbook:** `docs/design-playbook.md` contains user-owned uncommitted changes. Treat it as authoritative input but do not stage it without confirmation.
+1. **Figma MCP limit:** the Starter-plan call limit still blocks metadata, library search, and post-create validation. Do not mutate the file until the 49 recorded variables can be read back and verified.
+2. **Font availability:** the approved fonts are bundled in Flutter but were absent from the prior Figma plugin font inventory. Do not silently substitute a look-alike; install the fonts for Figma or explicitly approve a temporary fallback.
 3. **Existing page naming:** old pages do not match the required `00 Foundations`, `01 Components`, `02 Screens`, `03 States & Flows` structure. Rename only after replacement assets exist so provenance is not lost.
-4. **Generic library mismatch:** subscribed Material/Simple assets are implementation references, not visual sources for the toauner component set.
+4. **Generic library mismatch:** the last successful discovery found Material 3 and Simple Design System, but no toauner-compatible instrument component. Re-run library search after the MCP limit resets before creating each component.
 
 ## Build order
 
@@ -83,11 +83,11 @@ When sources disagree, product behavior remains fixed and the playbook replaces 
 3. Migrate reusable button, field, song row, header, and status components to variables.
 4. Assemble search, song detail, live tuner, and 1.3x text-scale frames from instances.
 5. Add state-flow frames and compare them with `reports/device/` screenshots.
-6. Update Flutter theme tokens and shared widgets, then run widget tests and device screenshots.
+6. Compare the token-bound Figma instances with Flutter device screenshots and migrate remaining screen-local text sizes to the six code roles.
 
 ## Phase 0 exit decision
 
-The component hierarchy and product behavior are fixed. Visual conflicts have deterministic resolutions from the playbook. The only unresolved choice is the Figma font path; no Figma text style should be presented as final until the approved fonts are available or the user explicitly approves a temporary fallback.
+The component hierarchy and product behavior are fixed. Visual conflicts have deterministic resolutions from the playbook. Figma mutations remain paused until MCP readback is available; after that, the only expected user decision is the Figma font path.
 
 ## Phase 1 progress
 
@@ -97,3 +97,12 @@ The component hierarchy and product behavior are fixed. Visual conflicts have de
 - Every created variable has a stable `toauner_ds` key and run ID for idempotent continuation.
 - The post-create validation call was blocked by the Figma Starter-plan MCP call limit. The returned IDs and pending validation are preserved in `reports/design/figma-state-toauner-v1.json`.
 - Component and text-style creation remains paused. This avoids creating unverified aliases or silently substituting the missing approved fonts.
+- A 2026-07-14 retry of page metadata, library discovery, and design-system search was blocked by the same Starter-plan MCP limit. No Figma state was changed.
+
+## Flutter visual-language progress
+
+- Replaced the flat `InstrumentColors.chrome` alias with explicit `sunken`, `panel`, `raised`, and `header` surfaces in the search, detail, tuner, header, status, and meter paths.
+- Reserved lock greens for achieved/held tuning states and removed screen-local raw colors.
+- Removed decorative action icons, the touch-irrelevant `Ctrl K` hint, generic empty-state iconography, and rounded completion icons. Navigation, search, and microphone permission remain the only approved icon-font affordances.
+- Added a static compliance test that rejects retired neon colors, raw screen colors, gradients, drop shadows, the flat chrome alias, and unapproved icon-font usage.
+- Full `tool/check.ps1` passed after the migration.
