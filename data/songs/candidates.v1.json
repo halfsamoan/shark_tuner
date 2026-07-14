@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedFrom": "independent-web-audit-2026-07-13",
+  "generatedFrom": "independent-web-audit-through-2026-07-14",
   "shippingEligible": false,
   "songs": [
     {
@@ -342,6 +342,91 @@
         { "label": "Recording reference — Harrison capo 7", "url": "https://en.wikipedia.org/wiki/Here_Comes_the_Sun", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" }
       ],
       "notes": "Tune open strings in E standard before placing the capo at fret 7; the recording was varispeeded, so no exact cents correction is asserted."
+    },
+    {
+      "id": "ozzy-osbourne-crazy-train",
+      "artist": "Ozzy Osbourne",
+      "searchAliases": ["오지 오스본"],
+      "title": "Crazy Train",
+      "tuningId": "guitar-6-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Marty Schwartz lesson — standard EADGBE", "url": "https://www.martyschwartzguitar.com/crazy-train-guitar-lesson-ozzy-osbourne-opening-riff-how-to-play-on-guitar/", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Cifra Club reviewed chart — standard EADGBE", "url": "https://www.cifraclub.com/ozzy-osbourne/crazy-train/kmhmg.html", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Independent lesson sources agree on E standard; no capo or recording offset asserted."
+    },
+    {
+      "id": "lynyrd-skynyrd-sweet-home-alabama",
+      "artist": "Lynyrd Skynyrd",
+      "searchAliases": ["레너드 스키너드"],
+      "title": "Sweet Home Alabama",
+      "tuningId": "guitar-6-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Marty Schwartz lesson — standard EADGBE", "url": "https://www.martyschwartzguitar.com/sweet-home-alabama-lynyrd-skynyrd-guitar-lesson-tutorial/", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Zager Guitar lesson — standard EADGBE", "url": "https://blog.zagerguitar.com/how-to-play-sweet-home-alabama-on-guitar/", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Independent lesson sources agree on E standard; no capo or recording offset asserted."
+    },
+    {
+      "id": "pink-floyd-wish-you-were-here",
+      "artist": "Pink Floyd",
+      "searchAliases": ["핑크 플로이드"],
+      "title": "Wish You Were Here",
+      "tuningId": "guitar-6-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Jon MacLennan lesson — recorded version in standard tuning", "url": "https://www.jonmaclennan.com/blog/wish-you-were-here-chords", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Marty Schwartz lesson — standard tuning, no capo", "url": "https://www.martyschwartzguitar.com/how-to-play-wish-you-were-here-by-pink-floyd/", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Both sources agree on E standard with no capo for the playable guitar path."
+    },
+    {
+      "id": "black-sabbath-paranoid",
+      "artist": "Black Sabbath",
+      "searchAliases": ["블랙 사바스"],
+      "title": "Paranoid",
+      "tuningId": "guitar-6-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Jon MacLennan lesson — standard EADGBE", "url": "https://www.jonmaclennan.com/blog/paranoid-chords", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Mr Tabs lesson — standard tuning", "url": "https://www.mrtabs.com/guitar-tab/black-sabbath-paranoid/", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Independent lesson sources agree on E standard; tiny analog-recording pitch variance is not asserted as a tuning offset."
+    },
+    {
+      "id": "led-zeppelin-stairway-to-heaven",
+      "artist": "Led Zeppelin",
+      "searchAliases": ["레드 제플린"],
+      "title": "Stairway to Heaven",
+      "tuningId": "guitar-6-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Jon MacLennan lesson — recorded version in standard EADGBE", "url": "https://www.jonmaclennan.com/blog/stairway-to-heaven-chords", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Scott's Guitar Lessons chart — standard tuning", "url": "https://www.scottsguitarlessons.co.uk/lesson_resources/PDFs/Tunes/stairway%20to%20heaven.pdf", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Independent lesson sources agree on E standard with no capo."
     }
   ]
 }

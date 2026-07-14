@@ -28,12 +28,12 @@ void main() {
             as Map<String, dynamic>;
   });
 
-  test('source-audited batch has 20 unique non-shipping candidates', () {
+  test('source-audited batch has 25 unique non-shipping candidates', () {
     final songs = (candidates['songs'] as List).cast<Map<String, dynamic>>();
     final ids = songs.map((song) => song['id'] as String).toSet();
 
     expect(candidates['shippingEligible'], isFalse);
-    expect(songs, hasLength(20));
+    expect(songs, hasLength(25));
     expect(ids, hasLength(songs.length));
     expect(
       songs.every((song) => song['verificationStatus'] == 'needs_human_review'),
@@ -80,7 +80,11 @@ void main() {
         reason: song['id'] as String,
       );
       expect(
-        sources.every((source) => source['checkedAt'] == '2026-07-13'),
+        sources.every(
+          (source) => RegExp(
+            r'^2026-07-(13|14)$',
+          ).hasMatch(source['checkedAt'] as String),
+        ),
         isTrue,
         reason: song['id'] as String,
       );

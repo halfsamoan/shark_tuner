@@ -12,6 +12,22 @@ Codex가 수행했다. 후보 원본은 감사 이력 보존을 위해 모든 �
 `project-owner`, 승인 날짜, 전량 승인 범위와 함께 별도로 기록한다.
 출시 카탈로그의 20곡은 모두 `verified`이며 릴리스 검색에 포함된다.
 
+## 2026-07-14 확장 후보
+
+곡 수를 늘리되 기존 출시 승인을 묵시적으로 확장하지 않기 위해 다음 5곡을
+후보 파일에만 추가했다. 각 곡은 서로 다른 발행처의 곡별 출처 2개와 한국어
+아티스트 검색 별칭을 가진다.
+
+- Ozzy Osbourne — `Crazy Train`
+- Lynyrd Skynyrd — `Sweet Home Alabama`
+- Pink Floyd — `Wish You Were Here`
+- Black Sabbath — `Paranoid`
+- Led Zeppelin — `Stairway to Heaven`
+
+전부 E standard, capo 0 후보이며 `needs_human_review` 상태다. 프로젝트
+소유자가 이 묶음을 검토·승인하기 전까지 `catalog.v1.json`과 앱 출시 자산의
+20곡은 바꾸지 않는다.
+
 ## 교체 결정
 
 기존 후보 중 다음 다섯 곡은 첫 출시 묶음에서 제외했다.

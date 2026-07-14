@@ -37,7 +37,7 @@ void main() {
       isTrue,
     );
     expect(promoted['shippingEligible'], isTrue);
-    expect(outputSongs, hasLength(20));
+    expect(outputSongs, hasLength(inputSongs.length));
     expect(
       outputSongs.every((song) => song['verificationStatus'] == 'verified'),
       isTrue,
@@ -46,7 +46,7 @@ void main() {
       'approvedBy': 'project-owner',
       'approvedAt': '2026-07-14',
       'scope': 'all_songs',
-      'approvedSongCount': 20,
+      'approvedSongCount': inputSongs.length,
       'statement':
           'Project owner reviewed and approved every source-audited song.',
     });
