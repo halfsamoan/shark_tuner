@@ -368,9 +368,17 @@ void main() {
     expect(find.text('이 튜닝으로 연주 가능한 곡 1개'), findsOneWidget);
     expect(engine.manualTargets, isEmpty);
     expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+    expect(find.byKey(const Key('open-stability-check')), findsOneWidget);
 
-    await tester.tap(find.text('완료'));
+    await tester.tap(find.byKey(const Key('open-stability-check')));
     await tester.pumpAndSettle();
+    expect(find.text('줄이 맞은 뒤에도 흔들리는지 확인합니다.'), findsOneWidget);
+    expect(engine.manualTargets, [6]);
+
+    await tester.tap(find.byTooltip('뒤로'));
+    await tester.pumpAndSettle();
+    expect(engine.manualTargets, [6, null]);
+
     await tester.pumpWidget(const SizedBox.shrink());
     await _pumpFrames(tester);
   });

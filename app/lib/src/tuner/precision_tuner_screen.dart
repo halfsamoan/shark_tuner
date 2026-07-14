@@ -9,6 +9,7 @@ import '../app/instrument_theme.dart';
 import '../device/tuner_device_control.dart';
 import '../instrument_setup/instrument_profile_store.dart';
 import '../settings/app_settings.dart';
+import '../stability/stability_check_screen.dart';
 import '../ui/instrument_widgets.dart';
 import '../ui/throttled_live_region.dart';
 import 'live_tuner_engine.dart';
@@ -56,6 +57,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   var _manualTarget = false;
   var _coarseMode = false;
   var _completionShown = false;
+  var _stabilityCheckOpen = false;
   var _needsMicrophonePrimer = false;
   var _checkingMicrophonePermission = true;
   double? _displayCents;
@@ -173,7 +175,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     }
     final detectedTarget = state.target;
     var newlyLocked = false;
-    if (state.locked && detectedTarget != null) {
+    if (!_stabilityCheckOpen && state.locked && detectedTarget != null) {
       newlyLocked = !_tuneUpTracker.state.lockedStringNumbers.contains(
         detectedTarget.stringNumber,
       );
@@ -438,19 +440,39 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
       isDismissible: false,
       enableDrag: false,
       backgroundColor: InstrumentColors.chrome,
-      builder: (context) => _TuneCompleteSheet(
+      builder: (sheetContext) => _TuneCompleteSheet(
         tuning: widget.tuning,
         elapsed: _tuneUpTracker.state.elapsed,
         compatibleSongs: widget.catalog.findPlayableWith(
           widget.tuning,
           includeUnverified: widget.includeUnverifiedSongs,
         ),
+        onStabilityCheck: () {
+          Navigator.of(sheetContext).pop();
+          unawaited(_openStabilityCheck());
+        },
       ),
     ).whenComplete(() {
       if (mounted) {
         _completionShown = false;
       }
     });
+  }
+
+  Future<void> _openStabilityCheck() async {
+    if (_stabilityCheckOpen || !mounted) {
+      return;
+    }
+    setState(() => _stabilityCheckOpen = true);
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (context) =>
+            StabilityCheckScreen(tuning: widget.tuning, engine: _engine),
+      ),
+    );
+    if (mounted) {
+      setState(() => _stabilityCheckOpen = false);
+    }
   }
 
   void _toggleTarget(int index) {
@@ -1383,11 +1405,13 @@ class _TuneCompleteSheet extends StatelessWidget {
     required this.tuning,
     required this.elapsed,
     required this.compatibleSongs,
+    required this.onStabilityCheck,
   });
 
   final TuningDefinition tuning;
   final Duration elapsed;
   final Future<List<SongTuningMatch>> compatibleSongs;
+  final VoidCallback onStabilityCheck;
 
   @override
   Widget build(BuildContext context) {
@@ -1429,9 +1453,23 @@ class _TuneCompleteSheet extends StatelessWidget {
               },
             ),
             const SizedBox(height: 22),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('완료'),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('완료'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton(
+                    key: const Key('open-stability-check'),
+                    onPressed: onStabilityCheck,
+                    child: const Text('30초 안정성 검사'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
