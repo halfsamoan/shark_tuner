@@ -155,6 +155,7 @@ final class SqliteSongCatalog implements SongCatalog {
         research_confidence TEXT NOT NULL,
         search_aliases_json TEXT NOT NULL DEFAULT '[]',
         sources_json TEXT NOT NULL,
+        musicbrainz_recording_mbid TEXT,
         notes TEXT NOT NULL,
         FOREIGN KEY (tuning_id, tuning_version)
           REFERENCES tuning (id, version)
@@ -167,6 +168,11 @@ final class SqliteSongCatalog implements SongCatalog {
     if (!songColumns.contains('search_aliases_json')) {
       _database.execute(
         "ALTER TABLE song ADD COLUMN search_aliases_json TEXT NOT NULL DEFAULT '[]'",
+      );
+    }
+    if (!songColumns.contains('musicbrainz_recording_mbid')) {
+      _database.execute(
+        'ALTER TABLE song ADD COLUMN musicbrainz_recording_mbid TEXT',
       );
     }
     final searchColumns = _database
@@ -238,8 +244,8 @@ final class SqliteSongCatalog implements SongCatalog {
         INSERT INTO song (
           id, title, artist, tuning_id, tuning_version, capo_fret,
           cents_offset, verification_status, research_confidence,
-          search_aliases_json, sources_json, notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          search_aliases_json, sources_json, musicbrainz_recording_mbid, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ''');
       final insertSearch = _database.prepare(
         'INSERT INTO song_fts (song_id, title, artist, aliases) '
@@ -259,6 +265,7 @@ final class SqliteSongCatalog implements SongCatalog {
             _researchConfidenceValue(song.researchConfidence),
             jsonEncode(song.searchAliases),
             jsonEncode(song.sources.map(_sourceToJson).toList()),
+            song.musicBrainzRecordingMbid,
             song.notes,
           ]);
           insertSearch.execute([
@@ -307,6 +314,7 @@ final class SqliteSongCatalog implements SongCatalog {
         row['research_confidence'] as String,
       ),
       sources: sources,
+      musicBrainzRecordingMbid: row['musicbrainz_recording_mbid'] as String?,
       notes: row['notes'] as String,
     );
     final midiNotes = (jsonDecode(row['midi_notes_json'] as String) as List)
@@ -351,6 +359,7 @@ const _joinedSelect = '''
     s.research_confidence,
     s.search_aliases_json,
     s.sources_json,
+    s.musicbrainz_recording_mbid,
     s.notes,
     t.id AS tuning_id,
     t.version AS tuning_version,
@@ -455,6 +464,7 @@ List<SongTuningRecord> _parseSongs(String documentJson) {
               .cast<Map<String, dynamic>>()
               .map(_sourceFromJson)
               .toList(),
+          musicBrainzRecordingMbid: json['musicBrainzRecordingMbid'] as String?,
           notes: json['notes'] as String? ?? '',
         ),
       )
@@ -471,6 +481,8 @@ Map<String, dynamic> _sourceToJson(SongMetadataSource source) {
     'url': source.uri.toString(),
     'checkedAt': source.checkedAt.toIso8601String(),
     'checkedBy': source.checkedBy,
+    'kind': _sourceKindValue(source.kind),
+    'supports': source.supports.map(_sourceClaimValue).toList(growable: false),
   };
 }
 
@@ -480,8 +492,39 @@ SongMetadataSource _sourceFromJson(Map<String, dynamic> json) {
     uri: Uri.parse(json['url'] as String),
     checkedAt: DateTime.parse(json['checkedAt'] as String),
     checkedBy: json['checkedBy'] as String,
+    kind: _parseSourceKind(json['kind'] as String? ?? 'independent_reference'),
+    supports:
+        (json['supports'] as List? ??
+                const ['tuning', 'capo_fret', 'cents_offset'])
+            .cast<String>()
+            .map(_parseSourceClaim)
+            .toSet(),
   );
 }
+
+SongMetadataSourceKind _parseSourceKind(String value) => switch (value) {
+  'independent_reference' => SongMetadataSourceKind.independentReference,
+  'curation_oracle' => SongMetadataSourceKind.curationOracle,
+  _ => throw FormatException('Unknown song source kind: $value'),
+};
+
+String _sourceKindValue(SongMetadataSourceKind value) => switch (value) {
+  SongMetadataSourceKind.independentReference => 'independent_reference',
+  SongMetadataSourceKind.curationOracle => 'curation_oracle',
+};
+
+SongMetadataClaim _parseSourceClaim(String value) => switch (value) {
+  'tuning' => SongMetadataClaim.tuning,
+  'capo_fret' => SongMetadataClaim.capoFret,
+  'cents_offset' => SongMetadataClaim.centsOffset,
+  _ => throw FormatException('Unknown song source claim: $value'),
+};
+
+String _sourceClaimValue(SongMetadataClaim value) => switch (value) {
+  SongMetadataClaim.tuning => 'tuning',
+  SongMetadataClaim.capoFret => 'capo_fret',
+  SongMetadataClaim.centsOffset => 'cents_offset',
+};
 
 SongVerificationStatus _parseVerificationStatus(String value) {
   return switch (value) {

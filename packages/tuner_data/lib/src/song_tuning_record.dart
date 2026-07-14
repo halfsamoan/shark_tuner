@@ -2,13 +2,23 @@ enum SongVerificationStatus { draft, needsHumanReview, verified }
 
 enum SongResearchConfidence { webVerified, high, medium }
 
+enum SongMetadataSourceKind { independentReference, curationOracle }
+
+enum SongMetadataClaim { tuning, capoFret, centsOffset }
+
 final class SongMetadataSource {
   SongMetadataSource({
     required this.label,
     required this.uri,
     required this.checkedAt,
     required this.checkedBy,
-  }) {
+    this.kind = SongMetadataSourceKind.independentReference,
+    Set<SongMetadataClaim> supports = const {
+      SongMetadataClaim.tuning,
+      SongMetadataClaim.capoFret,
+      SongMetadataClaim.centsOffset,
+    },
+  }) : supports = Set.unmodifiable(supports) {
     if (label.trim().isEmpty) {
       throw ArgumentError.value(label, 'label', 'Must not be empty.');
     }
@@ -18,12 +28,17 @@ final class SongMetadataSource {
     if (checkedBy.trim().isEmpty) {
       throw ArgumentError.value(checkedBy, 'checkedBy', 'Must not be empty.');
     }
+    if (supports.isEmpty) {
+      throw ArgumentError.value(supports, 'supports', 'Must not be empty.');
+    }
   }
 
   final String label;
   final Uri uri;
   final DateTime checkedAt;
   final String checkedBy;
+  final SongMetadataSourceKind kind;
+  final Set<SongMetadataClaim> supports;
 }
 
 /// Factual song-to-tuning metadata. It must never contain tabs or lyrics.
@@ -41,6 +56,7 @@ final class SongTuningRecord {
     this.capoFret = 0,
     this.centsOffset = 0,
     this.notes = '',
+    this.musicBrainzRecordingMbid,
   }) : searchAliases = _normalizeSearchAliases(searchAliases),
        sources = List.unmodifiable(sources) {
     if (id.trim().isEmpty || title.trim().isEmpty || artist.trim().isEmpty) {
@@ -54,6 +70,10 @@ final class SongTuningRecord {
     }
     if (!centsOffset.isFinite || centsOffset.abs() > 100) {
       throw ArgumentError.value(centsOffset, 'centsOffset');
+    }
+    final mbid = musicBrainzRecordingMbid;
+    if (mbid != null && !_mbidPattern.hasMatch(mbid)) {
+      throw ArgumentError.value(mbid, 'musicBrainzRecordingMbid');
     }
     if (verificationStatus == SongVerificationStatus.verified) {
       final independentUris = sources.map((source) => source.uri).toSet();
@@ -77,7 +97,13 @@ final class SongTuningRecord {
   final SongResearchConfidence researchConfidence;
   final List<SongMetadataSource> sources;
   final String notes;
+  final String? musicBrainzRecordingMbid;
 }
+
+final _mbidPattern = RegExp(
+  r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+  caseSensitive: false,
+);
 
 List<String> _normalizeSearchAliases(List<String> aliases) {
   final normalized = aliases.map((alias) => alias.trim()).toList();

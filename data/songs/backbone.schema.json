@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toauner.app/schema/song-backbone.v1.json",
+  "title": "toauner non-shipping song curation backbone",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "shippingEligible", "capturedAtUtc", "sources", "songs"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "shippingEligible": { "const": false },
+    "capturedAtUtc": { "type": "string", "format": "date-time" },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "license", "url"],
+        "properties": {
+          "kind": { "type": "string", "minLength": 1 },
+          "license": { "const": "CC0-1.0" },
+          "url": { "type": "string", "format": "uri" }
+        }
+      }
+    },
+    "songs": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/song" }
+    }
+  },
+  "$defs": {
+    "song": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["backboneId", "artist", "title", "identity", "priority", "curationState"],
+      "properties": {
+        "backboneId": { "type": "string", "pattern": "^mbrec-[0-9a-f-]{36}$" },
+        "artist": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["musicBrainzRecordingMbid", "musicBrainzArtistMbids", "musicBrainzReleaseMbid", "releaseName"],
+          "properties": {
+            "musicBrainzRecordingMbid": { "type": "string", "format": "uuid" },
+            "musicBrainzArtistMbids": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string", "format": "uuid" }
+            },
+            "musicBrainzReleaseMbid": { "type": "string", "format": "uuid" },
+            "releaseName": { "type": "string", "minLength": 1 }
+          }
+        },
+        "priority": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["totalListenCount", "totalUserCount", "canonicalScore"],
+          "properties": {
+            "totalListenCount": { "type": ["integer", "null"], "minimum": 0 },
+            "totalUserCount": { "type": ["integer", "null"], "minimum": 0 },
+            "canonicalScore": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "curationState": {
+          "enum": ["identity_only", "default_unverified", "exception_review_required"]
+        },
+        "genre": { "type": "string", "minLength": 1 },
+        "genreSourceUrl": { "type": "string", "format": "uri" },
+        "tuningProposal": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tuningId", "tuningVersion", "confidence", "policyId"],
+          "properties": {
+            "tuningId": { "const": "guitar-6-standard" },
+            "tuningVersion": { "const": 1 },
+            "confidence": { "const": "default_unverified" },
+            "policyId": { "const": "genre-standard-default-v1" }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "curationState": { "const": "default_unverified" } }, "required": ["curationState"] },
+          "then": { "required": ["genre", "genreSourceUrl", "tuningProposal"] }
+        },
+        {
+          "if": { "properties": { "curationState": { "const": "exception_review_required" } }, "required": ["curationState"] },
+          "then": { "required": ["genre", "genreSourceUrl"] }
+        }
+      ]
+    }
+  }
+}

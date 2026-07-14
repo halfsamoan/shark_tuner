@@ -15,5 +15,6 @@ dependencies:
     path: ../tuner_domain
 
 dev_dependencies:
+  csv: ^8.0.0
   lints: ^6.0.0
   test: ^1.25.6

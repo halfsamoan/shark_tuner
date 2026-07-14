@@ -36,7 +36,14 @@
         "label": { "type": "string", "minLength": 1 },
         "url": { "type": "string", "format": "uri" },
         "checkedAt": { "type": "string", "format": "date" },
-        "checkedBy": { "type": "string", "minLength": 1 }
+        "checkedBy": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["independent_reference", "curation_oracle"] },
+        "supports": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["tuning", "capo_fret", "cents_offset"] }
+        }
       }
     },
     "song": {
@@ -53,6 +60,7 @@
           "items": { "type": "string", "minLength": 1 }
         },
         "title": { "type": "string", "minLength": 1 },
+        "musicBrainzRecordingMbid": { "type": "string", "format": "uuid" },
         "tuningId": { "type": "string", "minLength": 1 },
         "tuningVersion": { "type": "integer", "minimum": 1 },
         "capoFret": { "type": "integer", "minimum": 0, "maximum": 24 },

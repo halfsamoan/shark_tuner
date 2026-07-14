@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-const _blockedSourceHosts = {'ultimate-guitar.com', 'songsterr.com'};
+const _blockedSourceHosts = {'ultimate-guitar.com'};
+const _materialClaims = {'tuning', 'capo_fret', 'cents_offset'};
 
 /// Promotes a source-audited candidate document after an explicit human review.
 ///
@@ -46,14 +47,49 @@ Map<String, dynamic> promoteSongCatalog({
       throw ArgumentError('$id needs at least two sources.');
     }
     final hosts = <String>{};
+    final claimHosts = {for (final claim in _materialClaims) claim: <String>{}};
+    final independentClaimHosts = {
+      for (final claim in _materialClaims) claim: <String>{},
+    };
+    var oracleCount = 0;
     for (final source in sources) {
       final uri = Uri.tryParse(source['url'] as String? ?? '');
       if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
         throw ArgumentError('$id has an invalid source URL.');
       }
       final host = uri.host.toLowerCase().replaceFirst(RegExp(r'^www\.'), '');
-      if (_blockedSourceHosts.contains(host)) {
+      if (_blockedSourceHosts.any(
+        (blocked) => host == blocked || host.endsWith('.$blocked'),
+      )) {
         throw ArgumentError('$id uses a prohibited source host: $host.');
+      }
+      final kind = source['kind'] ?? 'independent_reference';
+      if (kind != 'independent_reference' && kind != 'curation_oracle') {
+        throw ArgumentError('$id has an unknown source kind: $kind.');
+      }
+      final songsterr =
+          host == 'songsterr.com' || host.endsWith('.songsterr.com');
+      if (songsterr && kind != 'curation_oracle') {
+        throw ArgumentError('$id must label Songsterr as a curation oracle.');
+      }
+      if (!songsterr && kind == 'curation_oracle') {
+        throw ArgumentError('$id uses the oracle role outside Songsterr.');
+      }
+      if (kind == 'curation_oracle') oracleCount++;
+      final rawSupports = source['supports'];
+      final supports = rawSupports == null
+          ? _materialClaims
+          : rawSupports is List
+          ? rawSupports.cast<String>().toSet()
+          : throw ArgumentError('$id has invalid claim support metadata.');
+      if (supports.isEmpty || !supports.every(_materialClaims.contains)) {
+        throw ArgumentError('$id has invalid claim support metadata.');
+      }
+      for (final claim in supports) {
+        claimHosts[claim]!.add(host);
+        if (kind == 'independent_reference') {
+          independentClaimHosts[claim]!.add(host);
+        }
       }
       hosts.add(host);
       source['checkedBy'] =
@@ -61,6 +97,17 @@ Map<String, dynamic> promoteSongCatalog({
     }
     if (hosts.length < 2) {
       throw ArgumentError('$id needs two independent source hosts.');
+    }
+    if (oracleCount > 1) {
+      throw ArgumentError('$id can use at most one curation oracle.');
+    }
+    for (final claim in _materialClaims) {
+      if (claimHosts[claim]!.length < 2 ||
+          independentClaimHosts[claim]!.isEmpty) {
+        throw ArgumentError(
+          '$id needs two hosts including one independent source for $claim.',
+        );
+      }
     }
 
     song['verificationStatus'] = 'verified';
