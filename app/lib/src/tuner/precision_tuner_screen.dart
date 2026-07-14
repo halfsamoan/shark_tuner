@@ -14,6 +14,7 @@ import '../ui/instrument_widgets.dart';
 import '../ui/throttled_live_region.dart';
 import 'live_tuner_engine.dart';
 import 'reference_tone_player.dart';
+import 'stage_mode_screen.dart';
 import 'tuning_guidance.dart';
 
 class PrecisionTunerScreen extends StatefulWidget {
@@ -618,6 +619,27 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     await _startInput();
   }
 
+  Future<void> _openStageMode() async {
+    if (_referenceToneBusy || _checkingMicrophonePermission) {
+      return;
+    }
+    if (_referenceTonePlaying) {
+      await _stopReferenceTone(resumeInput: true);
+    }
+    if (!mounted) {
+      return;
+    }
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (context) => StageModeScreen(
+          engine: _engine,
+          tuning: widget.tuning,
+          initialTarget: _selected,
+        ),
+      ),
+    );
+  }
+
   void _showDiagnostics() {
     showModalBottomSheet<void>(
       context: context,
@@ -670,7 +692,32 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
         : _pegDirectionPresentation(guidance);
     final usesLargeText = MediaQuery.textScalerOf(context).scale(1) > 1.3;
     return Scaffold(
-      appBar: const InstrumentHeaderBar(section: '정밀 튜너', showBack: true),
+      appBar: InstrumentHeaderBar(
+        section: '정밀 튜너',
+        showBack: true,
+        actions: [
+          Semantics(
+            label: '무대 모드 열기',
+            button: true,
+            excludeSemantics: true,
+            child: TextButton(
+              key: const Key('open-stage-mode'),
+              onPressed: _checkingMicrophonePermission ? null : _openStageMode,
+              style: TextButton.styleFrom(
+                minimumSize: const Size(48, 48),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+              child: Text(
+                '무대',
+                style: InstrumentTypeTheme.standard.caption.copyWith(
+                  color: InstrumentColors.information,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: Stack(
         fit: StackFit.expand,
         children: [
