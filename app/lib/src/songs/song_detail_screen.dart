@@ -6,6 +6,7 @@ import '../app/instrument_theme.dart';
 import '../tension/tension_recommendation_screen.dart';
 import '../tuner/live_tuner_engine.dart';
 import '../tuner/precision_tuner_screen.dart';
+import '../tuning_history/tuning_history_store.dart';
 import '../ui/instrument_widgets.dart';
 
 class SongDetailScreen extends StatelessWidget {
@@ -15,12 +16,16 @@ class SongDetailScreen extends StatelessWidget {
     required this.catalog,
     required this.tunerEngineFactory,
     required this.includeUnverifiedSongs,
+    this.recordTuningHistory = recordTuningHistoryEntry,
+    this.tuningHistoryNow = DateTime.now,
   });
 
   final SongTuningMatch match;
   final SongCatalog catalog;
   final TunerEngineFactory tunerEngineFactory;
   final bool includeUnverifiedSongs;
+  final TuningHistoryRecorder recordTuningHistory;
+  final DateTime Function() tuningHistoryNow;
 
   @override
   Widget build(BuildContext context) {
@@ -135,6 +140,8 @@ class SongDetailScreen extends StatelessWidget {
                     catalog: catalog,
                     tunerEngineFactory: tunerEngineFactory,
                     includeUnverifiedSongs: includeUnverifiedSongs,
+                    recordTuningHistory: recordTuningHistory,
+                    tuningHistoryNow: tuningHistoryNow,
                   ),
                 ),
               );

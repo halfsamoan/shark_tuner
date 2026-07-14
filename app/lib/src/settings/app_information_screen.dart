@@ -52,6 +52,13 @@ class AppInformationScreen extends StatelessWidget {
                       '서버로 보내지 않으며 줄 관리 화면에서 기록을 모두 지울 수 있습니다.',
                 ),
                 const _InformationSection(
+                  label: '튜닝 기록',
+                  title: '완료한 세션만 이 기기에 남깁니다',
+                  body:
+                      '모든 현을 맞추면 완료 시각, 걸린 시간, 튜닝과 선택한 곡 정보를 최대 100회 앱 전용 저장 공간에 기록합니다. '
+                      '오디오와 프레임별 측정값은 포함하지 않으며 튜닝 기록 화면에서 모두 지울 수 있습니다.',
+                ),
+                const _InformationSection(
                   label: '정확도',
                   title: '환경에 따라 나누어 검증합니다',
                   body:

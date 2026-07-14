@@ -10,6 +10,8 @@ import '../device/tuner_device_control.dart';
 import '../instrument_setup/instrument_profile_store.dart';
 import '../settings/app_settings.dart';
 import '../stability/stability_check_screen.dart';
+import '../tuning_history/tuning_history_model.dart';
+import '../tuning_history/tuning_history_store.dart';
 import '../ui/instrument_widgets.dart';
 import '../ui/throttled_live_region.dart';
 import 'live_tuner_engine.dart';
@@ -31,6 +33,8 @@ class PrecisionTunerScreen extends StatefulWidget {
     this.loadInstrumentProfile = loadInstrumentPegProfile,
     this.saveInstrumentProfile = saveInstrumentPegProfile,
     this.referenceTonePlayerFactory = createReferenceTonePlayer,
+    this.recordTuningHistory = recordTuningHistoryEntry,
+    this.tuningHistoryNow = DateTime.now,
   }) : assert(
          (match == null) != (directTuning == null),
          'Provide exactly one of match or directTuning.',
@@ -47,6 +51,8 @@ class PrecisionTunerScreen extends StatefulWidget {
   final InstrumentProfileLoader loadInstrumentProfile;
   final InstrumentProfileSaver saveInstrumentProfile;
   final ReferenceTonePlayerFactory referenceTonePlayerFactory;
+  final TuningHistoryRecorder recordTuningHistory;
+  final DateTime Function() tuningHistoryNow;
 
   TuningDefinition get tuning => match?.tuning ?? directTuning!;
   SongTuningRecord? get song => match?.song;
@@ -61,6 +67,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   var _manualTarget = false;
   var _coarseMode = false;
   var _completionShown = false;
+  var _historyRecorded = false;
   var _stabilityCheckOpen = false;
   var _needsMicrophonePrimer = false;
   var _checkingMicrophonePermission = true;
@@ -447,6 +454,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
       return;
     }
     _completionShown = true;
+    unawaited(_recordCompletion());
     showModalBottomSheet<void>(
       context: context,
       isDismissible: false,
@@ -469,6 +477,37 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
         _completionShown = false;
       }
     });
+  }
+
+  Future<void> _recordCompletion() async {
+    if (_historyRecorded || !_tuneUpTracker.state.isComplete) {
+      return;
+    }
+    _historyRecorded = true;
+    final completedAt = widget.tuningHistoryNow().toUtc();
+    final elapsed = _tuneUpTracker.state.elapsed;
+    final song = widget.song;
+    final entry = TuningHistoryEntry(
+      id:
+          '${completedAt.microsecondsSinceEpoch}-${widget.tuning.id}-'
+          '${song?.id ?? 'direct'}',
+      completedAtUtc: completedAt,
+      tuningId: widget.tuning.id,
+      tuningVersion: widget.tuning.version,
+      tuningName: widget.tuning.name,
+      elapsed: elapsed == Duration.zero
+          ? const Duration(milliseconds: 1)
+          : elapsed,
+      stringCount: widget.tuning.strings.length,
+      songId: song?.id,
+      songTitle: song?.title,
+      artist: song?.artist,
+    );
+    try {
+      await widget.recordTuningHistory(entry);
+    } on Object {
+      // A local history write must never block the live tuning workflow.
+    }
   }
 
   Future<void> _openStabilityCheck() async {

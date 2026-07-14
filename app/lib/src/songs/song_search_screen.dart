@@ -12,6 +12,9 @@ import '../string_care/string_care_screen.dart';
 import '../string_care/string_care_store.dart';
 import '../tuner/live_tuner_engine.dart';
 import '../tuner/precision_tuner_screen.dart';
+import '../tuning_history/tuning_history_model.dart';
+import '../tuning_history/tuning_history_screen.dart';
+import '../tuning_history/tuning_history_store.dart';
 import '../ui/instrument_widgets.dart';
 import 'song_detail_screen.dart';
 
@@ -24,6 +27,10 @@ class SongSearchScreen extends StatefulWidget {
     required this.stringCareLoader,
     required this.stringCareSaver,
     required this.stringCareNow,
+    required this.tuningHistoryLoader,
+    required this.tuningHistorySaver,
+    required this.tuningHistoryRecorder,
+    required this.tuningHistoryNow,
   });
 
   final SongCatalogLoader catalogLoader;
@@ -32,6 +39,10 @@ class SongSearchScreen extends StatefulWidget {
   final StringCareLoader stringCareLoader;
   final StringCareSaver stringCareSaver;
   final DateTime Function() stringCareNow;
+  final TuningHistoryLoader tuningHistoryLoader;
+  final TuningHistorySaver tuningHistorySaver;
+  final TuningHistoryRecorder tuningHistoryRecorder;
+  final DateTime Function() tuningHistoryNow;
 
   @override
   State<SongSearchScreen> createState() => _SongSearchScreenState();
@@ -46,12 +57,25 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
   Object? _error;
   int _requestId = 0;
   var _stringCareLedger = StringCareLedger.empty();
+  var _tuningHistoryLedger = TuningHistoryLedger.empty();
 
   @override
   void initState() {
     super.initState();
     unawaited(_load());
     unawaited(_loadStringCare());
+    unawaited(_loadTuningHistory());
+  }
+
+  Future<void> _loadTuningHistory() async {
+    try {
+      final ledger = await widget.tuningHistoryLoader();
+      if (mounted) {
+        setState(() => _tuningHistoryLedger = ledger);
+      }
+    } on Object {
+      // Song search remains usable if local session history is unavailable.
+    }
   }
 
   Future<void> _loadStringCare() async {
@@ -134,6 +158,26 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
       appBar: InstrumentHeaderBar(
         section: '곡 찾기',
         actions: [
+          Semantics(
+            label: '튜닝 기록 ${_tuningHistoryLedger.entries.length}회',
+            button: true,
+            excludeSemantics: true,
+            child: IconButton(
+              key: const Key('tuning-history-entry'),
+              tooltip: '튜닝 기록',
+              onPressed: _openTuningHistory,
+              icon: Text(
+                _tuningHistoryLedger.entries.isEmpty
+                    ? 'LOG'
+                    : 'LOG·${_tuningHistoryLedger.entries.length}',
+                style: InstrumentTypeTheme.standard.status.copyWith(
+                  color: InstrumentColors.lockHold,
+                  fontFamily: 'D2Coding',
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
           Semantics(
             label: '개인정보 및 앱 정보',
             button: true,
@@ -232,12 +276,12 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
     );
   }
 
-  void _openDirectTuner(TuningDefinition tuning) {
+  Future<void> _openDirectTuner(TuningDefinition tuning) async {
     final catalog = _catalog;
     if (catalog == null) {
       return;
     }
-    Navigator.of(context).push(
+    await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => PrecisionTunerScreen(
           directTuning: tuning,
@@ -245,9 +289,14 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
           catalog: catalog,
           tunerEngineFactory: widget.tunerEngineFactory,
           includeUnverifiedSongs: widget.includeUnverifiedSongs,
+          recordTuningHistory: widget.tuningHistoryRecorder,
+          tuningHistoryNow: widget.tuningHistoryNow,
         ),
       ),
     );
+    if (mounted) {
+      await _loadTuningHistory();
+    }
   }
 
   void _openAppInformation() {
@@ -271,23 +320,42 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
     }
   }
 
+  Future<void> _openTuningHistory() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => TuningHistoryScreen(
+          loader: widget.tuningHistoryLoader,
+          saver: widget.tuningHistorySaver,
+        ),
+      ),
+    );
+    if (mounted) {
+      await _loadTuningHistory();
+    }
+  }
+
   void _showAllSongs() {
     _searchController.clear();
     FocusScope.of(context).unfocus();
     unawaited(_search(''));
   }
 
-  void _openSong(SongTuningMatch match) {
-    Navigator.of(context).push(
+  Future<void> _openSong(SongTuningMatch match) async {
+    await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => SongDetailScreen(
           match: match,
           catalog: _catalog!,
           tunerEngineFactory: widget.tunerEngineFactory,
           includeUnverifiedSongs: widget.includeUnverifiedSongs,
+          recordTuningHistory: widget.tuningHistoryRecorder,
+          tuningHistoryNow: widget.tuningHistoryNow,
         ),
       ),
     );
+    if (mounted) {
+      await _loadTuningHistory();
+    }
   }
 }
 
