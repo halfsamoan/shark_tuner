@@ -4,6 +4,7 @@ import 'package:tuner_data/tuner_data.dart';
 
 import '../songs/bundled_song_catalog.dart';
 import '../songs/song_search_screen.dart';
+import '../string_care/string_care_store.dart';
 import '../tuner/live_tuner_engine.dart';
 import 'instrument_theme.dart';
 
@@ -15,11 +16,17 @@ class ToaunerApp extends StatelessWidget {
     this.catalogLoader = openBundledSongCatalog,
     this.tunerEngineFactory = createLiveTunerEngine,
     this.includeUnverifiedSongs = !kReleaseMode,
+    this.stringCareLoader = loadStringCareLedger,
+    this.stringCareSaver = saveStringCareLedger,
+    this.stringCareNow = DateTime.now,
   });
 
   final SongCatalogLoader catalogLoader;
   final TunerEngineFactory tunerEngineFactory;
   final bool includeUnverifiedSongs;
+  final StringCareLoader stringCareLoader;
+  final StringCareSaver stringCareSaver;
+  final DateTime Function() stringCareNow;
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +38,9 @@ class ToaunerApp extends StatelessWidget {
         catalogLoader: catalogLoader,
         tunerEngineFactory: tunerEngineFactory,
         includeUnverifiedSongs: includeUnverifiedSongs,
+        stringCareLoader: stringCareLoader,
+        stringCareSaver: stringCareSaver,
+        stringCareNow: stringCareNow,
       ),
     );
   }

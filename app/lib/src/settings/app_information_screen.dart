@@ -45,6 +45,13 @@ class AppInformationScreen extends StatelessWidget {
                       '가사, 악보, 탭은 저장하지 않습니다.',
                 ),
                 const _InformationSection(
+                  label: '줄 교체 기록',
+                  title: '설치일은 이 기기에만 저장합니다',
+                  body:
+                      '사용자가 입력한 줄 설치일, 점검 주기, 게이지와 튜닝 식별자는 앱 전용 저장 공간에 보관합니다. '
+                      '서버로 보내지 않으며 줄 관리 화면에서 기록을 모두 지울 수 있습니다.',
+                ),
+                const _InformationSection(
                   label: '정확도',
                   title: '환경에 따라 나누어 검증합니다',
                   body:

@@ -2,12 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:tuner_domain/tuner_domain.dart';
 
 import '../app/instrument_theme.dart';
+import '../string_care/string_care_screen.dart';
+import '../string_care/string_care_store.dart';
 import '../ui/instrument_widgets.dart';
 
 class TensionRecommendationScreen extends StatefulWidget {
-  const TensionRecommendationScreen({super.key, required this.tuning});
+  const TensionRecommendationScreen({
+    super.key,
+    required this.tuning,
+    this.stringCareLoader = loadStringCareLedger,
+    this.stringCareSaver = saveStringCareLedger,
+    this.stringCareNow = DateTime.now,
+  });
 
   final TuningDefinition tuning;
+  final StringCareLoader stringCareLoader;
+  final StringCareSaver stringCareSaver;
+  final DateTime Function() stringCareNow;
 
   @override
   State<TensionRecommendationScreen> createState() =>
@@ -145,6 +156,7 @@ class _TensionRecommendationScreenState
                 rank: index + 1,
                 recommendation: recommendations[index],
                 expanded: index == 0,
+                onRecordInstallation: _openStringCare,
               ),
               if (index != recommendations.length - 1)
                 const SizedBox(height: 8),
@@ -156,6 +168,7 @@ class _TensionRecommendationScreenState
               rank: 0,
               recommendation: customMatch,
               expanded: false,
+              onRecordInstallation: _openStringCare,
             ),
             const SizedBox(height: 24),
             _ModelNotice(metadata: recommendations.first.unitWeightModel),
@@ -205,6 +218,20 @@ class _TensionRecommendationScreenState
       );
       _customGaugeError = null;
     });
+  }
+
+  void _openStringCare(GaugeRecommendation recommendation) {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => StringCareScreen(
+          loader: widget.stringCareLoader,
+          saver: widget.stringCareSaver,
+          now: widget.stringCareNow,
+          suggestedGaugeLabel: recommendation.gaugeSet.shortLabel,
+          suggestedTuningId: widget.tuning.id,
+        ),
+      ),
+    );
   }
 }
 
@@ -329,11 +356,13 @@ class _RecommendationSection extends StatelessWidget {
     required this.rank,
     required this.recommendation,
     required this.expanded,
+    required this.onRecordInstallation,
   });
 
   final int rank;
   final GaugeRecommendation recommendation;
   final bool expanded;
+  final ValueChanged<GaugeRecommendation> onRecordInstallation;
 
   @override
   Widget build(BuildContext context) {
@@ -403,6 +432,17 @@ class _RecommendationSection extends StatelessWidget {
           const _TensionTableHeader(),
           for (final result in recommendation.strings)
             _TensionTableRow(result: result),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerRight,
+            child: OutlinedButton(
+              key: Key(
+                'record-gauge-installation-${rank == 0 ? 'custom' : rank.toString().padLeft(2, '0')}',
+              ),
+              onPressed: () => onRecordInstallation(recommendation),
+              child: const Text('이 세트 설치 기록'),
+            ),
+          ),
         ],
       ),
     );

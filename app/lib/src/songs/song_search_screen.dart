@@ -7,6 +7,9 @@ import 'package:tuner_domain/tuner_domain.dart';
 import '../app/instrument_theme.dart';
 import '../app/toauner_app.dart';
 import '../settings/app_information_screen.dart';
+import '../string_care/string_care_model.dart';
+import '../string_care/string_care_screen.dart';
+import '../string_care/string_care_store.dart';
 import '../tuner/live_tuner_engine.dart';
 import '../tuner/precision_tuner_screen.dart';
 import '../ui/instrument_widgets.dart';
@@ -18,11 +21,17 @@ class SongSearchScreen extends StatefulWidget {
     required this.catalogLoader,
     required this.tunerEngineFactory,
     required this.includeUnverifiedSongs,
+    required this.stringCareLoader,
+    required this.stringCareSaver,
+    required this.stringCareNow,
   });
 
   final SongCatalogLoader catalogLoader;
   final TunerEngineFactory tunerEngineFactory;
   final bool includeUnverifiedSongs;
+  final StringCareLoader stringCareLoader;
+  final StringCareSaver stringCareSaver;
+  final DateTime Function() stringCareNow;
 
   @override
   State<SongSearchScreen> createState() => _SongSearchScreenState();
@@ -36,11 +45,24 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
   bool _loading = true;
   Object? _error;
   int _requestId = 0;
+  var _stringCareLedger = StringCareLedger.empty();
 
   @override
   void initState() {
     super.initState();
     unawaited(_load());
+    unawaited(_loadStringCare());
+  }
+
+  Future<void> _loadStringCare() async {
+    try {
+      final ledger = await widget.stringCareLoader();
+      if (mounted) {
+        setState(() => _stringCareLedger = ledger);
+      }
+    } on Object {
+      // The song catalog remains usable if local care data is unavailable.
+    }
   }
 
   Future<void> _load() async {
@@ -151,6 +173,11 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
               enabled: _catalog != null,
               onSelected: _openDirectTuner,
             ),
+            const SizedBox(height: 12),
+            _StringCareSummaryRow(
+              status: _stringCareLedger.statusOn(widget.stringCareNow()),
+              onTap: _openStringCare,
+            ),
             const SizedBox(height: 20),
             TextField(
               controller: _searchController,
@@ -229,6 +256,21 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
     );
   }
 
+  Future<void> _openStringCare() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => StringCareScreen(
+          loader: widget.stringCareLoader,
+          saver: widget.stringCareSaver,
+          now: widget.stringCareNow,
+        ),
+      ),
+    );
+    if (mounted) {
+      await _loadStringCare();
+    }
+  }
+
   void _showAllSongs() {
     _searchController.clear();
     FocusScope.of(context).unfocus();
@@ -243,6 +285,84 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
           catalog: _catalog!,
           tunerEngineFactory: widget.tunerEngineFactory,
           includeUnverifiedSongs: widget.includeUnverifiedSongs,
+        ),
+      ),
+    );
+  }
+}
+
+class _StringCareSummaryRow extends StatelessWidget {
+  const _StringCareSummaryRow({required this.status, required this.onTap});
+
+  final StringCareStatus status;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final warning =
+        status.kind == StringCareStatusKind.due ||
+        status.kind == StringCareStatusKind.overdue;
+    final (label, detail) = switch (status.kind) {
+      StringCareStatusKind.noRecord => ('줄 교체 기록', '설치일 기록하기'),
+      StringCareStatusKind.fresh => (
+        '현재 줄 ${status.ageDays}일째',
+        '점검 D-${status.daysUntilReminder}',
+      ),
+      StringCareStatusKind.dueSoon => (
+        '줄 교체 점검 예정',
+        'D-${status.daysUntilReminder}',
+      ),
+      StringCareStatusKind.due => ('줄 교체 점검 · 오늘', '기록 열기'),
+      StringCareStatusKind.overdue => (
+        '줄 교체 점검 · ${-status.daysUntilReminder!}일 지남',
+        '기록 열기',
+      ),
+    };
+    return Semantics(
+      button: true,
+      label: '$label, $detail',
+      child: InkWell(
+        key: const Key('string-care-entry'),
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 52),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          decoration: BoxDecoration(
+            color: InstrumentColors.panel,
+            border: Border(
+              left: BorderSide(
+                width: 2,
+                color: warning
+                    ? InstrumentColors.amber
+                    : InstrumentColors.information,
+              ),
+              top: const BorderSide(color: InstrumentColors.line),
+              right: const BorderSide(color: InstrumentColors.line),
+              bottom: const BorderSide(color: InstrumentColors.line),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: InstrumentTypeTheme.standard.caption.copyWith(
+                    color: warning
+                        ? InstrumentColors.amber
+                        : InstrumentColors.text,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '$detail  ›',
+                style: InstrumentTypeTheme.standard.status.copyWith(
+                  color: InstrumentColors.muted,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
