@@ -1,4 +1,23 @@
-# Third-party data attributions
+# Third-party attributions
+
+## Bundled interface fonts
+
+toauner bundles four unmodified font files for its interface. The full license
+texts ship in `app/assets/fonts/licenses/` and are registered with Flutter's
+`LicenseRegistry` at startup.
+
+- D2Coding 1.3.2 Regular and Bold, copyright NAVER Corporation. Source:
+  [official release](https://github.com/naver/d2codingfont/releases/tag/VER1.3.2).
+  License: SIL Open Font License 1.1; reserved font names `D2Coding` and
+  `D2Coding-Bold`.
+- Pretendard 1.3.9 Regular and SemiBold, copyright Kil Hyung-jin. Source:
+  [official release](https://github.com/orioncactus/pretendard/releases/tag/v1.3.9).
+  License: SIL Open Font License 1.1; reserved font name `Pretendard`.
+
+The font files are not modified or renamed. D2Coding is used for numeric and
+instrument-data roles; Pretendard is used for Korean prose and controls.
+
+## DSP corpus data
 
 toauner does not vendor third-party source code from the datasets below. The
 Guitar-TECHS and NSynth WAV fixtures under
