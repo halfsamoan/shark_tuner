@@ -32,6 +32,28 @@ function Read-RequiredFile {
     return [IO.File]::ReadAllText((Resolve-Path -LiteralPath $Path))
 }
 
+function Test-FinalReleaseDocument {
+    param(
+        [string]$Path,
+        [string[]]$RequiredMetadata
+    )
+
+    $text = Read-RequiredFile $Path
+    if ($null -eq $text) {
+        return $false
+    }
+    if ($text -notmatch '(?m)^release_status:\s*final\s*$') {
+        return $false
+    }
+    foreach ($key in $RequiredMetadata) {
+        $match = [regex]::Match($text, "(?m)^$([regex]::Escape($key)):\s*(.+?)\s*$")
+        if (-not $match.Success -or $match.Groups[1].Value -match '^(TBD|미정|)$') {
+            return $false
+        }
+    }
+    return $true
+}
+
 function Get-ReleaseFindings {
     param([string]$WorkspaceRoot)
 
@@ -109,15 +131,25 @@ function Get-ReleaseFindings {
     }
 
     foreach ($policy in @(
-        @{ Code = 'privacy_policy'; Path = 'docs\privacy-policy.md'; Label = 'Privacy policy' },
-        @{ Code = 'play_data_safety'; Path = 'docs\play-data-safety.md'; Label = 'Play Data Safety worksheet' }
+        @{
+            Code = 'privacy_policy'
+            Path = 'docs\privacy-policy.md'
+            Label = 'Privacy policy'
+            Metadata = @('developer_name', 'privacy_contact', 'public_url', 'effective_date')
+        },
+        @{
+            Code = 'play_data_safety'
+            Path = 'docs\play-data-safety.md'
+            Label = 'Play Data Safety worksheet'
+            Metadata = @('reviewed_build', 'reviewed_by', 'reviewed_date')
+        }
     )) {
         $path = Join-Path $WorkspaceRoot $policy.Path
-        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
-            $findings.Add((New-Finding $policy.Code 'blocker' "$($policy.Label) is not committed at $($policy.Path)."))
+        if (-not (Test-FinalReleaseDocument $path $policy.Metadata)) {
+            $findings.Add((New-Finding $policy.Code 'blocker' "$($policy.Label) is missing or not finalized at $($policy.Path)."))
         }
         else {
-            $findings.Add((New-Finding $policy.Code 'pass' "$($policy.Label) is present."))
+            $findings.Add((New-Finding $policy.Code 'pass' "$($policy.Label) is finalized."))
         }
     }
 
