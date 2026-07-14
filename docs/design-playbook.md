@@ -165,3 +165,14 @@
 - 현 오배정·히스테리시스: `docs/research/ux.md` §4
 - 참조 미학: tmux/btop 스테이터스라인, cool-retro-term(CRT), TC PolyTune(자동 모드 전환), Peterson(락 순간의 전면 색 전환), GuitarTuna(헤드스톡 안내 — M2A)
 - 실기기 현재 상태: `reports/device/*.png`
+
+### 13.1 외부 UI 무드 레퍼런스
+
+- [Figma Community 1467967362512102193](https://www.figma.com/community/file/1467967362512102193)
+- [Figma Community 1651309003795292092](https://www.figma.com/community/file/1651309003795292092)
+
+두 파일은 화면을 복제하거나 컴포넌트를 가져오는 소스가 아니다. 정보 밀도,
+타이포그래피 위계, 조작부 리듬, 실제 제품처럼 보이는 화면 전환만 비교한다.
+`rounded card` 반복, 무근거 그라디언트·글로우, 장식용 아이콘, 동일 크기 카드의
+대시보드 나열처럼 생성형 UI에서 흔한 패턴은 toauner에 반입하지 않는다. 최종
+판단 기준은 이 문서의 터미널 계기판 세계관과 실기기 조작성이다.
