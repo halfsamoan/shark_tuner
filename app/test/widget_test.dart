@@ -94,6 +94,42 @@ void main() {
     await _pumpFrames(tester);
   });
 
+  testWidgets('opens gauge recommendations from a song setup', (tester) async {
+    final catalog = _FakeSongCatalog();
+
+    await tester.pumpWidget(
+      ToaunerApp(
+        catalogLoader: () async => catalog,
+        tunerEngineFactory: _FakeTunerEngine.new,
+        includeUnverifiedSongs: true,
+      ),
+    );
+    await _pumpFrames(tester);
+    await tester.enterText(find.byType(EditableText), 'Eruption');
+    await _pumpFrames(tester);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(InkWell),
+        matching: find.text('Eruption'),
+      ),
+    );
+    await _pumpFrames(tester);
+
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('gauge-recommendation-cta')),
+      240,
+    );
+    await tester.tap(find.byKey(const Key('gauge-recommendation-cta')));
+    await _pumpFrames(tester);
+
+    expect(find.text('장력·게이지 추천'), findsOneWidget);
+    expect(find.textContaining('E-FLAT STANDARD'), findsWidgets);
+    expect(find.byKey(const Key('gauge-recommendation-1')), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+  });
+
   testWidgets('opens the standard tuner without choosing a song', (
     tester,
   ) async {

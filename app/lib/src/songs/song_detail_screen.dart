@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:tuner_data/tuner_data.dart';
+import 'package:tuner_domain/tuner_domain.dart';
 
 import '../app/instrument_theme.dart';
+import '../tension/tension_recommendation_screen.dart';
 import '../tuner/live_tuner_engine.dart';
 import '../tuner/precision_tuner_screen.dart';
 import '../ui/instrument_widgets.dart';
@@ -100,6 +102,17 @@ class SongDetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 22),
+            _TensionRecommendationEntry(
+              tuning: tuning,
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => TensionRecommendationScreen(tuning: tuning),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 22),
             _VerificationNotice(
               song: song,
               showDevelopmentStatus: includeUnverifiedSongs,
@@ -133,6 +146,72 @@ class SongDetailScreen extends StatelessWidget {
             detail: '${tuning.strings.length}현 │ $cents',
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _TensionRecommendationEntry extends StatelessWidget {
+  const _TensionRecommendationEntry({
+    required this.tuning,
+    required this.onPressed,
+  });
+
+  final TuningDefinition tuning;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: '${tuning.name} 장력과 게이지 추천 열기',
+      child: InkWell(
+        key: const Key('gauge-recommendation-cta'),
+        onTap: onPressed,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(12, 11, 10, 11),
+          decoration: const BoxDecoration(
+            border: Border(
+              top: BorderSide(color: InstrumentColors.line),
+              bottom: BorderSide(color: InstrumentColors.line),
+              left: BorderSide(color: InstrumentColors.accent, width: 3),
+            ),
+          ),
+          child: const Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '이 튜닝에서 장력 확인',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      '스케일과 현재 게이지를 기준으로 상위 3개 조합 계산',
+                      style: TextStyle(
+                        color: InstrumentColors.muted,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                '계산 ›',
+                style: TextStyle(
+                  color: InstrumentColors.accent,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
