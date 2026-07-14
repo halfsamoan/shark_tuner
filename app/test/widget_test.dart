@@ -121,6 +121,62 @@ void main() {
     await _pumpFrames(tester);
   });
 
+  testWidgets('opens E-flat as a progressive direct-tuning target', (
+    tester,
+  ) async {
+    final catalog = _FakeSongCatalog();
+    final engine = _ScriptedTunerEngine();
+
+    await tester.pumpWidget(
+      ToaunerApp(
+        catalogLoader: () async => catalog,
+        tunerEngineFactory: () => engine,
+        includeUnverifiedSongs: false,
+      ),
+    );
+    await _pumpFrames(tester);
+
+    await tester.tap(find.byKey(const Key('quick-tune-eb')));
+    await _pumpFrames(tester);
+
+    expect(find.textContaining('E-FLAT STANDARD'), findsWidgets);
+    expect(engine.startedTunings, ['guitar-6-eb-standard']);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+  });
+
+  testWidgets('direct tuning picker exposes lower and modal presets', (
+    tester,
+  ) async {
+    final catalog = _FakeSongCatalog();
+    final engine = _ScriptedTunerEngine();
+
+    await tester.pumpWidget(
+      ToaunerApp(
+        catalogLoader: () async => catalog,
+        tunerEngineFactory: () => engine,
+        includeUnverifiedSongs: false,
+      ),
+    );
+    await _pumpFrames(tester);
+
+    await tester.tap(find.byKey(const Key('quick-tune-more')));
+    await tester.pumpAndSettle();
+    expect(find.text('D Standard'), findsOneWidget);
+    expect(find.text('Drop C-sharp'), findsOneWidget);
+
+    await tester.tap(
+      find.byKey(const Key('direct-tuning-guitar-6-d-standard')),
+    );
+    await _pumpFrames(tester);
+
+    expect(engine.startedTunings, ['guitar-6-d-standard']);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+  });
+
   testWidgets('release tuner hides telemetry and never scrolls vertically', (
     tester,
   ) async {

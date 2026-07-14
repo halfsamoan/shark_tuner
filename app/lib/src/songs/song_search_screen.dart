@@ -264,6 +264,14 @@ class _QuickTunePanel extends StatelessWidget {
             spacing: 8,
             children: [
               ActionChip(
+                key: const Key('quick-tune-eb'),
+                onPressed: enabled
+                    ? () => onSelected(BuiltInTunings.eFlatStandard)
+                    : null,
+                avatar: const Icon(Icons.south_rounded, size: 15),
+                label: const Text('E♭ Standard'),
+              ),
+              ActionChip(
                 key: const Key('quick-tune-drop-d'),
                 onPressed: enabled
                     ? () => onSelected(BuiltInTunings.dropD)
@@ -271,10 +279,136 @@ class _QuickTunePanel extends StatelessWidget {
                 avatar: const Icon(Icons.tune_rounded, size: 15),
                 label: const Text('Drop D'),
               ),
-              const Chip(label: Text('최근 · E Standard')),
+              ActionChip(
+                key: const Key('quick-tune-more'),
+                onPressed: enabled ? () => _showPresetPicker(context) : null,
+                avatar: const Icon(Icons.more_horiz_rounded, size: 15),
+                label: const Text('다른 튜닝'),
+              ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  void _showPresetPicker(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: InstrumentColors.chrome,
+      isScrollControlled: true,
+      builder: (sheetContext) => _DirectTuningSheet(
+        tunings: BuiltInTunings.sixStringPresets,
+        onSelected: (tuning) {
+          Navigator.of(sheetContext).pop();
+          onSelected(tuning);
+        },
+      ),
+    );
+  }
+}
+
+class _DirectTuningSheet extends StatelessWidget {
+  const _DirectTuningSheet({required this.tunings, required this.onSelected});
+
+  final List<TuningDefinition> tunings;
+  final ValueChanged<TuningDefinition> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: FractionallySizedBox(
+        heightFactor: 0.72,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(24, 20, 24, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  InstrumentSectionLabel(
+                    'DIRECT TUNING',
+                    color: InstrumentColors.accent,
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    '원하는 튜닝을 고르면 각 줄을 목표 음까지 차례로 안내합니다.',
+                    style: TextStyle(
+                      color: InstrumentColors.muted,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView.builder(
+                itemCount: tunings.length,
+                itemBuilder: (context, index) {
+                  final tuning = tunings[index];
+                  return InkWell(
+                    key: Key('direct-tuning-${tuning.id}'),
+                    onTap: () => onSelected(tuning),
+                    child: Container(
+                      constraints: const BoxConstraints(minHeight: 62),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 11,
+                      ),
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: InstrumentColors.line),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            '${index + 1}'.padLeft(2, '0'),
+                            style: const TextStyle(
+                              color: InstrumentColors.muted,
+                              fontSize: 11,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  tuning.name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  tuning.strings
+                                      .map((string) => string.label)
+                                      .join('  '),
+                                  style: const TextStyle(
+                                    color: InstrumentColors.muted,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.arrow_forward_rounded,
+                            color: InstrumentColors.accent,
+                            size: 18,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -25,4 +25,20 @@ void main() {
       throwsUnsupportedError,
     );
   });
+
+  test('built-in direct presets include progressive six-string tunings', () {
+    expect(
+      BuiltInTunings.sixStringPresets.map((tuning) => tuning.id),
+      containsAllInOrder([
+        'guitar-6-standard',
+        'guitar-6-eb-standard',
+        'guitar-6-drop-d',
+        'guitar-6-d-standard',
+        'guitar-6-drop-c-sharp',
+        'guitar-6-drop-c',
+        'guitar-6-dadgad',
+      ]),
+    );
+    expect(BuiltInTunings.eFlatStandard.strings.first.midiNote, 39);
+  });
 }
