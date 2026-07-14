@@ -18,6 +18,8 @@ void main() {
     expect(find.textContaining('녹음 파일로 저장하지 않습니다'), findsOneWidget);
     expect(find.textContaining('서버로 보내지 않습니다'), findsOneWidget);
     expect(find.textContaining('오프라인 데이터'), findsOneWidget);
+    expect(find.textContaining('완료 시각, 걸린 시간'), findsOneWidget);
+    expect(find.textContaining('오디오와 프레임별 측정값은 포함하지 않으며'), findsOneWidget);
     expect(find.byKey(const Key('open-source-licenses')), findsOneWidget);
   });
 

@@ -10,11 +10,47 @@ import 'package:toauner_app/src/tuner/live_tuner_engine.dart';
 import 'package:toauner_app/src/tuner/precision_tuner_screen.dart';
 import 'package:toauner_app/src/tuner/reference_tone_player.dart';
 import 'package:toauner_app/src/tuner/stage_mode_screen.dart';
+import 'package:toauner_app/src/tuning_history/tuning_history_model.dart';
 import 'package:toauner_app/src/ui/instrument_widgets.dart';
 import 'package:tuner_data/tuner_data.dart';
 import 'package:tuner_domain/tuner_domain.dart';
 
 void main() {
+  testWidgets('home opens the local tuning completion history', (tester) async {
+    final catalog = _FakeSongCatalog();
+    final history = TuningHistoryLedger.empty().record(
+      TuningHistoryEntry(
+        id: 'completed-session',
+        completedAtUtc: DateTime.utc(2026, 7, 14, 10),
+        tuningId: 'guitar-standard',
+        tuningVersion: 1,
+        tuningName: 'E Standard',
+        elapsed: const Duration(seconds: 75),
+        stringCount: 6,
+      ),
+    );
+
+    await tester.pumpWidget(
+      ToaunerApp(
+        catalogLoader: () async => catalog,
+        tunerEngineFactory: _FakeTunerEngine.new,
+        includeUnverifiedSongs: false,
+        tuningHistoryLoader: () async => history,
+        tuningHistorySaver: (_) async {},
+      ),
+    );
+    await _pumpFrames(tester);
+
+    expect(find.text('LOG·1'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('tuning-history-entry')));
+    await _pumpFrames(tester);
+    expect(find.text('LOCAL SESSION LOG'), findsOneWidget);
+    expect(find.text('6현 완료 · 1:15'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+  });
+
   testWidgets('home surfaces an overdue string check and opens its log', (
     tester,
   ) async {
@@ -467,6 +503,7 @@ void main() {
       currentMatch: _FakeSongCatalog.verifiedMatch,
     );
     final engine = _ScriptedTunerEngine();
+    final historyEntries = <TuningHistoryEntry>[];
 
     await tester.pumpWidget(
       MaterialApp(
@@ -476,6 +513,8 @@ void main() {
           catalog: catalog,
           tunerEngineFactory: () => engine,
           includeUnverifiedSongs: false,
+          recordTuningHistory: (entry) async => historyEntries.add(entry),
+          tuningHistoryNow: () => DateTime.utc(2026, 7, 14, 10, 30),
         ),
       ),
     );
@@ -509,6 +548,15 @@ void main() {
     expect(engine.manualTargets, isEmpty);
     expect(find.byKey(const Key('tune-complete-glyph')), findsOneWidget);
     expect(find.byKey(const Key('open-stability-check')), findsOneWidget);
+    expect(historyEntries, hasLength(1));
+    expect(historyEntries.single.tuningId, 'eb-standard');
+    expect(historyEntries.single.songTitle, 'Eruption');
+    expect(historyEntries.single.artist, 'Van Halen');
+    expect(historyEntries.single.stringCount, 6);
+
+    engine.emit(_stateForString(1, cents: 0, locked: true));
+    await tester.pump();
+    expect(historyEntries, hasLength(1));
 
     await tester.tap(find.byKey(const Key('open-stability-check')));
     await tester.pumpAndSettle();
