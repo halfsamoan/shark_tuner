@@ -18,7 +18,7 @@ When sources disagree, product behavior remains fixed and the playbook replaces 
 ### Code
 
 - Flutter exposes `TerminalTheme`, `InstrumentTypeTheme`, `InstrumentMetrics`, and `InstrumentMotion` as the code-side token contract.
-- The six playbook text roles are defined and tested, but individual screens still contain legacy literal sizes that must migrate to those roles.
+- The six playbook text roles are defined, tested, and used across every production screen; literal sizes are confined to the role definitions.
 - D2Coding and Pretendard are bundled in the Flutter app. Figma still needs those fonts available in its editing environment before final text styles are created.
 - Shared Flutter widgets cover header, status bar, section label, definition row, verification badge, note cell, and pitch tape.
 - Note and meter behavior exists, but the public widgets do not yet expose the playbook's complete named state sets.
@@ -83,7 +83,7 @@ When sources disagree, product behavior remains fixed and the playbook replaces 
 3. Migrate reusable button, field, song row, header, and status components to variables.
 4. Assemble search, song detail, live tuner, and 1.3x text-scale frames from instances.
 5. Add state-flow frames and compare them with `reports/device/` screenshots.
-6. Compare the token-bound Figma instances with Flutter device screenshots and migrate remaining screen-local text sizes to the six code roles.
+6. Compare the token-bound Figma instances with Flutter device screenshots and adjust role-level tokens or layout constraints instead of introducing screen-local text sizes.
 
 ## Phase 0 exit decision
 
@@ -105,4 +105,6 @@ The component hierarchy and product behavior are fixed. Visual conflicts have de
 - Reserved lock greens for achieved/held tuning states and removed screen-local raw colors.
 - Removed decorative action icons, the touch-irrelevant `Ctrl K` hint, generic empty-state iconography, and rounded completion icons. Navigation, search, and microphone permission remain the only approved icon-font affordances.
 - Added a static compliance test that rejects retired neon colors, raw screen colors, gradients, drop shadows, the flat chrome alias, and unapproved icon-font usage.
+- Migrated every production screen to the six optical type roles and added a regression test that rejects new literal font sizes outside the token module.
+- Preserved the no-scroll primary tuner at normal scale while making 2.0x text, wrong-string guidance, and peg-direction correction states structurally usable.
 - Full `tool/check.ps1` passed after the migration.
