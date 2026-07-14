@@ -9,6 +9,7 @@ import '../app/instrument_theme.dart';
 import '../device/tuner_device_control.dart';
 import '../settings/app_settings.dart';
 import '../ui/instrument_widgets.dart';
+import '../ui/throttled_live_region.dart';
 import 'live_tuner_engine.dart';
 import 'tuning_guidance.dart';
 
@@ -494,6 +495,12 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                   ],
                   _GuidancePanel(
                     guidance: guidance,
+                    semanticsLabel: spokenTunerStatus(
+                      stringNumber: _selected.stringNumber,
+                      noteLabel: _selected.label,
+                      cents: _displayCents,
+                      guidance: guidance,
+                    ),
                     lockProgress: _liveState.lockProgress,
                     offsetLabel: tuning.centsOffset == 0
                         ? null
@@ -602,11 +609,13 @@ class _MicrophonePrimer extends StatelessWidget {
 class _GuidancePanel extends StatelessWidget {
   const _GuidancePanel({
     required this.guidance,
+    required this.semanticsLabel,
     required this.lockProgress,
     this.offsetLabel,
   });
 
   final TuningGuidance guidance;
+  final String semanticsLabel;
   final double lockProgress;
   final String? offsetLabel;
 
@@ -620,9 +629,8 @@ class _GuidancePanel extends StatelessWidget {
         : guidance.coarse
         ? InstrumentColors.amber
         : InstrumentColors.text;
-    return Semantics(
-      liveRegion: true,
-      label: guidance.spokenLabel,
+    return ThrottledLiveRegion(
+      label: semanticsLabel,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 9),

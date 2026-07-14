@@ -176,6 +176,32 @@ String _turnEstimate({
   return '약 $numerator/$divisor바퀴';
 }
 
+String spokenTunerStatus({
+  required int stringNumber,
+  required String noteLabel,
+  required double? cents,
+  required TuningGuidance guidance,
+}) {
+  final spokenNote = noteLabel.replaceAll('♭', '플랫').replaceAll('♯', '샵');
+  final prefix = '$stringNumber번 줄, $spokenNote';
+  if (guidance.headline.contains('완료')) {
+    return '$prefix, 완료';
+  }
+  if (guidance.kind == GuidanceSlotKind.wrongString ||
+      cents == null ||
+      !cents.isFinite) {
+    return '$prefix, ${guidance.spokenLabel}';
+  }
+  final absoluteCents = cents.abs().round();
+  if (guidance.direction == TuningDirection.lower) {
+    return '$prefix, $absoluteCents센트 높음, 낮추세요';
+  }
+  if (guidance.direction == TuningDirection.raise) {
+    return '$prefix, $absoluteCents센트 낮음, 올리세요';
+  }
+  return '$prefix, $absoluteCents센트 이내, 유지하세요';
+}
+
 int _greatestCommonDivisor(int left, int right) {
   var a = left.abs();
   var b = right.abs();

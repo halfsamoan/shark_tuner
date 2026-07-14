@@ -102,4 +102,22 @@ void main() {
     expect(guidance.headline, '3번 줄 소리가 들려요');
     expect(guidance.instruction, '6번 줄을 튕겨 주세요');
   });
+
+  test('spoken tuner status names string, note, error, and action', () {
+    final guidance = guidanceForCents(
+      cents: 132,
+      stringNumber: 6,
+      coarseMode: true,
+    );
+
+    expect(
+      spokenTunerStatus(
+        stringNumber: 6,
+        noteLabel: 'E♭2',
+        cents: 132,
+        guidance: guidance,
+      ),
+      '6번 줄, E플랫2, 132센트 높음, 낮추세요',
+    );
+  });
 }
