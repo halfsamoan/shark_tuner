@@ -121,7 +121,13 @@ function Get-ReleaseFindings {
         }
     }
 
-    $findings.Add((New-Finding 'dependency_license_gate' 'warning' 'Dependency license scanning is tracked separately and is not yet enforced.'))
+    $licenseAuditPath = Join-Path $WorkspaceRoot 'tool\license_audit.ps1'
+    if (Test-Path -LiteralPath $licenseAuditPath -PathType Leaf) {
+        $findings.Add((New-Finding 'dependency_license_gate' 'pass' 'Dependency license scanning is enforced by tool/check.ps1.'))
+    }
+    else {
+        $findings.Add((New-Finding 'dependency_license_gate' 'blocker' 'Dependency license scanning is not implemented.'))
+    }
     return $findings
 }
 
@@ -147,7 +153,7 @@ function Invoke-SelfTest {
         $expected = @(
             'android_application_id', 'android_release_signing', 'android_record_audio',
             'android_release_internet', 'ios_bundle_identifier', 'ios_microphone_description',
-            'app_version', 'privacy_policy', 'play_data_safety'
+            'app_version', 'privacy_policy', 'play_data_safety', 'dependency_license_gate'
         )
         foreach ($code in $expected) {
             if ($codes -notcontains $code) {

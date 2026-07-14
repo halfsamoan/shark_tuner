@@ -17,6 +17,12 @@ try {
     & (Join-Path $root 'tool\release_readiness.ps1') -SelfTest
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+    & (Join-Path $root 'tool\license_audit.ps1') -SelfTest
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+    & (Join-Path $root 'tool\license_audit.ps1')
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
     & $dart run melos run format
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 

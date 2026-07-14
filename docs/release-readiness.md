@@ -18,6 +18,7 @@ The default command writes `reports/release/release-readiness.json` and exits su
 - `NSMicrophoneUsageDescription` is present and non-empty.
 - The Flutter version uses `major.minor.patch+build` format.
 - Store-facing privacy policy and Play Data Safety worksheet are committed.
+- Every resolved external Dart package has a top-level license file and no GPL-family marker.
 
 `tool/check.ps1` runs the gate's isolated self-test. It does not run strict release validation because signing credentials and store documents are intentionally incomplete during development.
 
@@ -29,4 +30,6 @@ As of 2026-07-14:
 - `docs/privacy-policy.md` has not been finalized.
 - `docs/play-data-safety.md` has not been finalized.
 
-Dependency license classification is reported as a warning until the dedicated GPL deny gate is implemented. App naming, store listing, Play Console upload, closed testing, and iOS device validation remain human/external gates and cannot be inferred from repository configuration.
+`tool/license_audit.ps1` scans the resolved package graph, records license-file SHA-256 values, and fails on GPL, AGPL, LGPL, or a missing top-level license file. Workspace-owned packages and the pinned Flutter SDK are outside this package-level scan; Flutter SDK provenance is covered by its pinned distribution and bundled notices.
+
+App naming, store listing, Play Console upload, closed testing, and iOS device validation remain human/external gates and cannot be inferred from repository configuration.
