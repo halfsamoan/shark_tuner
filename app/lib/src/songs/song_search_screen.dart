@@ -120,12 +120,11 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
               key: const Key('app-information'),
               tooltip: '개인정보 및 앱 정보',
               onPressed: _openAppInformation,
-              icon: const Text(
+              icon: Text(
                 'ⓘ',
-                style: TextStyle(
+                style: InstrumentTypeTheme.standard.subhead.copyWith(
                   color: InstrumentColors.information,
                   fontFamily: 'D2Coding',
-                  fontSize: 20,
                 ),
               ),
             ),
@@ -141,9 +140,11 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
               style: Theme.of(context).textTheme.headlineMedium,
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               '오프라인 카탈로그에서 튜닝을 찾습니다.',
-              style: TextStyle(color: InstrumentColors.muted, fontSize: 12),
+              style: InstrumentTypeTheme.standard.caption.copyWith(
+                color: InstrumentColors.muted,
+              ),
             ),
             const SizedBox(height: 16),
             _QuickTunePanel(
@@ -154,9 +155,8 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
             TextField(
               controller: _searchController,
               autofocus: false,
-              style: const TextStyle(
+              style: InstrumentTypeTheme.standard.body.copyWith(
                 color: InstrumentColors.text,
-                fontSize: 16,
               ),
               cursorColor: InstrumentColors.accent,
               textInputAction: TextInputAction.search,
@@ -182,11 +182,10 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
                 _SongResultRow(match: match, onTap: () => _openSong(match)),
             if (widget.includeUnverifiedSongs) ...[
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'DEV·검토 전 후보까지 표시',
-                style: TextStyle(
+                style: InstrumentTypeTheme.standard.status.copyWith(
                   color: InstrumentColors.amber,
-                  fontSize: 10,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -276,10 +275,7 @@ class _QuickTunePanel extends StatelessWidget {
               onPressed: enabled
                   ? () => onSelected(BuiltInTunings.standardGuitar)
                   : null,
-              icon: const Text(
-                '●',
-                style: TextStyle(fontFamily: 'D2Coding', fontSize: 11),
-              ),
+              icon: Text('●', style: InstrumentTypeTheme.standard.status),
               label: const Text('바로 튜닝하기 · E Standard'),
             ),
           ),
@@ -343,21 +339,20 @@ class _DirectTuningSheet extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(24, 20, 24, 12),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  InstrumentSectionLabel(
+                  const InstrumentSectionLabel(
                     '튜닝 선택',
                     color: InstrumentColors.accent,
                   ),
-                  SizedBox(height: 6),
+                  const SizedBox(height: 6),
                   Text(
                     '원하는 튜닝을 고르면 각 줄을 목표 음까지 차례로 안내합니다.',
-                    style: TextStyle(
+                    style: InstrumentTypeTheme.standard.caption.copyWith(
                       color: InstrumentColors.muted,
-                      fontSize: 12,
                     ),
                   ),
                 ],
@@ -387,9 +382,8 @@ class _DirectTuningSheet extends StatelessWidget {
                         children: [
                           Text(
                             '${index + 1}'.padLeft(2, '0'),
-                            style: const TextStyle(
+                            style: InstrumentTypeTheme.standard.status.copyWith(
                               color: InstrumentColors.muted,
-                              fontSize: 11,
                             ),
                           ),
                           const SizedBox(width: 14),
@@ -399,19 +393,16 @@ class _DirectTuningSheet extends StatelessWidget {
                               children: [
                                 Text(
                                   tuning.name,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: InstrumentTypeTheme.standard.body
+                                      .copyWith(fontWeight: FontWeight.w600),
                                 ),
                                 const SizedBox(height: 3),
                                 Text(
                                   tuning.strings
                                       .map((string) => string.label)
                                       .join('  '),
-                                  style: const TextStyle(
-                                    color: InstrumentColors.muted,
-                                    fontSize: 11,
-                                  ),
+                                  style: InstrumentTypeTheme.standard.status
+                                      .copyWith(color: InstrumentColors.muted),
                                 ),
                               ],
                             ),
@@ -461,17 +452,15 @@ class _SongResultRow extends StatelessWidget {
                 children: [
                   Text(
                     song.title,
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: InstrumentTypeTheme.standard.body.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 3),
                   Text(
                     song.artist,
-                    style: const TextStyle(
+                    style: InstrumentTypeTheme.standard.caption.copyWith(
                       color: InstrumentColors.muted,
-                      fontSize: 12,
                     ),
                   ),
                 ],
@@ -482,18 +471,16 @@ class _SongResultRow extends StatelessWidget {
               children: [
                 Text(
                   match.tuning.name.toUpperCase(),
-                  style: const TextStyle(
+                  style: InstrumentTypeTheme.standard.status.copyWith(
                     color: InstrumentColors.accent,
-                    fontSize: 10,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   secondary,
-                  style: const TextStyle(
+                  style: InstrumentTypeTheme.standard.status.copyWith(
                     color: InstrumentColors.muted,
-                    fontSize: 11,
                   ),
                 ),
               ],
@@ -523,16 +510,20 @@ class _EmptyResults extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
+          Text(
             '검색 결과가 없습니다.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: InstrumentColors.text),
+            style: InstrumentTypeTheme.standard.body.copyWith(
+              color: InstrumentColors.text,
+            ),
           ),
           const SizedBox(height: 5),
-          const Text(
+          Text(
             '곡명 철자를 확인하거나 아티스트 이름으로 찾아보세요.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: InstrumentColors.muted, fontSize: 12),
+            style: InstrumentTypeTheme.standard.caption.copyWith(
+              color: InstrumentColors.muted,
+            ),
           ),
           const SizedBox(height: 14),
           Center(

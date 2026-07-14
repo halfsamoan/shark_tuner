@@ -35,10 +35,9 @@ class InstrumentHeaderBar extends StatelessWidget
               icon: const Icon(Icons.chevron_left_rounded),
             )
           : null,
-      title: const Row(
-        mainAxisSize: MainAxisSize.min,
+      title: Row(
         children: [
-          SizedBox(
+          const SizedBox(
             width: 10,
             height: 18,
             child: DecoratedBox(
@@ -48,10 +47,16 @@ class InstrumentHeaderBar extends StatelessWidget
               ),
             ),
           ),
-          SizedBox(width: 10),
-          Text(
-            'toauner',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              'toauner',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: InstrumentTypeTheme.standard.body.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),
@@ -63,9 +68,8 @@ class InstrumentHeaderBar extends StatelessWidget
               section,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: InstrumentTypeTheme.standard.caption.copyWith(
                 color: InstrumentColors.muted,
-                fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -120,13 +124,11 @@ class InstrumentStatusBar extends StatelessWidget {
             Expanded(
               child: Text(
                 state.toUpperCase(),
-                style: TextStyle(
+                style: InstrumentTypeTheme.standard.status.copyWith(
                   color: active
                       ? InstrumentColors.accent
                       : InstrumentColors.amber,
-                  fontSize: 10,
                   fontWeight: FontWeight.w600,
-                  letterSpacing: 0.4,
                 ),
               ),
             ),
@@ -137,9 +139,8 @@ class InstrumentStatusBar extends StatelessWidget {
                 maxLines: textScale > 1.3 ? 2 : 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.end,
-                style: const TextStyle(
+                style: InstrumentTypeTheme.standard.status.copyWith(
                   color: InstrumentColors.muted,
-                  fontSize: 10,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -193,9 +194,8 @@ class DefinitionRow extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: TextStyle(
+              style: InstrumentTypeTheme.standard.body.copyWith(
                 color: valueColor ?? InstrumentColors.text,
-                fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -236,9 +236,8 @@ class VerificationBadge extends StatelessWidget {
         const SizedBox(width: 7),
         Text(
           label,
-          style: TextStyle(
+          style: InstrumentTypeTheme.standard.status.copyWith(
             color: color,
-            fontSize: 11,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -299,10 +298,9 @@ class TuningNoteCell extends StatelessWidget {
                   children: [
                     Text(
                       label,
-                      style: TextStyle(
+                      style: InstrumentTypeTheme.standard.caption.copyWith(
                         color: foreground,
                         fontFamily: 'D2Coding',
-                        fontSize: 13,
                         height: 1,
                         fontWeight: FontWeight.w700,
                       ),
@@ -310,13 +308,10 @@ class TuningNoteCell extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       '$stringNumber',
-                      style: TextStyle(
+                      style: InstrumentTypeTheme.standard.status.copyWith(
                         color: active
                             ? InstrumentColors.accentInk
                             : InstrumentColors.muted,
-                        fontFamily: 'D2Coding',
-                        fontSize: 11,
-                        height: 1.2,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -329,12 +324,10 @@ class TuningNoteCell extends StatelessWidget {
                   right: 3,
                   child: Text(
                     '✓',
-                    style: TextStyle(
+                    style: InstrumentTypeTheme.standard.status.copyWith(
                       color: active
                           ? InstrumentColors.accentInk
                           : InstrumentColors.lockHold,
-                      fontFamily: 'D2Coding',
-                      fontSize: 11,
                       height: 1,
                       fontWeight: FontWeight.w700,
                     ),
@@ -496,9 +489,8 @@ class _PitchTapePainter extends CustomPainter {
     final painter = TextPainter(
       text: TextSpan(
         text: label,
-        style: const TextStyle(
+        style: InstrumentTypeTheme.standard.status.copyWith(
           color: InstrumentColors.muted,
-          fontSize: 9,
           fontWeight: FontWeight.w600,
         ),
       ),

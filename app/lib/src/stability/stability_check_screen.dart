@@ -100,12 +100,10 @@ class _StabilityCheckScreenState extends State<StabilityCheckScreen> {
               style: Theme.of(context).textTheme.headlineMedium,
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               '같은 줄을 중간 세기로 한 번 튕기고 약 3초간 울려 주세요. 최소 3회부터 결과를 표시하며, 5회면 반복 측정의 재현성도 확인합니다.',
-              style: TextStyle(
+              style: InstrumentTypeTheme.standard.caption.copyWith(
                 color: InstrumentColors.muted,
-                fontSize: 12,
-                height: 1.5,
               ),
             ),
             const SizedBox(height: 22),
@@ -143,9 +141,8 @@ class _StabilityCheckScreenState extends State<StabilityCheckScreen> {
               const SizedBox(height: 10),
               Text(
                 '$heard번 줄 소리가 들립니다. ${_selected.stringNumber}번 줄만 튕겨 주세요.',
-                style: const TextStyle(
+                style: InstrumentTypeTheme.standard.caption.copyWith(
                   color: InstrumentColors.amber,
-                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -153,9 +150,11 @@ class _StabilityCheckScreenState extends State<StabilityCheckScreen> {
             if (_liveState.status == LiveTunerStatus.permissionDenied ||
                 _liveState.status == LiveTunerStatus.unavailable) ...[
               const SizedBox(height: 10),
-              const Text(
+              Text(
                 '마이크 입력을 사용할 수 없습니다. 이전 화면에서 마이크 권한과 입력 상태를 확인해 주세요.',
-                style: TextStyle(color: InstrumentColors.danger, fontSize: 12),
+                style: InstrumentTypeTheme.standard.caption.copyWith(
+                  color: InstrumentColors.danger,
+                ),
               ),
             ],
             const SizedBox(height: 26),
@@ -204,9 +203,8 @@ class _StabilityCheckScreenState extends State<StabilityCheckScreen> {
               const SizedBox(height: 8),
               Text(
                 '신호가 약하거나 불규칙해 제외한 피킹 ${evidence.rejectedPluckCount}회',
-                style: const TextStyle(
+                style: InstrumentTypeTheme.standard.status.copyWith(
                   color: InstrumentColors.muted,
-                  fontSize: 11,
                 ),
               ),
             ],
@@ -285,11 +283,10 @@ class _CaptureStrip extends StatelessWidget {
                 : trusted >= 3
                 ? '결과 확보 · 5회 권장'
                 : '중간 세기로 튕기세요',
-            style: TextStyle(
+            style: InstrumentTypeTheme.standard.status.copyWith(
               color: complete || trusted >= 3
                   ? InstrumentColors.accent
                   : InstrumentColors.muted,
-              fontSize: 11,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -310,10 +307,8 @@ class _EmptyResult extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Text(
         text,
-        style: const TextStyle(
+        style: InstrumentTypeTheme.standard.caption.copyWith(
           color: InstrumentColors.muted,
-          fontSize: 12,
-          height: 1.5,
         ),
       ),
     );
@@ -341,11 +336,10 @@ class _HypothesisResult extends StatelessWidget {
         children: [
           Text(
             insufficient ? '판단하기 어려움' : '측정 기반 안내',
-            style: TextStyle(
+            style: InstrumentTypeTheme.standard.caption.copyWith(
               color: insufficient
                   ? InstrumentColors.amber
                   : InstrumentColors.accent,
-              fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -353,16 +347,16 @@ class _HypothesisResult extends StatelessWidget {
           for (final hypothesis in assessment.hypotheses)
             Text(
               _hypothesisCopy(hypothesis.kind),
-              style: const TextStyle(
+              style: InstrumentTypeTheme.standard.caption.copyWith(
                 color: InstrumentColors.text,
-                fontSize: 12,
-                height: 1.5,
               ),
             ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             '원인은 확정 진단이 아니라 현재 관측값으로 설명 가능한 가능성입니다.',
-            style: TextStyle(color: InstrumentColors.muted, fontSize: 10),
+            style: InstrumentTypeTheme.standard.status.copyWith(
+              color: InstrumentColors.muted,
+            ),
           ),
         ],
       ),

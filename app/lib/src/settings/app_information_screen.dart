@@ -22,12 +22,10 @@ class AppInformationScreen extends StatelessWidget {
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'toauner는 기타 소리를 기기 안에서 실시간으로 분석합니다.',
-                  style: TextStyle(
+                  style: InstrumentTypeTheme.standard.body.copyWith(
                     color: InstrumentColors.inkSecondary,
-                    fontSize: 16,
-                    height: 1.5,
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -114,10 +112,8 @@ class _InformationSection extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             body,
-            style: const TextStyle(
+            style: InstrumentTypeTheme.standard.body.copyWith(
               color: InstrumentColors.inkSecondary,
-              fontSize: 16,
-              height: 1.5,
             ),
           ),
         ],

@@ -98,6 +98,18 @@ void main() {
 
     expect(violations, isEmpty);
   });
+
+  test('production screens use named type roles instead of literal sizes', () {
+    final violations = _productionDartSources()
+        .where((source) => !source.path.endsWith('instrument_theme.dart'))
+        .where(
+          (source) => RegExp(r'fontSize:\s*[0-9]').hasMatch(source.contents),
+        )
+        .map((source) => source.path)
+        .toList();
+
+    expect(violations, isEmpty);
+  });
 }
 
 List<({String path, String contents})> _productionDartSources() {

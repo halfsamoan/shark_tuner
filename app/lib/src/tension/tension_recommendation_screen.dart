@@ -74,12 +74,10 @@ class _TensionRecommendationScreenState
               style: Theme.of(context).textTheme.headlineMedium,
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               '장력은 현의 굵기뿐 아니라 스케일 길이와 목표 음정으로 계산합니다. 숫자는 이상적인 장력 추정치이며 실제 촉감은 코어와 제조사에 따라 달라집니다.',
-              style: TextStyle(
+              style: InstrumentTypeTheme.standard.caption.copyWith(
                 color: InstrumentColors.muted,
-                fontSize: 12,
-                height: 1.5,
               ),
             ),
             const SizedBox(height: 24),
@@ -121,9 +119,9 @@ class _TensionRecommendationScreenState
                       setState(() => _woundThird = value ?? false),
                   contentPadding: EdgeInsets.zero,
                   dense: true,
-                  title: const Text(
+                  title: Text(
                     '3번 줄을 wound로 계산',
-                    style: TextStyle(fontSize: 12),
+                    style: InstrumentTypeTheme.standard.caption,
                   ),
                 ),
               Align(
@@ -226,9 +224,11 @@ class _ScaleSelector extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '스케일 길이',
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          style: InstrumentTypeTheme.standard.caption.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
         ),
         const SizedBox(height: 7),
         Row(
@@ -257,11 +257,10 @@ class _ScaleSelector extends StatelessWidget {
                         ),
                         child: Text(
                           '${option.toStringAsFixed(option % 1 == 0 ? 0 : 2)}″',
-                          style: TextStyle(
+                          style: InstrumentTypeTheme.standard.status.copyWith(
                             color: selected == option
                                 ? InstrumentColors.accentInk
                                 : InstrumentColors.text,
-                            fontSize: 10,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -298,15 +297,19 @@ class _CurrentGaugeStrip extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Text(
+          Text(
             '현재 현',
-            style: TextStyle(color: InstrumentColors.muted, fontSize: 10),
+            style: InstrumentTypeTheme.standard.status.copyWith(
+              color: InstrumentColors.muted,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               gaugeSet.displayName,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+              style: InstrumentTypeTheme.standard.caption.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
           TextButton(
@@ -352,24 +355,24 @@ class _RecommendationSection extends StatelessWidget {
           width: 30,
           child: Text(
             rank == 0 ? 'C' : rank.toString().padLeft(2, '0'),
-            style: TextStyle(
+            style: InstrumentTypeTheme.standard.caption.copyWith(
               color: rank == 1
                   ? InstrumentColors.accent
                   : InstrumentColors.muted,
-              fontSize: 13,
               fontWeight: FontWeight.w800,
             ),
           ),
         ),
         title: Text(
           recommendation.gaugeSet.displayName,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+          style: InstrumentTypeTheme.standard.caption.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
         ),
         subtitle: Text(
           '${recommendation.totalTensionLbf.toStringAsFixed(1)} lbf total · ${warning ? '느슨한 현 확인' : 'floppy 경고 없음'}',
-          style: TextStyle(
+          style: InstrumentTypeTheme.standard.status.copyWith(
             color: warning ? InstrumentColors.amber : InstrumentColors.muted,
-            fontSize: 10,
           ),
         ),
         children: [
@@ -379,10 +382,8 @@ class _RecommendationSection extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               recommendation.reason,
-              style: const TextStyle(
+              style: InstrumentTypeTheme.standard.caption.copyWith(
                 color: InstrumentColors.muted,
-                fontSize: 10,
-                height: 1.4,
               ),
             ),
           ),
@@ -392,9 +393,8 @@ class _RecommendationSection extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 '! $note',
-                style: const TextStyle(
+                style: InstrumentTypeTheme.standard.caption.copyWith(
                   color: InstrumentColors.amber,
-                  fontSize: 10,
                 ),
               ),
             ),
@@ -471,9 +471,8 @@ class _TensionTableRow extends StatelessWidget {
             width: 54,
             child: Text(
               label,
-              style: TextStyle(
+              style: InstrumentTypeTheme.standard.status.copyWith(
                 color: color,
-                fontSize: 10,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -483,9 +482,8 @@ class _TensionTableRow extends StatelessWidget {
     );
   }
 
-  static const _cellStyle = TextStyle(
+  static final _cellStyle = InstrumentTypeTheme.standard.status.copyWith(
     color: InstrumentColors.text,
-    fontSize: 10,
   );
 }
 
@@ -506,10 +504,8 @@ class _ModelNotice extends StatelessWidget {
       child: Text(
         '계산 모델 v${metadata.version} · 공식 계산기 20개 스팟체크 최대 오차 3% 미만\n'
         'plain은 강선 밀도로 계산하고 wound는 니켈 라운드와운드 보간값을 사용합니다. 제조사·코어·권선 구조에 따라 실제 장력과 촉감은 달라질 수 있습니다.',
-        style: const TextStyle(
+        style: InstrumentTypeTheme.standard.caption.copyWith(
           color: InstrumentColors.muted,
-          fontSize: 10,
-          height: 1.5,
         ),
       ),
     );

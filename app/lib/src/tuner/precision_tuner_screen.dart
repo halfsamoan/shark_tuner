@@ -569,11 +569,11 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                               '${widget.sessionLabel.toUpperCase()}  /  ${tuning.name.toUpperCase()}',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: InstrumentColors.muted,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: InstrumentTypeTheme.standard.status
+                                  .copyWith(
+                                    color: InstrumentColors.muted,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                             ),
                           ),
                           if (widget.includeUnverifiedSongs)
@@ -587,9 +587,9 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                                 ),
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
-                              child: const Text(
+                              child: Text(
                                 'DEV·진단',
-                                style: TextStyle(fontSize: 9),
+                                style: InstrumentTypeTheme.standard.status,
                               ),
                             ),
                         ],
@@ -643,9 +643,9 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                               ),
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
-                            child: const Text(
+                            child: Text(
                               '자동 인식으로 전환',
-                              style: TextStyle(fontSize: 9),
+                              style: InstrumentTypeTheme.standard.status,
                             ),
                           ),
                         ],
@@ -655,28 +655,23 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                     Text(
                       _formatMeasuredCents(_displayCents, coarse: _coarseMode),
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: InstrumentTypeTheme.standard.centsHero.copyWith(
                         color: lockedNow
                             ? InstrumentColors.lockHold
                             : _coarseMode
                             ? InstrumentColors.amber
                             : InstrumentColors.text,
-                        fontSize: _coarseMode ? 52 : 62,
-                        height: 1.05,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -2,
                       ),
                     ),
                     Text(
                       guidance.headline,
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: InstrumentTypeTheme.standard.caption.copyWith(
                         color: lockedNow
                             ? InstrumentColors.lockHold
                             : guidance.coarse
                             ? InstrumentColors.amber
                             : InstrumentColors.muted,
-                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -689,26 +684,29 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        Text(
-                          _liveState.frequencyHz == null
-                              ? '— Hz'
-                              : '${_liveState.frequencyHz!.toStringAsFixed(2)} Hz',
-                          style: const TextStyle(
-                            color: InstrumentColors.text,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
+                        Flexible(
+                          child: Text(
+                            _liveState.frequencyHz == null
+                                ? '— Hz'
+                                : '${_liveState.frequencyHz!.toStringAsFixed(2)} Hz',
+                            maxLines: usesLargeText ? 2 : 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: InstrumentTypeTheme.standard.subhead
+                                .copyWith(
+                                  color: InstrumentColors.text,
+                                  fontWeight: FontWeight.w600,
+                                ),
                           ),
                         ),
-                        const Spacer(),
+                        const SizedBox(width: 8),
                         Flexible(
                           child: Text(
                             '목표 ${_targetHz.toStringAsFixed(2)} Hz',
-                            maxLines: 1,
+                            maxLines: usesLargeText ? 2 : 1,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.end,
-                            style: const TextStyle(
+                            style: InstrumentTypeTheme.standard.status.copyWith(
                               color: InstrumentColors.muted,
-                              fontSize: 11,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -749,17 +747,24 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                     const SizedBox(height: 8),
                     Text(
                       '튜닝 진행 ${progress.lockedStringCount}/${progress.expectedStringCount}',
-                      style: TextStyle(
+                      style: InstrumentTypeTheme.standard.status.copyWith(
                         color: progress.isComplete
                             ? InstrumentColors.accent
                             : InstrumentColors.muted,
-                        fontSize: 11,
                       ),
                     ),
                   ],
                 );
-                if (usesLargeText || constraints.maxHeight < 600) {
+                final requiresExpandedGuidanceScroll =
+                    guidance.kind == GuidanceSlotKind.wrongString ||
+                    pegDirection.flipSuggested ||
+                    _liveState.status == LiveTunerStatus.permissionDenied ||
+                    _liveState.status == LiveTunerStatus.unavailable;
+                if (usesLargeText ||
+                    constraints.maxHeight < 600 ||
+                    requiresExpandedGuidanceScroll) {
                   return SingleChildScrollView(
+                    reverse: pegDirection.flipSuggested,
                     padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
                     child: SizedBox(
                       width: constraints.maxWidth - 48,
@@ -881,13 +886,11 @@ class _MicrophonePrimer extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     '소리는 기기에서만 분석되고 저장되지 않습니다. '
                     '통화나 주변 대화를 녹음하지 않습니다.',
-                    style: TextStyle(
+                    style: InstrumentTypeTheme.standard.caption.copyWith(
                       color: InstrumentColors.muted,
-                      fontSize: 13,
-                      height: 1.5,
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -989,12 +992,10 @@ class _PegSetupSheetState extends State<_PegSetupSheet> {
               color: InstrumentColors.accent,
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               '헤드스톡을 정면에서 봤을 때의 모양을 고르세요. 설정 전에는 안전하게 조이기·풀기만 안내합니다.',
-              style: TextStyle(
+              style: InstrumentTypeTheme.standard.caption.copyWith(
                 color: InstrumentColors.muted,
-                fontSize: 12,
-                height: 1.45,
               ),
             ),
             const SizedBox(height: 16),
@@ -1054,13 +1055,17 @@ class _PegSetupSheetState extends State<_PegSetupSheet> {
               value: _reversed,
               onChanged: (value) => setState(() => _reversed = value),
               contentPadding: EdgeInsets.zero,
-              title: const Text(
+              title: Text(
                 '리버스 헤드스톡',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                style: InstrumentTypeTheme.standard.caption.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-              subtitle: const Text(
+              subtitle: Text(
                 '일반 헤드스톡과 반대 방향으로 기울어진 경우만 켜세요',
-                style: TextStyle(color: InstrumentColors.muted, fontSize: 10),
+                style: InstrumentTypeTheme.standard.status.copyWith(
+                  color: InstrumentColors.muted,
+                ),
               ),
             ),
             const SizedBox(height: 10),
@@ -1161,11 +1166,10 @@ class _SetupChoiceRow extends StatelessWidget {
             children: [
               Text(
                 selected ? '[×]' : '[ ]',
-                style: TextStyle(
+                style: InstrumentTypeTheme.standard.caption.copyWith(
                   color: selected
                       ? InstrumentColors.accent
                       : InstrumentColors.muted,
-                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -1177,18 +1181,16 @@ class _SetupChoiceRow extends StatelessWidget {
                   children: [
                     Text(
                       label,
-                      style: const TextStyle(
+                      style: InstrumentTypeTheme.standard.caption.copyWith(
                         color: InstrumentColors.text,
-                        fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     if (detail != null)
                       Text(
                         detail!,
-                        style: const TextStyle(
+                        style: InstrumentTypeTheme.standard.status.copyWith(
                           color: InstrumentColors.muted,
-                          fontSize: 9,
                         ),
                       ),
                   ],
@@ -1280,9 +1282,8 @@ class _GuidancePanel extends StatelessWidget {
                   child: Text(
                     guidance.leadingSymbol,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: InstrumentTypeTheme.standard.subhead.copyWith(
                       color: color,
-                      fontSize: 22,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -1294,9 +1295,8 @@ class _GuidancePanel extends StatelessWidget {
                     children: [
                       Text(
                         guidance.instruction,
-                        style: TextStyle(
+                        style: InstrumentTypeTheme.standard.caption.copyWith(
                           color: color,
-                          fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -1315,26 +1315,26 @@ class _GuidancePanel extends StatelessWidget {
                                   Expanded(
                                     child: Text(
                                       pegDirection.label,
-                                      style: TextStyle(
-                                        color: pegDirection.pending
-                                            ? InstrumentColors.amber
-                                            : InstrumentColors.muted,
-                                        fontSize: 10,
-                                        fontWeight: pegDirection.pending
-                                            ? FontWeight.w700
-                                            : FontWeight.w500,
-                                      ),
+                                      style: InstrumentTypeTheme.standard.status
+                                          .copyWith(
+                                            color: pegDirection.pending
+                                                ? InstrumentColors.amber
+                                                : InstrumentColors.muted,
+                                            fontWeight: pegDirection.pending
+                                                ? FontWeight.w700
+                                                : FontWeight.w500,
+                                          ),
                                     ),
                                   ),
                                   if (pegAction != null) ...[
                                     const SizedBox(width: 8),
                                     Text(
                                       '$pegActionLabel ›',
-                                      style: const TextStyle(
-                                        color: InstrumentColors.accent,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                                      style: InstrumentTypeTheme.standard.status
+                                          .copyWith(
+                                            color: InstrumentColors.accent,
+                                            fontWeight: FontWeight.w700,
+                                          ),
                                     ),
                                   ],
                                 ],
@@ -1363,9 +1363,8 @@ class _GuidancePanel extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   offsetLabel!,
-                  style: const TextStyle(
+                  style: InstrumentTypeTheme.standard.status.copyWith(
                     color: InstrumentColors.accent,
-                    fontSize: 9,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1375,26 +1374,23 @@ class _GuidancePanel extends StatelessWidget {
               const SizedBox(height: 8),
               Container(height: 1, color: InstrumentColors.line),
               const SizedBox(height: 6),
-              const Align(
+              Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
                   '방향 안내를 멈췄어요',
-                  style: TextStyle(
+                  style: InstrumentTypeTheme.standard.caption.copyWith(
                     color: InstrumentColors.amber,
-                    fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
               const SizedBox(height: 3),
-              const Align(
+              Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
                   '안내와 반대로 두 번 움직였습니다. 이 페그만 방향을 바꿀까요?',
-                  style: TextStyle(
+                  style: InstrumentTypeTheme.standard.caption.copyWith(
                     color: InstrumentColors.muted,
-                    fontSize: 10,
-                    height: 1.35,
                   ),
                 ),
               ),
@@ -1442,13 +1438,12 @@ class _TuneCompleteSheet extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               '✓',
               key: Key('tune-complete-glyph'),
-              style: TextStyle(
+              style: InstrumentTypeTheme.standard.title.copyWith(
                 color: InstrumentColors.lockFlood,
                 fontFamily: 'D2Coding',
-                fontSize: 52,
                 height: 1,
                 fontWeight: FontWeight.w700,
               ),
@@ -1470,9 +1465,8 @@ class _TuneCompleteSheet extends StatelessWidget {
                 final count = snapshot.data?.length;
                 return Text(
                   count == null ? '연주 가능한 곡 확인 중' : '이 튜닝으로 연주 가능한 곡 $count개',
-                  style: const TextStyle(
+                  style: InstrumentTypeTheme.standard.caption.copyWith(
                     color: InstrumentColors.accent,
-                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
                 );
@@ -1603,9 +1597,8 @@ class _InputErrorNotice extends StatelessWidget {
             permissionDenied
                 ? '설정에서 마이크를 허용해 주세요.'
                 : '사용 가능한 마이크 입력을 찾지 못했습니다.',
-            style: const TextStyle(
+            style: InstrumentTypeTheme.standard.status.copyWith(
               color: InstrumentColors.danger,
-              fontSize: 11,
             ),
           ),
           const SizedBox(height: 4),

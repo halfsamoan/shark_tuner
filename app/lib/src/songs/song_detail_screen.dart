@@ -42,9 +42,8 @@ class SongDetailScreen extends StatelessWidget {
                 Expanded(
                   child: Text(
                     song.artist,
-                    style: const TextStyle(
+                    style: InstrumentTypeTheme.standard.body.copyWith(
                       color: InstrumentColors.muted,
-                      fontSize: 15,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -177,7 +176,7 @@ class _TensionRecommendationEntry extends StatelessWidget {
               left: BorderSide(color: InstrumentColors.accent, width: 3),
             ),
           ),
-          child: const Row(
+          child: Row(
             children: [
               Expanded(
                 child: Column(
@@ -185,17 +184,15 @@ class _TensionRecommendationEntry extends StatelessWidget {
                   children: [
                     Text(
                       '이 튜닝에서 장력 확인',
-                      style: TextStyle(
-                        fontSize: 12,
+                      style: InstrumentTypeTheme.standard.caption.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    SizedBox(height: 3),
+                    const SizedBox(height: 3),
                     Text(
                       '스케일과 현재 게이지를 기준으로 상위 3개 조합 계산',
-                      style: TextStyle(
+                      style: InstrumentTypeTheme.standard.status.copyWith(
                         color: InstrumentColors.muted,
-                        fontSize: 10,
                       ),
                     ),
                   ],
@@ -203,9 +200,8 @@ class _TensionRecommendationEntry extends StatelessWidget {
               ),
               Text(
                 '계산 ›',
-                style: TextStyle(
+                style: InstrumentTypeTheme.standard.status.copyWith(
                   color: InstrumentColors.accent,
-                  fontSize: 11,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -248,7 +244,9 @@ class _StickyTuneBar extends StatelessWidget {
             instruction,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: InstrumentColors.muted, fontSize: 9),
+            style: InstrumentTypeTheme.standard.status.copyWith(
+              color: InstrumentColors.muted,
+            ),
           ),
         ],
       ),
@@ -291,11 +289,10 @@ class _VerificationNotice extends StatelessWidget {
                 : showDevelopmentStatus
                 ? 'DEV·출처 확인 전 후보 데이터'
                 : '튜닝 확인 중',
-            style: TextStyle(
+            style: InstrumentTypeTheme.standard.caption.copyWith(
               color: verified
                   ? InstrumentColors.accent
                   : InstrumentColors.amber,
-              fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -306,10 +303,8 @@ class _VerificationNotice extends StatelessWidget {
                 : showDevelopmentStatus
                 ? 'DEV·독립 출처와 사람 검증 전에는 출시 곡에 포함되지 않습니다.'
                 : '확인이 끝난 곡만 검색 결과에 표시됩니다.',
-            style: const TextStyle(
+            style: InstrumentTypeTheme.standard.status.copyWith(
               color: InstrumentColors.muted,
-              fontSize: 11,
-              height: 1.45,
             ),
           ),
         ],
