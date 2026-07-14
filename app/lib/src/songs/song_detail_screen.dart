@@ -229,7 +229,7 @@ class _StickyTuneBar extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 10, 24, 10),
       decoration: const BoxDecoration(
-        color: InstrumentColors.chrome,
+        color: InstrumentColors.header,
         border: Border(top: BorderSide(color: InstrumentColors.line)),
       ),
       child: Column(

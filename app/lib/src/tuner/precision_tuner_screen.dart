@@ -275,7 +275,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     final profile = await showModalBottomSheet<InstrumentPegProfile>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: InstrumentColors.chrome,
+      backgroundColor: InstrumentColors.raised,
       builder: (context) => _PegSetupSheet(
         stringCount: widget.tuning.strings.length,
         current: _activeInstrumentProfile,
@@ -439,7 +439,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
       context: context,
       isDismissible: false,
       enableDrag: false,
-      backgroundColor: InstrumentColors.chrome,
+      backgroundColor: InstrumentColors.raised,
       builder: (sheetContext) => _TuneCompleteSheet(
         tuning: widget.tuning,
         elapsed: _tuneUpTracker.state.elapsed,
@@ -509,7 +509,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   void _showDiagnostics() {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: InstrumentColors.chrome,
+      backgroundColor: InstrumentColors.raised,
       isScrollControlled: true,
       builder: (context) => _DiagnosticsSheet(
         state: _liveState,
@@ -559,7 +559,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                       alignment: Alignment.centerLeft,
                       padding: const EdgeInsets.symmetric(horizontal: 10),
                       decoration: BoxDecoration(
-                        color: InstrumentColors.chrome,
+                        color: InstrumentColors.header,
                         border: Border.all(color: InstrumentColors.line),
                       ),
                       child: Row(
@@ -657,7 +657,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: lockedNow
-                            ? InstrumentColors.accent
+                            ? InstrumentColors.lockHold
                             : _coarseMode
                             ? InstrumentColors.amber
                             : InstrumentColors.text,
@@ -672,7 +672,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: lockedNow
-                            ? InstrumentColors.accent
+                            ? InstrumentColors.lockHold
                             : guidance.coarse
                             ? InstrumentColors.amber
                             : InstrumentColors.muted,
@@ -1263,10 +1263,12 @@ class _GuidancePanel extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 9),
         decoration: BoxDecoration(
           color: completed
-              ? InstrumentColors.accent.withValues(alpha: 0.08)
+              ? InstrumentColors.lockHold.withValues(alpha: 0.08)
               : InstrumentColors.panel,
           border: Border.all(
-            color: completed ? InstrumentColors.accent : InstrumentColors.line,
+            color: completed
+                ? InstrumentColors.lockHold
+                : InstrumentColors.line,
           ),
         ),
         child: Column(
@@ -1440,10 +1442,16 @@ class _TuneCompleteSheet extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.check_circle_rounded,
-              color: InstrumentColors.accent,
-              size: 52,
+            const Text(
+              '✓',
+              key: Key('tune-complete-glyph'),
+              style: TextStyle(
+                color: InstrumentColors.lockFlood,
+                fontFamily: 'D2Coding',
+                fontSize: 52,
+                height: 1,
+                fontWeight: FontWeight.w700,
+              ),
             ),
             const SizedBox(height: 14),
             Text(

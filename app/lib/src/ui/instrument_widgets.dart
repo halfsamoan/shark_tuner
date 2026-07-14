@@ -24,7 +24,7 @@ class InstrumentHeaderBar extends StatelessWidget
     return AppBar(
       automaticallyImplyLeading: false,
       toolbarHeight: preferredSize.height,
-      backgroundColor: InstrumentColors.chrome,
+      backgroundColor: InstrumentColors.header,
       surfaceTintColor: Colors.transparent,
       shape: const Border(bottom: BorderSide(color: InstrumentColors.line)),
       titleSpacing: showBack ? 4 : 16,
@@ -101,7 +101,7 @@ class InstrumentStatusBar extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 32),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: const BoxDecoration(
-          color: InstrumentColors.chrome,
+          color: InstrumentColors.header,
           border: Border(top: BorderSide(color: InstrumentColors.line)),
         ),
         child: Row(
@@ -312,7 +312,7 @@ class TuningNoteCell extends StatelessWidget {
                       '$stringNumber',
                       style: TextStyle(
                         color: active
-                            ? const Color(0xFF32420E)
+                            ? InstrumentColors.accentInk
                             : InstrumentColors.muted,
                         fontFamily: 'D2Coding',
                         fontSize: 11,
@@ -327,12 +327,17 @@ class TuningNoteCell extends StatelessWidget {
                 Positioned(
                   top: 3,
                   right: 3,
-                  child: Icon(
-                    Icons.check_rounded,
-                    size: 10,
-                    color: active
-                        ? InstrumentColors.accentInk
-                        : InstrumentColors.accent,
+                  child: Text(
+                    '✓',
+                    style: TextStyle(
+                      color: active
+                          ? InstrumentColors.accentInk
+                          : InstrumentColors.lockHold,
+                      fontFamily: 'D2Coding',
+                      fontSize: 11,
+                      height: 1,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
             ],
@@ -375,9 +380,9 @@ class PitchTape extends StatelessWidget {
           decoration: BoxDecoration(
             color: locked
                 ? InstrumentColors.accent.withValues(alpha: 0.08)
-                : InstrumentColors.chrome,
+                : InstrumentColors.sunken,
             border: Border.all(
-              color: locked ? InstrumentColors.accent : InstrumentColors.line,
+              color: locked ? InstrumentColors.lockHold : InstrumentColors.line,
             ),
           ),
           child: CustomPaint(
@@ -441,7 +446,9 @@ class _PitchTapePainter extends CustomPainter {
       final x = xForCents(measuredCents);
       final absoluteCents = measuredCents.abs();
       final marker = Paint()
-        ..color = locked || absoluteCents <= 5
+        ..color = locked
+            ? InstrumentColors.lockHold
+            : absoluteCents <= 5
             ? InstrumentColors.accent
             : absoluteCents <= 15
             ? InstrumentColors.text

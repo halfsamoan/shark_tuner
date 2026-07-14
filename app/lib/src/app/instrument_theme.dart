@@ -280,13 +280,12 @@ abstract final class InstrumentColors {
   static const textSecondary = Color(0xFF8CA093);
   static const gridTick = Color(0xFF46554C);
 
-  // Transitional aliases keep existing screens stable while each one migrates
-  // to explicit semantic tokens.
-  static const chrome = canvas;
+  // Text compatibility aliases retain readable names while visual surfaces use
+  // explicit elevation roles throughout the UI.
   static const text = ink;
   static const muted = textSecondary;
-  static const accentInk = Color(0xFF111508);
-  static const danger = Color(0xFFF36A6A);
+  static const accentInk = sunken;
+  static const danger = amber;
 }
 
 ThemeData buildInstrumentTheme() {

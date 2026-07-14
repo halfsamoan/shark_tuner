@@ -164,11 +164,6 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
               decoration: const InputDecoration(
                 hintText: '곡명 또는 아티스트 검색',
                 prefixIcon: Icon(Icons.search_rounded, size: 20),
-                suffixIcon: _ShortcutHint(),
-                suffixIconConstraints: BoxConstraints.tightFor(
-                  width: 64,
-                  height: 48,
-                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -266,16 +261,13 @@ class _QuickTunePanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: InstrumentColors.chrome,
+        color: InstrumentColors.panel,
         border: Border.all(color: InstrumentColors.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const InstrumentSectionLabel(
-            'Quick tune',
-            color: InstrumentColors.accent,
-          ),
+          const InstrumentSectionLabel('바로 튜닝', color: InstrumentColors.accent),
           const SizedBox(height: 9),
           SizedBox(
             width: double.infinity,
@@ -284,7 +276,10 @@ class _QuickTunePanel extends StatelessWidget {
               onPressed: enabled
                   ? () => onSelected(BuiltInTunings.standardGuitar)
                   : null,
-              icon: const Icon(Icons.graphic_eq_rounded, size: 18),
+              icon: const Text(
+                '●',
+                style: TextStyle(fontFamily: 'D2Coding', fontSize: 11),
+              ),
               label: const Text('바로 튜닝하기 · E Standard'),
             ),
           ),
@@ -297,7 +292,6 @@ class _QuickTunePanel extends StatelessWidget {
                 onPressed: enabled
                     ? () => onSelected(BuiltInTunings.eFlatStandard)
                     : null,
-                avatar: const Icon(Icons.south_rounded, size: 15),
                 label: const Text('E♭ Standard'),
               ),
               ActionChip(
@@ -305,13 +299,11 @@ class _QuickTunePanel extends StatelessWidget {
                 onPressed: enabled
                     ? () => onSelected(BuiltInTunings.dropD)
                     : null,
-                avatar: const Icon(Icons.tune_rounded, size: 15),
                 label: const Text('Drop D'),
               ),
               ActionChip(
                 key: const Key('quick-tune-more'),
                 onPressed: enabled ? () => _showPresetPicker(context) : null,
-                avatar: const Icon(Icons.more_horiz_rounded, size: 15),
                 label: const Text('다른 튜닝'),
               ),
             ],
@@ -324,7 +316,7 @@ class _QuickTunePanel extends StatelessWidget {
   void _showPresetPicker(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: InstrumentColors.chrome,
+      backgroundColor: InstrumentColors.raised,
       isScrollControlled: true,
       builder: (sheetContext) => _DirectTuningSheet(
         tunings: BuiltInTunings.sixStringPresets,
@@ -357,7 +349,7 @@ class _DirectTuningSheet extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   InstrumentSectionLabel(
-                    'DIRECT TUNING',
+                    '튜닝 선택',
                     color: InstrumentColors.accent,
                   ),
                   SizedBox(height: 6),
@@ -424,11 +416,6 @@ class _DirectTuningSheet extends StatelessWidget {
                               ],
                             ),
                           ),
-                          const Icon(
-                            Icons.arrow_forward_rounded,
-                            color: InstrumentColors.accent,
-                            size: 18,
-                          ),
                         ],
                       ),
                     ),
@@ -437,28 +424,6 @@ class _DirectTuningSheet extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ShortcutHint extends StatelessWidget {
-  const _ShortcutHint();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        decoration: BoxDecoration(
-          color: InstrumentColors.chrome,
-          border: Border.all(color: InstrumentColors.line),
-          borderRadius: BorderRadius.circular(3),
-        ),
-        child: const Text(
-          'Ctrl K',
-          style: TextStyle(color: InstrumentColors.muted, fontSize: 9),
         ),
       ),
     );
@@ -485,7 +450,7 @@ class _SongResultRow extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 72),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
         decoration: const BoxDecoration(
-          color: InstrumentColors.chrome,
+          color: InstrumentColors.panel,
           border: Border(bottom: BorderSide(color: InstrumentColors.line)),
         ),
         child: Row(
@@ -558,8 +523,6 @@ class _EmptyResults extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Icon(Icons.search_off_rounded, color: InstrumentColors.muted),
-          const SizedBox(height: 10),
           const Text(
             '검색 결과가 없습니다.',
             textAlign: TextAlign.center,
@@ -573,11 +536,10 @@ class _EmptyResults extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Center(
-            child: OutlinedButton.icon(
+            child: OutlinedButton(
               key: const Key('show-all-songs'),
               onPressed: onShowAll,
-              icon: const Icon(Icons.refresh_rounded, size: 17),
-              label: const Text('전체 곡 다시 보기'),
+              child: const Text('전체 곡 다시 보기'),
             ),
           ),
           if (popularResults.isNotEmpty) ...[

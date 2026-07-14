@@ -465,7 +465,7 @@ void main() {
     expect(find.text('6현 모두 완료!'), findsOneWidget);
     expect(find.text('이 튜닝으로 연주 가능한 곡 1개'), findsOneWidget);
     expect(engine.manualTargets, isEmpty);
-    expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+    expect(find.byKey(const Key('tune-complete-glyph')), findsOneWidget);
     expect(find.byKey(const Key('open-stability-check')), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('open-stability-check')));
