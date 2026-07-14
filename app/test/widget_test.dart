@@ -6,6 +6,7 @@ import 'package:toauner_app/main.dart';
 import 'package:toauner_app/src/app/instrument_theme.dart';
 import 'package:toauner_app/src/tuner/live_tuner_engine.dart';
 import 'package:toauner_app/src/tuner/precision_tuner_screen.dart';
+import 'package:toauner_app/src/tuner/reference_tone_player.dart';
 import 'package:toauner_app/src/ui/instrument_widgets.dart';
 import 'package:tuner_data/tuner_data.dart';
 import 'package:tuner_domain/tuner_domain.dart';
@@ -845,6 +846,60 @@ void main() {
     await _pumpFrames(tester);
     expect(awakeStates, [true, false]);
   });
+
+  testWidgets('reference tone pauses capture and follows the selected string', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final engine = _ScriptedTunerEngine();
+    final player = _FakeReferenceTonePlayer();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildInstrumentTheme(),
+        home: PrecisionTunerScreen(
+          match: _FakeSongCatalog.verifiedMatch,
+          catalog: _FakeSongCatalog(
+            currentMatch: _FakeSongCatalog.verifiedMatch,
+          ),
+          tunerEngineFactory: () => engine,
+          referenceTonePlayerFactory: () => player,
+          includeUnverifiedSongs: false,
+        ),
+      ),
+    );
+    await _pumpFrames(tester);
+
+    await tester.tap(find.byKey(const Key('reference-tone-toggle')));
+    await _pumpFrames(tester);
+    expect(engine.stopCount, 1);
+    expect(player.playedFrequencies, hasLength(1));
+    expect(player.playedFrequencies.single, closeTo(78.69, 0.01));
+    expect(find.textContaining('REF E♭2 정지'), findsOneWidget);
+
+    await tester.tap(find.text('E♭4').first);
+    await _pumpFrames(tester);
+    expect(player.playedFrequencies, hasLength(2));
+    final highTarget = _FakeSongCatalog.match.tuning.strings
+        .singleWhere((string) => string.stringNumber == 1)
+        .targetFrequencyHz(
+          referenceA4Hz: _FakeSongCatalog.match.tuning.referenceA4Hz,
+          centsOffset: _FakeSongCatalog.match.tuning.centsOffset,
+        );
+    expect(player.playedFrequencies.last, closeTo(highTarget, 0.001));
+
+    await tester.tap(find.byKey(const Key('reference-tone-toggle')));
+    await _pumpFrames(tester);
+    expect(player.stopCount, 1);
+    expect(engine.startedTunings, ['eb-standard', 'eb-standard']);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+    expect(player.disposed, isTrue);
+  });
 }
 
 LiveTunerState _stateForString(
@@ -926,6 +981,7 @@ final class _ScriptedTunerEngine implements TunerEngine {
   final _states = StreamController<LiveTunerState>.broadcast(sync: true);
   final manualTargets = <int?>[];
   final startedTunings = <String>[];
+  int stopCount = 0;
   LiveTunerState _current = LiveTunerState.idle;
 
   void emit(LiveTunerState state) {
@@ -956,7 +1012,30 @@ final class _ScriptedTunerEngine implements TunerEngine {
   }
 
   @override
-  Future<void> stop() async {}
+  Future<void> stop() async {
+    stopCount++;
+  }
+}
+
+final class _FakeReferenceTonePlayer implements ReferenceTonePlayer {
+  final playedFrequencies = <double>[];
+  int stopCount = 0;
+  bool disposed = false;
+
+  @override
+  Future<void> play(double frequencyHz) async {
+    playedFrequencies.add(frequencyHz);
+  }
+
+  @override
+  Future<void> stop() async {
+    stopCount++;
+  }
+
+  @override
+  Future<void> dispose() async {
+    disposed = true;
+  }
 }
 
 Future<void> _pumpFrames(WidgetTester tester) async {
