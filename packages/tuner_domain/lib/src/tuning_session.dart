@@ -181,15 +181,18 @@ final class InTuneLockConfig {
     this.holdDuration = const Duration(milliseconds: 750),
     this.pluckHitToleranceCents = 2,
     this.pluckHitWindow = const Duration(seconds: 1),
+    this.missingFramesBeforeRelease = 3,
   }) : assert(toleranceCents > 0),
        assert(releaseToleranceCents >= toleranceCents),
-       assert(pluckHitToleranceCents > 0);
+       assert(pluckHitToleranceCents > 0),
+       assert(missingFramesBeforeRelease > 0);
 
   final double toleranceCents;
   final double releaseToleranceCents;
   final Duration holdDuration;
   final double pluckHitToleranceCents;
   final Duration pluckHitWindow;
+  final int missingFramesBeforeRelease;
 }
 
 final class InTuneLockState {
@@ -213,6 +216,7 @@ final class InTuneLockTracker {
   Duration? _withinSince;
   Duration? _pluckStartedAt;
   bool _locked = false;
+  int _missingFrames = 0;
 
   InTuneLockState update({
     required double cents,
@@ -227,6 +231,7 @@ final class InTuneLockTracker {
       throw ArgumentError.value(timestamp, 'timestamp', 'Must be monotonic.');
     }
     _lastTimestamp = timestamp;
+    _missingFrames = 0;
     if (freshOnset) {
       _pluckStartedAt = timestamp;
     }
@@ -257,11 +262,39 @@ final class InTuneLockTracker {
     );
   }
 
+  /// Records a frame without a trustworthy pitch estimate.
+  ///
+  /// An established lock survives a short detector dropout, while an
+  /// unfinished hold interval is cleared immediately because it is no longer
+  /// continuous evidence.
+  InTuneLockState markMissing({required Duration timestamp}) {
+    final previousTimestamp = _lastTimestamp;
+    if (previousTimestamp != null && timestamp < previousTimestamp) {
+      throw ArgumentError.value(timestamp, 'timestamp', 'Must be monotonic.');
+    }
+    _lastTimestamp = timestamp;
+    _missingFrames++;
+    if (!_locked) {
+      _withinSince = null;
+    }
+    if (_missingFrames >= config.missingFramesBeforeRelease) {
+      _locked = false;
+      _withinSince = null;
+      _pluckStartedAt = null;
+    }
+    return InTuneLockState(
+      locked: _locked,
+      withinTolerance: false,
+      progress: _locked ? 1 : 0,
+    );
+  }
+
   void reset() {
     _lastTimestamp = null;
     _withinSince = null;
     _pluckStartedAt = null;
     _locked = false;
+    _missingFrames = 0;
   }
 
   bool _isPluckHit(double absoluteCents, Duration timestamp) {

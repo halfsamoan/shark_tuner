@@ -112,8 +112,8 @@ final class LiveTunerState {
       heardTarget: clearPitch || clearHeardTarget
           ? null
           : heardTarget ?? this.heardTarget,
-      locked: clearPitch ? false : locked ?? this.locked,
-      lockProgress: clearPitch ? 0 : lockProgress ?? this.lockProgress,
+      locked: locked ?? (clearPitch ? false : this.locked),
+      lockProgress: lockProgress ?? (clearPitch ? 0 : this.lockProgress),
       actualSampleRate: actualSampleRate ?? this.actualSampleRate,
       selectedSource: selectedSource ?? this.selectedSource,
       windowSamples: windowSamples ?? this.windowSamples,
@@ -172,7 +172,7 @@ final class IsolateTunerEngine implements TunerEngine {
   TuningDefinition? _tuning;
   int? _manualStringNumber;
   _DspIsolate? _dsp;
-  StreamSubscription<Uint8List>? _audioSubscription;
+  StreamSubscription<void>? _audioSubscription;
   StreamSubscription<Map<String, Object?>>? _frameSubscription;
   var _disposed = false;
   int _lastPluckLatencySequence = 0;
@@ -246,18 +246,14 @@ final class IsolateTunerEngine implements TunerEngine {
         ),
       );
       _frameSubscription = dsp.frames.listen(_handleDspFrame);
-      _audioSubscription = session.pcm16Bytes.listen(
-        dsp.addAudio,
-        onError: (Object error, StackTrace stackTrace) {
-          _emit(
-            _current.copyWith(
-              status: LiveTunerStatus.unavailable,
-              error: error,
-              clearPitch: true,
-            ),
+      _audioSubscription = session.pcm16Bytes
+          .asyncMap<void>(dsp.addAudio)
+          .listen(
+            (_) {},
+            onError: (Object error, StackTrace stackTrace) {
+              unawaited(_handleAudioError(error));
+            },
           );
-        },
-      );
     } on MicrophonePermissionDeniedException catch (error) {
       await _closePipeline();
       _emit(
@@ -277,6 +273,20 @@ final class IsolateTunerEngine implements TunerEngine {
         ),
       );
     }
+  }
+
+  Future<void> _handleAudioError(Object error) async {
+    await _closePipeline();
+    if (_disposed) {
+      return;
+    }
+    _emit(
+      _current.copyWith(
+        status: LiveTunerStatus.unavailable,
+        error: error,
+        clearPitch: true,
+      ),
+    );
   }
 
   @override
@@ -344,7 +354,7 @@ final class IsolateTunerEngine implements TunerEngine {
         ? null
         : _selectionFor(rawFrequencyHz, rawTarget, tuning).cents;
     if (frequencyHz == null) {
-      _lockTracker.reset();
+      final lock = _lockTracker.markMissing(timestamp: audioPosition);
       _resetHeardOtherEvidence();
       _emit(
         _current.copyWith(
@@ -364,6 +374,8 @@ final class IsolateTunerEngine implements TunerEngine {
               : Duration(microseconds: pluckLatencyMicros),
           pluckLatencySampleCount: _pluckToDisplayLatencyMicros.length,
           pluckToDisplayP95Latency: pluckToDisplayP95,
+          locked: lock.locked,
+          lockProgress: lock.progress,
           clearPitch: true,
         ),
       );
@@ -565,17 +577,22 @@ int _hopSamplesFor(int windowSamples) {
 
 final class _DspIsolate {
   _DspIsolate._({
-    required this.frames,
     required this._commands,
     required this._isolate,
     required this._framePort,
-  });
+  }) {
+    _messageSubscription = _framePort.listen(_handleMessage);
+  }
 
-  final Stream<Map<String, Object?>> frames;
   final SendPort _commands;
   final Isolate _isolate;
   final ReceivePort _framePort;
+  final _frameController = StreamController<Map<String, Object?>>.broadcast();
+  late final StreamSubscription<Object?> _messageSubscription;
+  Completer<void>? _audioAck;
   var _closed = false;
+
+  Stream<Map<String, Object?>> get frames => _frameController.stream;
 
   static Future<_DspIsolate> spawn() async {
     final readyPort = ReceivePort();
@@ -587,7 +604,6 @@ final class _DspIsolate {
     final commands = await readyPort.first as SendPort;
     readyPort.close();
     return _DspIsolate._(
-      frames: framePort.cast<Map<String, Object?>>(),
       commands: commands,
       isolate: isolate,
       framePort: framePort,
@@ -615,14 +631,36 @@ final class _DspIsolate {
     });
   }
 
-  void addAudio(Uint8List bytes) {
+  Future<void> addAudio(Uint8List bytes) {
     if (_closed || bytes.isEmpty) {
-      return;
+      return Future.value();
     }
+    if (_audioAck != null) {
+      return Future.error(
+        StateError('DSP audio backpressure contract was violated.'),
+      );
+    }
+    final ack = Completer<void>();
+    _audioAck = ack;
     _commands.send({
       'type': 'audio',
       'bytes': TransferableTypedData.fromList([bytes]),
     });
+    return ack.future;
+  }
+
+  void _handleMessage(Object? message) {
+    if (_closed) {
+      return;
+    }
+    final frame = (message! as Map).cast<String, Object?>();
+    if (frame['type'] == 'audioProcessed') {
+      final ack = _audioAck;
+      _audioAck = null;
+      ack?.complete();
+      return;
+    }
+    _frameController.add(frame);
   }
 
   void close() {
@@ -630,7 +668,11 @@ final class _DspIsolate {
       return;
     }
     _closed = true;
+    _audioAck?.complete();
+    _audioAck = null;
     _commands.send(const {'type': 'close'});
+    unawaited(_messageSubscription.cancel());
+    unawaited(_frameController.close());
     _framePort.close();
     _isolate.kill(priority: Isolate.immediate);
   }
@@ -689,7 +731,7 @@ void _dspIsolateMain(Map<String, Object> bootstrap) {
       final onset = pendingPluckOnsetSample;
       if (onset != null) {
         final latencySamples = processedSamples - onset;
-        if (latencySamples >= 0 && latencySamples <= activeSampleRate ~/ 2) {
+        if (latencySamples >= 0) {
           pluckToFirstValidMicros =
               (latencySamples * Duration.microsecondsPerSecond) ~/
               activeSampleRate;
@@ -700,6 +742,7 @@ void _dspIsolateMain(Map<String, Object> bootstrap) {
     }
     stopwatch.stop();
     framePort.send(<String, Object?>{
+      'type': 'frame',
       'frequencyHz': stable?.frequencyHz,
       'clarity': stable?.clarity ?? raw?.clarity,
       'rawFrequencyHz': raw?.frequencyHz,
@@ -767,6 +810,7 @@ void _dspIsolateMain(Map<String, Object> bootstrap) {
         pluckLatencySequence = 0;
       case 'audio':
         if (ring == null) {
+          framePort.send(const <String, Object?>{'type': 'audioProcessed'});
           return;
         }
         final transferable = command['bytes']! as TransferableTypedData;
@@ -802,6 +846,7 @@ void _dspIsolateMain(Map<String, Object> bootstrap) {
         if (index < bytes.length) {
           pendingLowByte = bytes[index];
         }
+        framePort.send(const <String, Object?>{'type': 'audioProcessed'});
       case 'close':
         commands.close();
     }

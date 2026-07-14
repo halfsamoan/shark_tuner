@@ -218,6 +218,40 @@ void main() {
         isFalse,
       );
     });
+
+    test('keeps an established lock through one low-quality frame', () {
+      final tracker = InTuneLockTracker();
+      tracker.update(cents: 1, timestamp: Duration.zero);
+      tracker.update(cents: 1, timestamp: const Duration(milliseconds: 750));
+
+      expect(
+        tracker
+            .markMissing(timestamp: const Duration(milliseconds: 800))
+            .locked,
+        isTrue,
+      );
+      expect(
+        tracker
+            .update(cents: 4, timestamp: const Duration(milliseconds: 850))
+            .locked,
+        isTrue,
+      );
+    });
+
+    test('releases after three consecutive low-quality frames', () {
+      final tracker = InTuneLockTracker();
+      tracker.update(cents: 1, timestamp: Duration.zero);
+      tracker.update(cents: 1, timestamp: const Duration(milliseconds: 750));
+
+      tracker.markMissing(timestamp: const Duration(milliseconds: 800));
+      tracker.markMissing(timestamp: const Duration(milliseconds: 850));
+      expect(
+        tracker
+            .markMissing(timestamp: const Duration(milliseconds: 900))
+            .locked,
+        isFalse,
+      );
+    });
   });
 
   group('TuneUpProgressTracker', () {

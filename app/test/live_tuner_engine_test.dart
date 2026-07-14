@@ -136,6 +136,23 @@ void main() {
     await engine.dispose();
   });
 
+  test('closes capture and DSP after an audio stream error', () async {
+    final capture = _FakeAudioCapture(
+      stream: Stream<Uint8List>.error(StateError('capture failed')),
+    );
+    final engine = IsolateTunerEngine(audioCapture: capture);
+    final unavailable = engine.states.firstWhere(
+      (state) => state.status == LiveTunerStatus.unavailable,
+    );
+
+    await engine.start(BuiltInTunings.standardGuitar);
+    final state = await unavailable.timeout(const Duration(seconds: 5));
+
+    expect(state.error, isA<StateError>());
+    expect(capture.isCapturing, isFalse);
+    await engine.dispose();
+  });
+
   test('manual focus reports a different heard physical string', () async {
     final capture = _FakeAudioCapture(
       stream: Stream.fromIterable(_sineChunks(frequencyHz: 196)),
