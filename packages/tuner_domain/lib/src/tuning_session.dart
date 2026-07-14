@@ -28,6 +28,39 @@ final class StringSelection {
   final double cents;
 }
 
+/// Finds the nearest physical string without changing automatic-selection
+/// state. Returns null when the pitch is not plausibly close to any string.
+StringSelection? closestStringSelection({
+  required double frequencyHz,
+  required TuningDefinition tuning,
+  double maximumDeviationCents = 200,
+}) {
+  if (!frequencyHz.isFinite || frequencyHz <= 0) {
+    throw ArgumentError.value(frequencyHz, 'frequencyHz');
+  }
+  if (!maximumDeviationCents.isFinite || maximumDeviationCents <= 0) {
+    throw ArgumentError.value(maximumDeviationCents, 'maximumDeviationCents');
+  }
+  StringSelection? best;
+  for (final target in tuning.strings) {
+    final targetHz = target.targetFrequencyHz(
+      referenceA4Hz: tuning.referenceA4Hz,
+      centsOffset: tuning.centsOffset,
+    );
+    final cents = _centsFrom(frequencyHz, targetHz);
+    if (best == null || cents.abs() < best.cents.abs()) {
+      best = StringSelection(
+        target: target,
+        targetFrequencyHz: targetHz,
+        cents: cents,
+      );
+    }
+  }
+  return best != null && best.cents.abs() <= maximumDeviationCents
+      ? best
+      : null;
+}
+
 /// Chooses a physical string while requiring repeated evidence before a switch.
 final class AutomaticStringSelector {
   AutomaticStringSelector({
@@ -39,10 +72,12 @@ final class AutomaticStringSelector {
   TuningString? _selected;
   int? _pendingStringNumber;
   int _pendingFrames = 0;
+  bool _switchArmedByOnset = false;
 
   StringSelection? update({
     required double frequencyHz,
     required TuningDefinition tuning,
+    bool freshOnset = false,
   }) {
     if (!frequencyHz.isFinite || frequencyHz <= 0) {
       throw ArgumentError.value(frequencyHz, 'frequencyHz');
@@ -52,9 +87,17 @@ final class AutomaticStringSelector {
       reset();
       _tuningKey = tuningKey;
     }
+    if (freshOnset) {
+      _clearPending();
+      _switchArmedByOnset = true;
+    }
 
-    final nearest = _nearestTarget(frequencyHz, tuning);
-    if (nearest.cents.abs() > config.maximumDeviationCents) {
+    final nearest = closestStringSelection(
+      frequencyHz: frequencyHz,
+      tuning: tuning,
+      maximumDeviationCents: config.maximumDeviationCents,
+    );
+    if (nearest == null) {
       _clearPending();
       return null;
     }
@@ -62,9 +105,16 @@ final class AutomaticStringSelector {
     final selected = _selected;
     if (selected == null) {
       _selected = nearest.target;
+      _switchArmedByOnset = false;
       return _selectionFor(frequencyHz, nearest.target, tuning);
     }
     if (selected.stringNumber == nearest.target.stringNumber) {
+      _clearPending();
+      _switchArmedByOnset = false;
+      return _selectionFor(frequencyHz, selected, tuning);
+    }
+
+    if (!_switchArmedByOnset) {
       _clearPending();
       return _selectionFor(frequencyHz, selected, tuning);
     }
@@ -85,6 +135,7 @@ final class AutomaticStringSelector {
     if (_pendingFrames >= config.switchConfirmationFrames) {
       _selected = nearest.target;
       _clearPending();
+      _switchArmedByOnset = false;
       return _selectionFor(frequencyHz, nearest.target, tuning);
     }
     return current;
@@ -93,24 +144,8 @@ final class AutomaticStringSelector {
   void reset() {
     _tuningKey = null;
     _selected = null;
+    _switchArmedByOnset = false;
     _clearPending();
-  }
-
-  ({TuningString target, double cents}) _nearestTarget(
-    double frequencyHz,
-    TuningDefinition tuning,
-  ) {
-    TuningString? best;
-    var bestCents = double.infinity;
-    for (final target in tuning.strings) {
-      final targetHz = _targetFrequency(target, tuning);
-      final cents = _centsFrom(frequencyHz, targetHz);
-      if (cents.abs() < bestCents.abs()) {
-        best = target;
-        bestCents = cents;
-      }
-    }
-    return (target: best!, cents: bestCents);
   }
 
   StringSelection _selectionFor(

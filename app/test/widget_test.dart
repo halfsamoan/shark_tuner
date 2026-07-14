@@ -299,6 +299,63 @@ void main() {
     await _pumpFrames(tester);
   });
 
+  testWidgets('manual focus explains when a different string is heard', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final engine = _ScriptedTunerEngine();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildInstrumentTheme(),
+        home: PrecisionTunerScreen(
+          match: _FakeSongCatalog.verifiedMatch,
+          catalog: _FakeSongCatalog(
+            currentMatch: _FakeSongCatalog.verifiedMatch,
+          ),
+          tunerEngineFactory: () => engine,
+          includeUnverifiedSongs: false,
+        ),
+      ),
+    );
+    await _pumpFrames(tester);
+
+    final sixthString = _FakeSongCatalog.match.tuning.strings.first;
+    final thirdString = _FakeSongCatalog.match.tuning.strings.singleWhere(
+      (string) => string.stringNumber == 3,
+    );
+    await tester.tap(
+      find.byWidgetPredicate(
+        (widget) => widget is TuningNoteCell && widget.stringNumber == 6,
+      ),
+    );
+    await tester.pump();
+    engine.emit(
+      LiveTunerState(
+        status: LiveTunerStatus.listening,
+        frequencyHz: thirdString.targetFrequencyHz(
+          referenceA4Hz: _FakeSongCatalog.match.tuning.referenceA4Hz,
+          centsOffset: _FakeSongCatalog.match.tuning.centsOffset,
+        ),
+        clarity: 0.99,
+        rmsDb: -12,
+        cents: 900,
+        target: sixthString,
+        heardTarget: thirdString,
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('3번 줄 소리가 들려요'), findsOneWidget);
+    expect(find.text('6번 줄을 튕겨 주세요'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+  });
+
   testWidgets('primes microphone use before requesting permission', (
     tester,
   ) async {

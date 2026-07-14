@@ -125,6 +125,24 @@ void main() {
     expect(engine.current.error, isA<MicrophonePermissionDeniedException>());
     await engine.dispose();
   });
+
+  test('manual focus reports a different heard physical string', () async {
+    final capture = _FakeAudioCapture(
+      stream: Stream.fromIterable(_sineChunks(frequencyHz: 196)),
+    );
+    final engine = IsolateTunerEngine(audioCapture: capture);
+    final heardOther = engine.states.firstWhere(
+      (state) => state.heardTarget != null,
+    );
+
+    await engine.start(BuiltInTunings.standardGuitar);
+    engine.setManualTarget(6);
+    final state = await heardOther.timeout(const Duration(seconds: 5));
+
+    expect(state.target?.stringNumber, 6);
+    expect(state.heardTarget?.stringNumber, 3);
+    await engine.dispose();
+  });
 }
 
 List<Uint8List> _sineChunks({

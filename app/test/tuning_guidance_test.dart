@@ -41,14 +41,14 @@ void main() {
   });
 
   test('in-tune and no-signal states avoid adjustment advice', () {
-    expect(
-      guidanceForCents(
-        cents: 4.9,
-        stringNumber: 3,
-        coarseMode: false,
-      ).direction,
-      TuningDirection.hold,
+    final almostInTune = guidanceForCents(
+      cents: 4.9,
+      stringNumber: 3,
+      coarseMode: false,
     );
+    expect(almostInTune.direction, TuningDirection.hold);
+    expect(almostInTune.kind, GuidanceSlotKind.settling);
+    expect(almostInTune.leadingSymbol, '…');
     expect(
       guidanceForCents(
         cents: null,
@@ -57,5 +57,49 @@ void main() {
       ).headline,
       '줄을 한 번 튕겨 주세요',
     );
+  });
+
+  test('signal guidance distinguishes quiet, noisy, and settling input', () {
+    expect(
+      guidanceForLiveInput(
+        cents: null,
+        rmsDb: -52,
+        clarity: null,
+        expectedStringNumber: 6,
+      ).kind,
+      GuidanceSlotKind.tooQuiet,
+    );
+    expect(
+      guidanceForLiveInput(
+        cents: null,
+        rmsDb: -18,
+        clarity: 0.3,
+        expectedStringNumber: 6,
+      ).kind,
+      GuidanceSlotKind.noisy,
+    );
+    expect(
+      guidanceForLiveInput(
+        cents: null,
+        rmsDb: -30,
+        clarity: 0.8,
+        expectedStringNumber: 6,
+      ).kind,
+      GuidanceSlotKind.settling,
+    );
+  });
+
+  test('wrong-string guidance names both heard and expected strings', () {
+    final guidance = guidanceForLiveInput(
+      cents: 90,
+      rmsDb: -12,
+      clarity: 0.99,
+      expectedStringNumber: 6,
+      heardStringNumber: 3,
+    );
+
+    expect(guidance.kind, GuidanceSlotKind.wrongString);
+    expect(guidance.headline, '3번 줄 소리가 들려요');
+    expect(guidance.instruction, '6번 줄을 튕겨 주세요');
   });
 }

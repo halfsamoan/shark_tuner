@@ -2,6 +2,15 @@ import 'dart:math' as math;
 
 enum TuningDirection { raise, lower, hold }
 
+enum GuidanceSlotKind {
+  pluckPrompt,
+  direction,
+  wrongString,
+  tooQuiet,
+  noisy,
+  settling,
+}
+
 final class TuningGuidance {
   const TuningGuidance({
     required this.direction,
@@ -9,6 +18,7 @@ final class TuningGuidance {
     required this.instruction,
     required this.coarse,
     this.turnEstimate,
+    this.kind = GuidanceSlotKind.direction,
   });
 
   final TuningDirection direction;
@@ -16,11 +26,19 @@ final class TuningGuidance {
   final String instruction;
   final bool coarse;
   final String? turnEstimate;
+  final GuidanceSlotKind kind;
 
-  String get arrow => switch (direction) {
-    TuningDirection.raise => '▲',
-    TuningDirection.lower => '▼',
-    TuningDirection.hold => '✓',
+  String get leadingSymbol => switch (kind) {
+    GuidanceSlotKind.pluckPrompt => '●',
+    GuidanceSlotKind.wrongString => '!',
+    GuidanceSlotKind.tooQuiet => '↟',
+    GuidanceSlotKind.noisy => '≈',
+    GuidanceSlotKind.settling => '…',
+    GuidanceSlotKind.direction => switch (direction) {
+      TuningDirection.raise => '▲',
+      TuningDirection.lower => '▼',
+      TuningDirection.hold => '✓',
+    },
   };
 
   String get spokenLabel => '$headline. $instruction';
@@ -43,6 +61,7 @@ TuningGuidance guidanceForCents({
       headline: '줄을 한 번 튕겨 주세요',
       instruction: '소리가 멎으면 다시 한 번 튕기세요',
       coarse: false,
+      kind: GuidanceSlotKind.pluckPrompt,
     );
   }
   if (cents.abs() <= inTuneToleranceCents) {
@@ -51,6 +70,7 @@ TuningGuidance guidanceForCents({
       headline: '거의 맞았어요',
       instruction: '그대로 유지해 잠금을 완료하세요',
       coarse: false,
+      kind: GuidanceSlotKind.settling,
     );
   }
 
@@ -79,6 +99,66 @@ TuningGuidance guidanceForCents({
         : '$stringNumber번 줄 페그를 조여 올리세요 ($turnEstimate)',
     coarse: false,
     turnEstimate: turnEstimate,
+  );
+}
+
+TuningGuidance guidanceForLiveInput({
+  required double? cents,
+  required double? rmsDb,
+  required double? clarity,
+  required int expectedStringNumber,
+  int? heardStringNumber,
+  bool coarseMode = false,
+}) {
+  if (heardStringNumber != null && heardStringNumber != expectedStringNumber) {
+    return TuningGuidance(
+      direction: TuningDirection.hold,
+      headline: '$heardStringNumber번 줄 소리가 들려요',
+      instruction: '$expectedStringNumber번 줄을 튕겨 주세요',
+      coarse: false,
+      kind: GuidanceSlotKind.wrongString,
+    );
+  }
+  if (cents != null && cents.isFinite) {
+    return guidanceForCents(
+      cents: cents,
+      stringNumber: expectedStringNumber,
+      coarseMode: coarseMode,
+    );
+  }
+  if (rmsDb == null || !rmsDb.isFinite || rmsDb <= -60) {
+    return TuningGuidance(
+      direction: TuningDirection.hold,
+      headline: '줄을 한 번 튕겨 주세요',
+      instruction: '$expectedStringNumber번 줄을 튕기고 울리게 두세요',
+      coarse: false,
+      kind: GuidanceSlotKind.pluckPrompt,
+    );
+  }
+  if (rmsDb < -46) {
+    return TuningGuidance(
+      direction: TuningDirection.hold,
+      headline: '소리가 너무 작아요',
+      instruction: '$expectedStringNumber번 줄을 조금 더 세게 튕겨 주세요',
+      coarse: false,
+      kind: GuidanceSlotKind.tooQuiet,
+    );
+  }
+  if (rmsDb > -30 && clarity != null && clarity < 0.6) {
+    return const TuningGuidance(
+      direction: TuningDirection.hold,
+      headline: '주변 소리가 함께 들려요',
+      instruction: '다른 줄을 뮤트하고 한 줄만 울려 주세요',
+      coarse: false,
+      kind: GuidanceSlotKind.noisy,
+    );
+  }
+  return const TuningGuidance(
+    direction: TuningDirection.hold,
+    headline: '음을 잡는 중이에요',
+    instruction: '한 줄만 그대로 울리게 두세요',
+    coarse: false,
+    kind: GuidanceSlotKind.settling,
   );
 }
 

@@ -3,6 +3,17 @@ import 'package:tuner_domain/tuner_domain.dart';
 
 void main() {
   group('AutomaticStringSelector', () {
+    test('closest string lookup does not mutate automatic selection state', () {
+      final closest = closestStringSelection(
+        frequencyHz: 196,
+        tuning: BuiltInTunings.standardGuitar,
+      );
+
+      expect(closest, isNotNull);
+      expect(closest!.target.stringNumber, 3);
+      expect(closest.cents, closeTo(0, 0.1));
+    });
+
     test('maps concert pitch to the nearest physical string', () {
       final selector = AutomaticStringSelector();
 
@@ -53,6 +64,7 @@ void main() {
       final first = selector.update(
         frequencyHz: 110,
         tuning: BuiltInTunings.standardGuitar,
+        freshOnset: true,
       );
       final second = selector.update(
         frequencyHz: 110,
@@ -66,6 +78,27 @@ void main() {
       expect(first!.target.stringNumber, 6);
       expect(second!.target.stringNumber, 6);
       expect(third!.target.stringNumber, 5);
+    });
+
+    test('does not switch strings on a mid-sustain harmonic jump', () {
+      final selector = AutomaticStringSelector();
+      selector.update(
+        frequencyHz: 82.41,
+        tuning: BuiltInTunings.standardGuitar,
+        freshOnset: true,
+      );
+
+      final firstJump = selector.update(
+        frequencyHz: 110,
+        tuning: BuiltInTunings.standardGuitar,
+      );
+      final repeatedJump = selector.update(
+        frequencyHz: 110,
+        tuning: BuiltInTunings.standardGuitar,
+      );
+
+      expect(firstJump!.target.stringNumber, 6);
+      expect(repeatedJump!.target.stringNumber, 6);
     });
 
     test('rejects frequencies too far from every target', () {

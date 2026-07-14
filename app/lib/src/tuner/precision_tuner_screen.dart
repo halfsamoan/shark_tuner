@@ -299,9 +299,12 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                 : '다음 줄로 이동합니다',
             coarse: false,
           )
-        : guidanceForCents(
+        : guidanceForLiveInput(
             cents: _displayCents,
-            stringNumber: _selected.stringNumber,
+            rmsDb: _liveState.rmsDb,
+            clarity: _liveState.clarity,
+            expectedStringNumber: _selected.stringNumber,
+            heardStringNumber: _liveState.heardTarget?.stringNumber,
             coarseMode: _coarseMode,
           );
     return Scaffold(
@@ -633,7 +636,7 @@ class _GuidancePanel extends StatelessWidget {
                 SizedBox(
                   width: 32,
                   child: Text(
-                    guidance.arrow,
+                    guidance.leadingSymbol,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: color,

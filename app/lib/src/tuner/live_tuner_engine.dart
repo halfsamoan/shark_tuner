@@ -23,6 +23,7 @@ final class LiveTunerState {
     this.rmsDb,
     this.cents,
     this.target,
+    this.heardTarget,
     this.locked = false,
     this.lockProgress = 0,
     this.actualSampleRate,
@@ -44,6 +45,7 @@ final class LiveTunerState {
   final double? rmsDb;
   final double? cents;
   final TuningString? target;
+  final TuningString? heardTarget;
   final bool locked;
   final double lockProgress;
   final int? actualSampleRate;
@@ -63,6 +65,7 @@ final class LiveTunerState {
     double? rmsDb,
     double? cents,
     TuningString? target,
+    TuningString? heardTarget,
     bool? locked,
     double? lockProgress,
     int? actualSampleRate,
@@ -75,6 +78,7 @@ final class LiveTunerState {
     Duration? pluckToDisplayP95Latency,
     Object? error,
     bool clearPitch = false,
+    bool clearHeardTarget = false,
     bool clearError = false,
   }) {
     return LiveTunerState(
@@ -84,6 +88,9 @@ final class LiveTunerState {
       rmsDb: rmsDb ?? this.rmsDb,
       cents: clearPitch ? null : cents ?? this.cents,
       target: clearPitch ? null : target ?? this.target,
+      heardTarget: clearPitch || clearHeardTarget
+          ? null
+          : heardTarget ?? this.heardTarget,
       locked: clearPitch ? false : locked ?? this.locked,
       lockProgress: clearPitch ? 0 : lockProgress ?? this.lockProgress,
       actualSampleRate: actualSampleRate ?? this.actualSampleRate,
@@ -145,6 +152,8 @@ final class IsolateTunerEngine implements TunerEngine {
   var _disposed = false;
   int _lastPluckLatencySequence = 0;
   final List<int> _pluckToDisplayLatencyMicros = [];
+  int? _heardOtherStringNumber;
+  int _heardOtherFrameCount = 0;
 
   @override
   LiveTunerState get current => _current;
@@ -171,6 +180,7 @@ final class IsolateTunerEngine implements TunerEngine {
     _manualStringNumber = null;
     _lastPluckLatencySequence = 0;
     _pluckToDisplayLatencyMicros.clear();
+    _resetHeardOtherEvidence();
     final windowSamples = _windowSamplesFor(tuning);
     final hopSamples = _hopSamplesFor(windowSamples);
     _emit(
@@ -252,6 +262,7 @@ final class IsolateTunerEngine implements TunerEngine {
     }
     _manualStringNumber = stringNumber;
     _lockTracker.reset();
+    _resetHeardOtherEvidence();
   }
 
   void _handleDspFrame(Map<String, Object?> frame) {
@@ -263,15 +274,18 @@ final class IsolateTunerEngine implements TunerEngine {
     final processingMicros = frame['processingMicros'] as int?;
     final pluckLatencyMicros = frame['pluckToFirstValidMicros'] as int?;
     final pluckLatencySequence = frame['pluckLatencySequence'] as int? ?? 0;
-    if (pluckLatencyMicros != null &&
+    final freshOnset =
+        pluckLatencyMicros != null &&
         processingMicros != null &&
-        pluckLatencySequence > _lastPluckLatencySequence) {
+        pluckLatencySequence > _lastPluckLatencySequence;
+    if (freshOnset) {
       _lastPluckLatencySequence = pluckLatencySequence;
       _pluckToDisplayLatencyMicros.add(pluckLatencyMicros + processingMicros);
     }
     final pluckToDisplayP95 = _durationP95(_pluckToDisplayLatencyMicros);
     if (frequencyHz == null) {
       _lockTracker.reset();
+      _resetHeardOtherEvidence();
       _emit(
         _current.copyWith(
           rmsDb: rmsDb,
@@ -296,8 +310,20 @@ final class IsolateTunerEngine implements TunerEngine {
             (target) => target.stringNumber == _manualStringNumber,
           );
     final selection = manualTarget == null
-        ? _selector.update(frequencyHz: frequencyHz, tuning: tuning)
+        ? _selector.update(
+            frequencyHz: frequencyHz,
+            tuning: tuning,
+            freshOnset: freshOnset,
+          )
         : _selectionFor(frequencyHz, manualTarget, tuning);
+    final closest = closestStringSelection(
+      frequencyHz: frequencyHz,
+      tuning: tuning,
+    );
+    final heardTarget = _confirmedOtherTarget(
+      manualTarget: manualTarget,
+      closest: closest?.target,
+    );
     if (selection == null) {
       _lockTracker.reset();
       _emit(
@@ -330,6 +356,8 @@ final class IsolateTunerEngine implements TunerEngine {
         rmsDb: rmsDb,
         cents: selection.cents,
         target: selection.target,
+        heardTarget: heardTarget,
+        clearHeardTarget: heardTarget == null,
         locked: lock.locked,
         lockProgress: lock.progress,
         processingDuration: processingMicros == null
@@ -354,6 +382,7 @@ final class IsolateTunerEngine implements TunerEngine {
     _lockTracker.reset();
     _tuning = null;
     _manualStringNumber = null;
+    _resetHeardOtherEvidence();
     _emit(LiveTunerState.idle);
   }
 
@@ -388,6 +417,30 @@ final class IsolateTunerEngine implements TunerEngine {
     if (!_states.isClosed) {
       _states.add(state);
     }
+  }
+
+  TuningString? _confirmedOtherTarget({
+    required TuningString? manualTarget,
+    required TuningString? closest,
+  }) {
+    if (manualTarget == null ||
+        closest == null ||
+        closest.stringNumber == manualTarget.stringNumber) {
+      _resetHeardOtherEvidence();
+      return null;
+    }
+    if (_heardOtherStringNumber == closest.stringNumber) {
+      _heardOtherFrameCount++;
+    } else {
+      _heardOtherStringNumber = closest.stringNumber;
+      _heardOtherFrameCount = 1;
+    }
+    return _heardOtherFrameCount >= 2 ? closest : null;
+  }
+
+  void _resetHeardOtherEvidence() {
+    _heardOtherStringNumber = null;
+    _heardOtherFrameCount = 0;
   }
 }
 
