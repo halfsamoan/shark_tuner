@@ -36,6 +36,11 @@ void main() {
       expect(state.selectedSource, AudioInputSource.unprocessed);
       expect(state.windowSamples, 4096);
       expect(state.hopSamples, 1536);
+      expect(state.rawCents, closeTo(0, 1));
+      expect(state.rawClarity, greaterThanOrEqualTo(0.9));
+      expect(state.audioPosition, isNotNull);
+      expect(state.onsetPosition, isNotNull);
+      expect(state.onsetSequence, 1);
       expect(state.pluckToFirstValidLatency, isNotNull);
       expect(state.pluckLatencySampleCount, 1);
       expect(state.pluckToDisplayP95Latency, isNotNull);

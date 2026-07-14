@@ -19,6 +19,8 @@ final class LiveTunerState {
   const LiveTunerState({
     required this.status,
     this.frequencyHz,
+    this.rawCents,
+    this.rawClarity,
     this.clarity,
     this.rmsDb,
     this.cents,
@@ -34,6 +36,10 @@ final class LiveTunerState {
     this.pluckToFirstValidLatency,
     this.pluckLatencySampleCount = 0,
     this.pluckToDisplayP95Latency,
+    this.audioPosition,
+    this.onsetPosition,
+    this.onsetSequence = 0,
+    this.freshOnset = false,
     this.error,
   });
 
@@ -41,6 +47,8 @@ final class LiveTunerState {
 
   final LiveTunerStatus status;
   final double? frequencyHz;
+  final double? rawCents;
+  final double? rawClarity;
   final double? clarity;
   final double? rmsDb;
   final double? cents;
@@ -56,11 +64,17 @@ final class LiveTunerState {
   final Duration? pluckToFirstValidLatency;
   final int pluckLatencySampleCount;
   final Duration? pluckToDisplayP95Latency;
+  final Duration? audioPosition;
+  final Duration? onsetPosition;
+  final int onsetSequence;
+  final bool freshOnset;
   final Object? error;
 
   LiveTunerState copyWith({
     LiveTunerStatus? status,
     double? frequencyHz,
+    double? rawCents,
+    double? rawClarity,
     double? clarity,
     double? rmsDb,
     double? cents,
@@ -76,14 +90,21 @@ final class LiveTunerState {
     Duration? pluckToFirstValidLatency,
     int? pluckLatencySampleCount,
     Duration? pluckToDisplayP95Latency,
+    Duration? audioPosition,
+    Duration? onsetPosition,
+    int? onsetSequence,
+    bool freshOnset = false,
     Object? error,
     bool clearPitch = false,
+    bool clearRawPitch = false,
     bool clearHeardTarget = false,
     bool clearError = false,
   }) {
     return LiveTunerState(
       status: status ?? this.status,
       frequencyHz: clearPitch ? null : frequencyHz ?? this.frequencyHz,
+      rawCents: clearRawPitch ? null : rawCents ?? this.rawCents,
+      rawClarity: clearRawPitch ? null : rawClarity ?? this.rawClarity,
       clarity: clearPitch ? null : clarity ?? this.clarity,
       rmsDb: rmsDb ?? this.rmsDb,
       cents: clearPitch ? null : cents ?? this.cents,
@@ -104,6 +125,10 @@ final class LiveTunerState {
           pluckLatencySampleCount ?? this.pluckLatencySampleCount,
       pluckToDisplayP95Latency:
           pluckToDisplayP95Latency ?? this.pluckToDisplayP95Latency,
+      audioPosition: audioPosition ?? this.audioPosition,
+      onsetPosition: onsetPosition ?? this.onsetPosition,
+      onsetSequence: onsetSequence ?? this.onsetSequence,
+      freshOnset: freshOnset,
       error: clearError ? null : error ?? this.error,
     );
   }
@@ -151,6 +176,7 @@ final class IsolateTunerEngine implements TunerEngine {
   StreamSubscription<Map<String, Object?>>? _frameSubscription;
   var _disposed = false;
   int _lastPluckLatencySequence = 0;
+  int _lastOnsetSequence = 0;
   final List<int> _pluckToDisplayLatencyMicros = [];
   int? _heardOtherStringNumber;
   int _heardOtherFrameCount = 0;
@@ -181,6 +207,7 @@ final class IsolateTunerEngine implements TunerEngine {
     _lockTargetStringNumber = null;
     _manualStringNumber = null;
     _lastPluckLatencySequence = 0;
+    _lastOnsetSequence = 0;
     _pluckToDisplayLatencyMicros.clear();
     _resetHeardOtherEvidence();
     final windowSamples = _windowSamplesFor(tuning);
@@ -273,25 +300,62 @@ final class IsolateTunerEngine implements TunerEngine {
       return;
     }
     final frequencyHz = frame['frequencyHz'] as double?;
+    final rawFrequencyHz = frame['rawFrequencyHz'] as double?;
+    final rawClarity = frame['rawClarity'] as double?;
     final rmsDb = frame['rmsDb'] as double?;
+    final audioPosition = Duration(
+      microseconds: frame['audioPositionMicros']! as int,
+    );
+    final onsetPositionMicros = frame['onsetPositionMicros'] as int?;
+    final onsetPosition = onsetPositionMicros == null
+        ? null
+        : Duration(microseconds: onsetPositionMicros);
+    final onsetSequence = frame['onsetSequence'] as int? ?? 0;
+    final freshOnset = onsetSequence > _lastOnsetSequence;
+    if (freshOnset) {
+      _lastOnsetSequence = onsetSequence;
+    }
     final processingMicros = frame['processingMicros'] as int?;
     final pluckLatencyMicros = frame['pluckToFirstValidMicros'] as int?;
     final pluckLatencySequence = frame['pluckLatencySequence'] as int? ?? 0;
-    final freshOnset =
+    final freshLatencySample =
         pluckLatencyMicros != null &&
         processingMicros != null &&
         pluckLatencySequence > _lastPluckLatencySequence;
-    if (freshOnset) {
+    if (freshLatencySample) {
       _lastPluckLatencySequence = pluckLatencySequence;
       _pluckToDisplayLatencyMicros.add(pluckLatencyMicros + processingMicros);
     }
     final pluckToDisplayP95 = _durationP95(_pluckToDisplayLatencyMicros);
+    final tuning = _tuning!;
+    final manualTarget = _manualStringNumber == null
+        ? null
+        : tuning.strings.singleWhere(
+            (target) => target.stringNumber == _manualStringNumber,
+          );
+    final rawTarget = rawFrequencyHz == null
+        ? manualTarget
+        : manualTarget ??
+              closestStringSelection(
+                frequencyHz: rawFrequencyHz,
+                tuning: tuning,
+              )?.target;
+    final rawCents = rawFrequencyHz == null || rawTarget == null
+        ? null
+        : _selectionFor(rawFrequencyHz, rawTarget, tuning).cents;
     if (frequencyHz == null) {
       _lockTracker.reset();
       _resetHeardOtherEvidence();
       _emit(
         _current.copyWith(
           rmsDb: rmsDb,
+          rawCents: rawCents,
+          rawClarity: rawClarity,
+          clearRawPitch: rawCents == null,
+          audioPosition: audioPosition,
+          onsetPosition: onsetPosition,
+          onsetSequence: onsetSequence,
+          freshOnset: freshOnset,
           processingDuration: processingMicros == null
               ? null
               : Duration(microseconds: processingMicros),
@@ -306,17 +370,11 @@ final class IsolateTunerEngine implements TunerEngine {
       return;
     }
 
-    final tuning = _tuning!;
-    final manualTarget = _manualStringNumber == null
-        ? null
-        : tuning.strings.singleWhere(
-            (target) => target.stringNumber == _manualStringNumber,
-          );
     final selection = manualTarget == null
         ? _selector.update(
             frequencyHz: frequencyHz,
             tuning: tuning,
-            freshOnset: freshOnset,
+            freshOnset: freshLatencySample,
           )
         : _selectionFor(frequencyHz, manualTarget, tuning);
     final closest = closestStringSelection(
@@ -333,7 +391,14 @@ final class IsolateTunerEngine implements TunerEngine {
         _current.copyWith(
           frequencyHz: frequencyHz,
           clarity: frame['clarity'] as double?,
+          rawCents: rawCents,
+          rawClarity: rawClarity,
+          clearRawPitch: rawCents == null,
           rmsDb: rmsDb,
+          audioPosition: audioPosition,
+          onsetPosition: onsetPosition,
+          onsetSequence: onsetSequence,
+          freshOnset: freshOnset,
           processingDuration: processingMicros == null
               ? null
               : Duration(microseconds: processingMicros),
@@ -355,13 +420,22 @@ final class IsolateTunerEngine implements TunerEngine {
     final lock = _lockTracker.update(
       cents: selection.cents,
       timestamp: Duration(microseconds: audioPositionMicros),
-      freshOnset: freshOnset,
+      freshOnset: freshLatencySample,
     );
     _emit(
       _current.copyWith(
         frequencyHz: frequencyHz,
         clarity: frame['clarity'] as double?,
+        rawCents: rawFrequencyHz == null
+            ? null
+            : _selectionFor(rawFrequencyHz, selection.target, tuning).cents,
+        rawClarity: rawClarity,
+        clearRawPitch: rawFrequencyHz == null,
         rmsDb: rmsDb,
+        audioPosition: audioPosition,
+        onsetPosition: onsetPosition,
+        onsetSequence: onsetSequence,
+        freshOnset: freshOnset,
         cents: selection.cents,
         target: selection.target,
         heardTarget: heardTarget,
@@ -578,9 +652,18 @@ void _dspIsolateMain(Map<String, Object> bootstrap) {
   int? pendingLowByte;
   int? pluckToFirstValidMicros;
   int? pendingPluckOnsetSample;
+  int? latestOnsetSample;
+  var onsetSequence = 0;
   var pluckLatencySequence = 0;
   var detector = MpmDetector();
   PluckOnsetTracker? onsetTracker;
+
+  void recordOnset(int onsetSample) {
+    pendingPluckOnsetSample = onsetSample;
+    latestOnsetSample = onsetSample;
+    onsetSequence++;
+    pitchPipeline!.reset();
+  }
 
   void analyzeFrame() {
     final activeRing = ring!;
@@ -620,12 +703,18 @@ void _dspIsolateMain(Map<String, Object> bootstrap) {
       'frequencyHz': stable?.frequencyHz,
       'clarity': stable?.clarity ?? raw?.clarity,
       'rawFrequencyHz': raw?.frequencyHz,
+      'rawClarity': raw?.clarity,
       'confidenceAccepted': tracked.confidenceAccepted,
       'octaveCorrection': tracked.octaveSanity?.kind.name,
       'rmsDb': rmsDb,
       'audioPositionMicros':
           (processedSamples * Duration.microsecondsPerSecond) ~/
           activeSampleRate,
+      'onsetPositionMicros': latestOnsetSample == null
+          ? null
+          : (latestOnsetSample! * Duration.microsecondsPerSecond) ~/
+                activeSampleRate,
+      'onsetSequence': onsetSequence,
       'processingMicros': stopwatch.elapsedMicroseconds,
       'pluckToFirstValidMicros': pluckToFirstValidMicros,
       'pluckLatencySequence': pluckLatencySequence,
@@ -639,8 +728,7 @@ void _dspIsolateMain(Map<String, Object> bootstrap) {
     final normalized = signedSample / 32768.0;
     final onset = onsetTracker!.addSample(normalized);
     if (onset != null) {
-      pendingPluckOnsetSample = onset;
-      pitchPipeline!.reset();
+      recordOnset(onset);
     }
     ring!.write(normalized);
     processedSamples++;
@@ -674,6 +762,8 @@ void _dspIsolateMain(Map<String, Object> bootstrap) {
         pendingLowByte = null;
         pluckToFirstValidMicros = null;
         pendingPluckOnsetSample = null;
+        latestOnsetSample = null;
+        onsetSequence = 0;
         pluckLatencySequence = 0;
       case 'audio':
         if (ring == null) {
@@ -698,8 +788,7 @@ void _dspIsolateMain(Map<String, Object> bootstrap) {
             end: batchEnd,
           );
           if (onsets.isNotEmpty) {
-            pendingPluckOnsetSample = onsets.last;
-            pitchPipeline!.reset();
+            recordOnset(onsets.last);
           }
           ring!.writePcm16Le(bytes, start: index, end: batchEnd);
           processedSamples += batchSamples;
