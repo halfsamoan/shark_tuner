@@ -154,6 +154,7 @@ final class IsolateTunerEngine implements TunerEngine {
   final List<int> _pluckToDisplayLatencyMicros = [];
   int? _heardOtherStringNumber;
   int _heardOtherFrameCount = 0;
+  int? _lockTargetStringNumber;
 
   @override
   LiveTunerState get current => _current;
@@ -177,6 +178,7 @@ final class IsolateTunerEngine implements TunerEngine {
     _tuning = tuning;
     _selector.reset();
     _lockTracker.reset();
+    _lockTargetStringNumber = null;
     _manualStringNumber = null;
     _lastPluckLatencySequence = 0;
     _pluckToDisplayLatencyMicros.clear();
@@ -262,6 +264,7 @@ final class IsolateTunerEngine implements TunerEngine {
     }
     _manualStringNumber = stringNumber;
     _lockTracker.reset();
+    _lockTargetStringNumber = null;
     _resetHeardOtherEvidence();
   }
 
@@ -345,9 +348,14 @@ final class IsolateTunerEngine implements TunerEngine {
       return;
     }
     final audioPositionMicros = frame['audioPositionMicros'] as int;
+    if (_lockTargetStringNumber != selection.target.stringNumber) {
+      _lockTracker.reset();
+      _lockTargetStringNumber = selection.target.stringNumber;
+    }
     final lock = _lockTracker.update(
       cents: selection.cents,
       timestamp: Duration(microseconds: audioPositionMicros),
+      freshOnset: freshOnset,
     );
     _emit(
       _current.copyWith(

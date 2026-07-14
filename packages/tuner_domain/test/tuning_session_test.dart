@@ -115,6 +115,35 @@ void main() {
   });
 
   group('InTuneLockTracker', () {
+    test('locks after one +/-2 cent hit within a second of a fresh pluck', () {
+      final tracker = InTuneLockTracker();
+
+      expect(
+        tracker
+            .update(cents: 18, timestamp: Duration.zero, freshOnset: true)
+            .locked,
+        isFalse,
+      );
+      expect(
+        tracker
+            .update(cents: -1.9, timestamp: const Duration(milliseconds: 999))
+            .locked,
+        isTrue,
+      );
+    });
+
+    test('does not use a +/-2 cent hit after the pluck window expires', () {
+      final tracker = InTuneLockTracker();
+
+      tracker.update(cents: 18, timestamp: Duration.zero, freshOnset: true);
+      expect(
+        tracker
+            .update(cents: 1.9, timestamp: const Duration(milliseconds: 1001))
+            .locked,
+        isFalse,
+      );
+    });
+
     test('locks only after remaining in tolerance for 750 ms', () {
       final tracker = InTuneLockTracker();
 

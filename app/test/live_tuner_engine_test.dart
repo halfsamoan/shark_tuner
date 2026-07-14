@@ -27,6 +27,11 @@ void main() {
       expect(state.frequencyHz, closeTo(110, 0.1));
       expect(state.target?.stringNumber, 5);
       expect(state.cents, closeTo(0, 1));
+      expect(
+        state.locked,
+        isTrue,
+        reason: 'one +/-2 cent hit within the fresh-pluck window locks',
+      );
       expect(state.actualSampleRate, 48000);
       expect(state.selectedSource, AudioInputSource.unprocessed);
       expect(state.windowSamples, 4096);

@@ -179,12 +179,17 @@ final class InTuneLockConfig {
     this.toleranceCents = 3,
     this.releaseToleranceCents = 5,
     this.holdDuration = const Duration(milliseconds: 750),
+    this.pluckHitToleranceCents = 2,
+    this.pluckHitWindow = const Duration(seconds: 1),
   }) : assert(toleranceCents > 0),
-       assert(releaseToleranceCents >= toleranceCents);
+       assert(releaseToleranceCents >= toleranceCents),
+       assert(pluckHitToleranceCents > 0);
 
   final double toleranceCents;
   final double releaseToleranceCents;
   final Duration holdDuration;
+  final double pluckHitToleranceCents;
+  final Duration pluckHitWindow;
 }
 
 final class InTuneLockState {
@@ -206,9 +211,14 @@ final class InTuneLockTracker {
   final InTuneLockConfig config;
   Duration? _lastTimestamp;
   Duration? _withinSince;
+  Duration? _pluckStartedAt;
   bool _locked = false;
 
-  InTuneLockState update({required double cents, required Duration timestamp}) {
+  InTuneLockState update({
+    required double cents,
+    required Duration timestamp,
+    bool freshOnset = false,
+  }) {
     if (!cents.isFinite) {
       throw ArgumentError.value(cents, 'cents');
     }
@@ -217,6 +227,9 @@ final class InTuneLockTracker {
       throw ArgumentError.value(timestamp, 'timestamp', 'Must be monotonic.');
     }
     _lastTimestamp = timestamp;
+    if (freshOnset) {
+      _pluckStartedAt = timestamp;
+    }
 
     final absoluteCents = cents.abs();
     final withinTolerance = absoluteCents <= config.toleranceCents;
@@ -225,6 +238,9 @@ final class InTuneLockTracker {
         _locked = false;
         _withinSince = withinTolerance ? timestamp : null;
       }
+    } else if (_isPluckHit(absoluteCents, timestamp)) {
+      _locked = true;
+      _withinSince = timestamp;
     } else if (withinTolerance) {
       _withinSince ??= timestamp;
       if (timestamp - _withinSince! >= config.holdDuration) {
@@ -244,7 +260,15 @@ final class InTuneLockTracker {
   void reset() {
     _lastTimestamp = null;
     _withinSince = null;
+    _pluckStartedAt = null;
     _locked = false;
+  }
+
+  bool _isPluckHit(double absoluteCents, Duration timestamp) {
+    final startedAt = _pluckStartedAt;
+    return startedAt != null &&
+        timestamp - startedAt <= config.pluckHitWindow &&
+        absoluteCents <= config.pluckHitToleranceCents;
   }
 
   double _progressAt(Duration timestamp) {
