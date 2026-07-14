@@ -6,6 +6,7 @@ import 'package:tuner_domain/tuner_domain.dart';
 
 import '../app/instrument_theme.dart';
 import '../app/toauner_app.dart';
+import '../metronome/metronome_screen.dart'; // (Claude)
 import '../settings/app_information_screen.dart';
 import '../string_care/string_care_model.dart';
 import '../string_care/string_care_screen.dart';
@@ -158,6 +159,28 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
       appBar: InstrumentHeaderBar(
         section: '곡 찾기',
         actions: [
+          // (Claude) Metronome entry point.
+          Semantics(
+            label: '메트로놈',
+            button: true,
+            excludeSemantics: true,
+            child: IconButton(
+              key: const Key('metronome-entry'),
+              tooltip: '메트로놈',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const MetronomeScreen(),
+                ),
+              ),
+              icon: Text(
+                '♩',
+                style: InstrumentTypeTheme.standard.subhead.copyWith(
+                  color: InstrumentColors.accent,
+                  fontFamily: 'D2Coding',
+                ),
+              ),
+            ),
+          ),
           Semantics(
             label: '튜닝 기록 ${_tuningHistoryLedger.entries.length}회',
             button: true,
