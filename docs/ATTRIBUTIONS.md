@@ -24,6 +24,14 @@ instrument-data roles; Pretendard is used for Korean prose and controls.
   License: MIT. toauner uses its local in-memory byte-source playback and loop
   mode for reference tones; it does not use remote audio URLs.
 
+## Development-only curation tooling
+
+- `csv` 8.0.0, maintained as the Dart `csv` package. Source:
+  [pub.dev package](https://pub.dev/packages/csv). License: MIT. It is a
+  development-only dependency used to stream an offline MusicBrainz canonical
+  CSV snapshot into the non-shipping song curation backbone; it is not bundled
+  into the mobile runtime and performs no network requests.
+
 ## DSP corpus data
 
 toauner does not vendor third-party source code from the datasets below. The

@@ -89,11 +89,11 @@
 - 보류: 폴리포닉(우리 저음 audience에서 부실), 메트로놈·코드(축 밖). 베이스는 1급 확장 가치.
 
 **곡 데이터 20곡 출시 + 30곡 후보 → 수백~수천곡 (전부 사실만, 탭/가사 금지)**:
-1. 백본(CC0): MusicBrainz(MBID 정체성) + ListenBrainz(인기 우선순위) + AcousticBrainz 덤프(키/템포 힌트), 로컬 호스팅.
-2. 장르 디폴트 레버리지: 팝/록 85~90%는 E 스탠다드·카포 없음 → `default-unverified`로 대량 시드, 사람 시간 안 씀. 예외 장르(메탈/블루스/핑거스타일/반음다운)에만 검증 역투입.
-3. 예외 검증: Wikipedia 대체튜닝 리스트 → Songsterr MIDI 배열 2차 오라클 대조 → 2소스 일치 시 verified, 출처 URL 2개.
+1. **[코드 완료] 오프라인 백본**: MusicBrainz canonical core CSV(MBID 정체성) + 선택적 ListenBrainz 인기도 스냅샷을 네트워크 없는 도구로 결합. 결과는 항상 비출시이며 MBID·인기도가 튜닝 근거로 계산되지 않는다.
+2. **[코드 완료] 장르 기본값 격리**: 팝/록/컨트리/포크의 E Standard 제안도 `default_unverified`로만 생성한다. 메탈 등 예외 장르는 `exception_review_required`로 강제하고 카포·센트 오프셋을 추정하지 않는다.
+3. **[코드 완료] 주장별 2소스 게이트**: 튜닝·카포·센트 오프셋 각각 두 독립 호스트와 최소 한 독립 출처를 강제한다. Songsterr는 한 곡당 한 개의 명시적 `curation_oracle`만 허용하며 런타임 호출·스크래핑은 금지한다.
 4. 수천곡: LLM 제안 + 독립 확인 2개 게이트. 릴리스는 verified만 노출.
-- 금지 소스: Ultimate Guitar·DadaGP·MuseScore(ToS/오염 provenance), Spotify audio-features(폐지). Songsterr는 런타임 금지·큐레이션 오라클만.
+- 금지 소스: Ultimate Guitar·DadaGP·MuseScore(ToS/오염 provenance), Spotify audio-features(폐지). AcousticBrainz는 2022년 수집 종료된 CC0 힌트 자료일 뿐 튜닝 검증 근거가 아니다. Songsterr는 런타임 금지·큐레이션 오라클만.
 
 ---
 
