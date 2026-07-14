@@ -119,10 +119,15 @@ void main() {
     try {
       expect(await candidateCatalog.search('Metallica'), isEmpty);
       expect(await candidateCatalog.getById('metallica-enter-sandman'), isNull);
-      expect(
-        await candidateCatalog.search('Metallica', includeUnverified: true),
-        hasLength(2),
+      final researchMatches = await candidateCatalog.search(
+        'Metallica',
+        includeUnverified: true,
       );
+      expect(researchMatches.map((match) => match.song.title).toSet(), {
+        'Enter Sandman',
+        'Master of Puppets',
+        'Sad but True',
+      });
     } finally {
       await candidateCatalog.close();
     }

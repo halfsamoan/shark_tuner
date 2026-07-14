@@ -23,8 +23,14 @@ Codex가 수행했다. 후보 원본은 감사 이력 보존을 위해 모든 �
 - Pink Floyd — `Wish You Were Here`
 - Black Sabbath — `Paranoid`
 - Led Zeppelin — `Stairway to Heaven`
+- Green Day — `Basket Case`
+- Stevie Ray Vaughan — `Pride and Joy`
+- Metallica — `Sad but True`
+- Tracy Chapman — `Fast Car`
+- Ed Sheeran — `Perfect`
 
-전부 E standard, capo 0 후보이며 `needs_human_review` 상태다. 프로젝트
+앞의 5곡은 E standard, capo 0이고 뒤의 5곡은 E-flat·D standard와 capo
+1·2 사용 사례를 보강한다. 전부 `needs_human_review` 상태다. 프로젝트
 소유자가 이 묶음을 검토·승인하기 전까지 `catalog.v1.json`과 앱 출시 자산의
 20곡은 바꾸지 않는다.
 

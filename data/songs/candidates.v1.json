@@ -427,6 +427,91 @@
         { "label": "Scott's Guitar Lessons chart — standard tuning", "url": "https://www.scottsguitarlessons.co.uk/lesson_resources/PDFs/Tunes/stairway%20to%20heaven.pdf", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" }
       ],
       "notes": "Independent lesson sources agree on E standard with no capo."
+    },
+    {
+      "id": "green-day-basket-case",
+      "artist": "Green Day",
+      "searchAliases": ["그린 데이", "그린데이"],
+      "title": "Basket Case",
+      "tuningId": "guitar-6-eb-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "JustinGuitar lesson — original in E-flat tuning", "url": "https://www.justinguitar.com/songs/green-day-basket-case-chords-tabs-guitar-lesson-st-311", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Andy Guitar lesson — E-flat standard map", "url": "https://www.andyguitar.co.uk/videos/green-day-basket-case", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Both sources specify E-flat standard for playing with the original recording."
+    },
+    {
+      "id": "stevie-ray-vaughan-pride-and-joy",
+      "artist": "Stevie Ray Vaughan",
+      "searchAliases": ["스티비 레이 본", "SRV"],
+      "title": "Pride and Joy",
+      "tuningId": "guitar-6-eb-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Guitar World SRV lesson — E-flat standard map", "url": "https://www.guitarworld.com/features/stevie-ray-vaughan-soul-soul", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Jon MacLennan SRV lesson — Pride and Joy in E-flat", "url": "https://www.jonmaclennan.com/blog/stevie-ray-vaughans-first-guitar-lesson", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Sources agree on E-flat standard; no exact recording cents offset is asserted."
+    },
+    {
+      "id": "metallica-sad-but-true",
+      "artist": "Metallica",
+      "searchAliases": ["메탈리카"],
+      "title": "Sad but True",
+      "tuningId": "guitar-6-d-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Guitar Lessons 365 lesson — D standard", "url": "https://guitarlessons365.com/sad-but-true-guitar-lesson-with-onscreen-tab-metallica/", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "MusicRadar lesson — D standard DGCFAD", "url": "https://www.musicradar.com/tuition/guitars/weekend-riff-metallica-sad-but-true-603034", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Independent sources agree on D standard for the released recording."
+    },
+    {
+      "id": "tracy-chapman-fast-car",
+      "artist": "Tracy Chapman",
+      "searchAliases": ["트레이시 채프먼"],
+      "title": "Fast Car",
+      "tuningId": "guitar-6-standard",
+      "tuningVersion": 1,
+      "capoFret": 2,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Great Scott Music lesson — standard tuning, capo 2", "url": "https://greatscottmusic.com.au/wp-content/uploads/2025/01/fast-car-by-tracy-chapman-song-lesson.pdf", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Guitar Alliance chart — standard tuning, capo 2", "url": "https://www.guitaralliance.com/riff-o-matic/private/private/riff-a-day/november_05/fast_car/chapman_tracy-fast_car.pdf", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Tune open strings in E standard before placing the capo at fret 2."
+    },
+    {
+      "id": "ed-sheeran-perfect",
+      "artist": "Ed Sheeran",
+      "searchAliases": ["에드 시런", "에드 시어런"],
+      "title": "Perfect",
+      "tuningId": "guitar-6-standard",
+      "tuningVersion": 1,
+      "capoFret": 1,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Guitar Lessons 365 lesson — standard tuning, capo 1", "url": "https://guitarlessons365.com/ed-sheeran-perfect-guitar-lesson/", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Guitar Lobby lesson — EADGBE, capo 1", "url": "https://www.guitarlobby.com/capo-songs/", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Tune open strings in E standard before placing the capo at fret 1."
     }
   ]
 }

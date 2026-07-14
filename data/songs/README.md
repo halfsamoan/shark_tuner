@@ -8,7 +8,7 @@
 
 - `research-starter-list.md`: 임시 리서치 폴더에서 보존한 89곡 후보 원문.
 - `tunings.v1.json`: 첫 후보군이 참조하는 정규화된 튜닝 정의.
-- `candidates.v1.json`: 검색·카포·7/8현 흐름을 위한 출처 감사 후보 25곡. 기존 승인 20곡에 2026-07-14 확장 후보 5곡을 더했으며, 후보 파일 자체는 전부 `needs_human_review`로 유지한다. 출시 승인은 `catalog.v1.json`에만 기록한다.
+- `candidates.v1.json`: 검색·카포·7/8현 흐름을 위한 출처 감사 후보 30곡. 기존 승인 20곡에 2026-07-14 확장 후보 10곡을 더했으며, 후보 파일 자체는 전부 `needs_human_review`로 유지한다. 출시 승인은 `catalog.v1.json`에만 기록한다.
 - `song-candidates.schema.json`: 후보 데이터 계약. `verified`로 승격하려면 독립 출처가 최소 2개 필요하다.
 - `catalog.v1.json`: 2026-07-14 프로젝트 소유자가 전량 승인한 출시 카탈로그. 승인 역할·날짜·범위와 20곡의 `verified` 상태를 기록한다.
 - `song-catalog.schema.json`: 출시 카탈로그 계약. 전량 승인 메타데이터와 독립 출처를 강제한다.

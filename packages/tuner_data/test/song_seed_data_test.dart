@@ -28,12 +28,12 @@ void main() {
             as Map<String, dynamic>;
   });
 
-  test('source-audited batch has 25 unique non-shipping candidates', () {
+  test('source-audited batch has 30 unique non-shipping candidates', () {
     final songs = (candidates['songs'] as List).cast<Map<String, dynamic>>();
     final ids = songs.map((song) => song['id'] as String).toSet();
 
     expect(candidates['shippingEligible'], isFalse);
-    expect(songs, hasLength(25));
+    expect(songs, hasLength(30));
     expect(ids, hasLength(songs.length));
     expect(
       songs.every((song) => song['verificationStatus'] == 'needs_human_review'),
