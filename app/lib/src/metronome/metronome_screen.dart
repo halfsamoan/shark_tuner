@@ -53,15 +53,15 @@ class _MetronomeScreenState extends State<MetronomeScreen> {
   Future<void> _toggle() => _running ? _stop() : _start();
 
   Future<void> _start() async {
-    // (Claude) Toggle the UI and visual beat immediately so the control always
-    // responds, then start audio; surface a failure instead of failing silently.
+    // (Claude) Toggle the UI immediately so the control always responds, then
+    // start audio; surface a failure instead of failing silently.
     setState(() {
       _running = true;
       _beat = 0;
     });
-    _restartVisual();
     try {
       await _player.play(bpm: _bpm, beatsPerBar: _beatsPerBar);
+      _startVisualSync();
     } on Object {
       _visualTimer?.cancel();
       if (mounted) {
@@ -81,12 +81,26 @@ class _MetronomeScreenState extends State<MetronomeScreen> {
     }
   }
 
-  void _restartVisual() {
+  // (Claude) Drive the beat indicator from the audio's playback position so it
+  // stays locked to what is actually sounding, not a drifting local timer.
+  void _startVisualSync() {
     _visualTimer?.cancel();
-    final period = Duration(microseconds: (60000000 / _bpm).round());
-    _visualTimer = Timer.periodic(period, (_) {
-      if (!mounted) return;
-      setState(() => _beat = (_beat + 1) % _beatsPerBar);
+    var polling = false;
+    _visualTimer = Timer.periodic(const Duration(milliseconds: 25), (_) async {
+      if (!mounted || !_running || polling) return;
+      polling = true;
+      try {
+        final position = await _player.position();
+        final beatMs = 60000 / _bpm;
+        final beat = (position.inMilliseconds / beatMs).floor() % _beatsPerBar;
+        if (mounted && beat != _beat) {
+          setState(() => _beat = beat);
+        }
+      } on Object {
+        // Ignore a dropped position sample; the next tick recovers.
+      } finally {
+        polling = false;
+      }
     });
   }
 
@@ -96,7 +110,7 @@ class _MetronomeScreenState extends State<MetronomeScreen> {
     setState(() => _bpm = next);
     if (_running) {
       await _player.play(bpm: _bpm, beatsPerBar: _beatsPerBar);
-      _restartVisual();
+      _startVisualSync();
     }
   }
 
@@ -104,7 +118,7 @@ class _MetronomeScreenState extends State<MetronomeScreen> {
     setState(() => _beatsPerBar = beats);
     if (_running) {
       await _player.play(bpm: _bpm, beatsPerBar: _beatsPerBar);
-      _restartVisual();
+      _startVisualSync();
     }
   }
 

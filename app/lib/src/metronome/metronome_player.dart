@@ -8,11 +8,15 @@ import 'package:audioplayers/audioplayers.dart';
 
 const int metronomeSampleRate = 48000;
 
-/// Builds one bar of clicks (beat 1 accented) as a 48 kHz mono PCM16 WAV.
+/// Builds a click track (beat 1 of each bar accented) as a 48 kHz mono PCM16
+/// WAV. The pattern is repeated to fill at least [minLoopDuration] so that the
+/// (non-gapless) MediaPlayer loop boundary is rare; every beat inside the
+/// buffer is sample-accurate, keeping the tempo steady.
 Uint8List buildMetronomeBarWav({
   required int bpm,
   required int beatsPerBar,
   int sampleRate = metronomeSampleRate,
+  Duration minLoopDuration = const Duration(seconds: 45),
 }) {
   if (bpm < 20 || bpm > 400) {
     throw ArgumentError.value(bpm, 'bpm', 'Must be within 20..400.');
@@ -21,17 +25,22 @@ Uint8List buildMetronomeBarWav({
     throw ArgumentError.value(beatsPerBar, 'beatsPerBar');
   }
   final samplesPerBeat = (sampleRate * 60 / bpm).round();
-  final totalSamples = samplesPerBeat * beatsPerBar;
-  final samples = Int16List(totalSamples);
-  for (var beat = 0; beat < beatsPerBar; beat++) {
-    final accent = beat == 0;
-    _writeClick(
-      samples,
-      offset: beat * samplesPerBeat,
-      sampleRate: sampleRate,
-      frequencyHz: accent ? 1760 : 1320,
-      gain: accent ? 0.9 : 0.62,
-    );
+  final barSamples = samplesPerBeat * beatsPerBar;
+  final minSamples = (sampleRate * minLoopDuration.inMilliseconds / 1000)
+      .round();
+  final bars = math.max(1, (minSamples / barSamples).ceil());
+  final samples = Int16List(barSamples * bars);
+  for (var bar = 0; bar < bars; bar++) {
+    for (var beat = 0; beat < beatsPerBar; beat++) {
+      final accent = beat == 0;
+      _writeClick(
+        samples,
+        offset: bar * barSamples + beat * samplesPerBeat,
+        sampleRate: sampleRate,
+        frequencyHz: accent ? 1760 : 1320,
+        gain: accent ? 0.9 : 0.62,
+      );
+    }
   }
   return _wrapWav(samples, sampleRate);
 }
@@ -87,6 +96,11 @@ Uint8List _wrapWav(Int16List samples, int sampleRate) {
 
 abstract interface class MetronomePlayer {
   Future<void> play({required int bpm, required int beatsPerBar});
+
+  /// (Claude) Current playback offset, used to keep the beat indicator locked
+  /// to the audio timeline rather than a free-running visual timer.
+  Future<Duration> position();
+
   Future<void> stop();
   Future<void> dispose();
 }
@@ -114,6 +128,10 @@ final class AudioplayersMetronomePlayer implements MetronomePlayer {
       mode: PlayerMode.mediaPlayer,
     );
   }
+
+  @override
+  Future<Duration> position() async =>
+      (await _player.getCurrentPosition()) ?? Duration.zero;
 
   @override
   Future<void> stop() => _player.stop();
