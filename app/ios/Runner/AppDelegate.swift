@@ -29,5 +29,30 @@ import UIKit
         result(opened)
       }
     }
+    let deviceChannel = FlutterMethodChannel(
+      name: "app.toauner/device",
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
+    )
+    deviceChannel.setMethodCallHandler { call, result in
+      guard call.method == "setScreenAwake" else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+      guard
+        let arguments = call.arguments as? [String: Any],
+        let enabled = arguments["enabled"] as? Bool
+      else {
+        result(
+          FlutterError(
+            code: "invalid_arguments",
+            message: "enabled must be a boolean",
+            details: nil
+          )
+        )
+        return
+      }
+      UIApplication.shared.isIdleTimerDisabled = enabled
+      result(true)
+    }
   }
 }

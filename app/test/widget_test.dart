@@ -431,6 +431,40 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await _pumpFrames(tester);
   });
+
+  testWidgets('keeps the screen awake only while the tuner is mounted', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final awakeStates = <bool>[];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildInstrumentTheme(),
+        home: PrecisionTunerScreen(
+          match: _FakeSongCatalog.verifiedMatch,
+          catalog: _FakeSongCatalog(
+            currentMatch: _FakeSongCatalog.verifiedMatch,
+          ),
+          tunerEngineFactory: _ScriptedTunerEngine.new,
+          includeUnverifiedSongs: false,
+          setScreenAwake: (enabled) async {
+            awakeStates.add(enabled);
+            return true;
+          },
+        ),
+      ),
+    );
+    await _pumpFrames(tester);
+    expect(awakeStates, [true]);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+    expect(awakeStates, [true, false]);
+  });
 }
 
 LiveTunerState _stateForString(

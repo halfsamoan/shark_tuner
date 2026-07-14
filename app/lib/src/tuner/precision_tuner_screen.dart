@@ -6,6 +6,7 @@ import 'package:tuner_data/tuner_data.dart';
 import 'package:tuner_domain/tuner_domain.dart';
 
 import '../app/instrument_theme.dart';
+import '../device/tuner_device_control.dart';
 import '../settings/app_settings.dart';
 import '../ui/instrument_widgets.dart';
 import 'live_tuner_engine.dart';
@@ -21,6 +22,7 @@ class PrecisionTunerScreen extends StatefulWidget {
     this.directTuning,
     this.directLabel = '바로 튜닝',
     this.openAppSettings = openToaunerAppSettings,
+    this.setScreenAwake = setToaunerScreenAwake,
   }) : assert(
          (match == null) != (directTuning == null),
          'Provide exactly one of match or directTuning.',
@@ -33,6 +35,7 @@ class PrecisionTunerScreen extends StatefulWidget {
   final TunerEngineFactory tunerEngineFactory;
   final bool includeUnverifiedSongs;
   final AppSettingsLauncher openAppSettings;
+  final ScreenAwakeSetter setScreenAwake;
 
   TuningDefinition get tuning => match?.tuning ?? directTuning!;
   SongTuningRecord? get song => match?.song;
@@ -71,6 +74,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
       ),
     );
     _engineSubscription = _engine.states.listen(_handleEngineState);
+    unawaited(widget.setScreenAwake(true));
     unawaited(_prepareInput());
   }
 
@@ -80,6 +84,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     _tuneUpStopwatch.stop();
     unawaited(_engineSubscription.cancel());
     unawaited(_engine.dispose());
+    unawaited(widget.setScreenAwake(false));
     super.dispose();
   }
 
