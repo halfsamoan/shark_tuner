@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 final class StabilityPluckObservation {
   StabilityPluckObservation({
     required this.stringNumber,
@@ -102,6 +104,8 @@ final class StabilityEvidence {
     required this.medianSteadyStateDriftCentsPerSecond,
     required this.medianInterPluckDriftCents,
     required this.stepJumpCount,
+    required this.repeatabilityPluckCount,
+    required this.normalizedOvershootCoefficientOfVariation,
   });
 
   final int trustedPluckCount;
@@ -111,6 +115,8 @@ final class StabilityEvidence {
   final double? medianSteadyStateDriftCentsPerSecond;
   final double? medianInterPluckDriftCents;
   final int stepJumpCount;
+  final int repeatabilityPluckCount;
+  final double? normalizedOvershootCoefficientOfVariation;
 }
 
 final class StabilityAssessment {
@@ -231,6 +237,7 @@ StabilityEvidence _summarize(
   List<StabilityPluckObservation> observations, {
   required int rejectedCount,
 }) {
+  final repeatability = _normalizedOvershootRepeatability(observations);
   return StabilityEvidence(
     trustedPluckCount: observations.length,
     rejectedPluckCount: rejectedCount,
@@ -249,6 +256,40 @@ StabilityEvidence _summarize(
     stepJumpCount: observations
         .where((item) => item.postAdjustmentStepObserved)
         .length,
+    repeatabilityPluckCount: repeatability.count,
+    normalizedOvershootCoefficientOfVariation: repeatability.coefficient,
+  );
+}
+
+({int count, double? coefficient}) _normalizedOvershootRepeatability(
+  List<StabilityPluckObservation> observations,
+) {
+  if (observations.length < 5 ||
+      observations.map((item) => item.stringNumber).toSet().length != 1) {
+    return (count: observations.length, coefficient: null);
+  }
+  final medianPeakRms = _medianOrNull(
+    observations.map((item) => item.peakRmsDb),
+  )!;
+  final normalized = [
+    for (final observation in observations)
+      observation.attackOvershootCents *
+          math.pow(10, (medianPeakRms - observation.peakRmsDb) / 20),
+  ];
+  final mean =
+      normalized.reduce((left, right) => left + right) / normalized.length;
+  if (mean == 0) {
+    return (count: observations.length, coefficient: 0);
+  }
+  var squareSum = 0.0;
+  for (final value in normalized) {
+    final difference = value - mean;
+    squareSum += difference * difference;
+  }
+  final standardDeviation = math.sqrt(squareSum / normalized.length);
+  return (
+    count: observations.length,
+    coefficient: standardDeviation / mean.abs(),
   );
 }
 

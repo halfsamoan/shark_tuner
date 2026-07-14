@@ -89,6 +89,22 @@ void main() {
         );
       },
     );
+
+    test('reports five-pluck RMS-normalized overshoot repeatability', () {
+      final assessment = StabilityClassifier.assess([
+        _observation(overshoot: 10, peakRmsDb: -12),
+        _observation(overshoot: 12.59, peakRmsDb: -10),
+        _observation(overshoot: 15.85, peakRmsDb: -8),
+        _observation(overshoot: 19.95, peakRmsDb: -6),
+        _observation(overshoot: 25.12, peakRmsDb: -4),
+      ]);
+
+      expect(assessment.evidence.repeatabilityPluckCount, 5);
+      expect(
+        assessment.evidence.normalizedOvershootCoefficientOfVariation,
+        lessThan(.01),
+      );
+    });
   });
 }
 
@@ -100,6 +116,7 @@ StabilityPluckObservation _observation({
   bool stepJump = false,
   double confidence = 0.95,
   double validFrameRatio = 0.9,
+  double peakRmsDb = -8,
 }) {
   return StabilityPluckObservation(
     stringNumber: 6,
@@ -108,7 +125,7 @@ StabilityPluckObservation _observation({
     steadyStateDriftCentsPerSecond: steadyDrift,
     interPluckDriftCents: interPluckDrift,
     postAdjustmentStepObserved: stepJump,
-    peakRmsDb: -8,
+    peakRmsDb: peakRmsDb,
     confidence: confidence,
     validFrameRatio: validFrameRatio,
   );
