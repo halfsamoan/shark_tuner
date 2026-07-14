@@ -8,6 +8,8 @@ enum StringWinding { standard, reversed }
 
 enum PegMechanism { verticalPost, slottedRoller }
 
+enum HeadstockLayout { split, inline, classicalSplit }
+
 enum PegRotationDirection {
   clockwise,
   counterClockwise;
@@ -53,6 +55,164 @@ final class PegConfiguration {
       mechanism: mechanism ?? this.mechanism,
       directionOverride: directionOverride ?? this.directionOverride,
     );
+  }
+}
+
+/// A verified physical map from guitar strings to tuning-machine behavior.
+///
+/// Split layouts cover 3+3, 4+3, and 4+4 headstocks. Inline layouts support
+/// any string count. Classical slotted rollers deliberately remain unknown
+/// until a direction override has been observed for each peg.
+final class InstrumentPegProfile {
+  InstrumentPegProfile._({
+    required this.stringCount,
+    required this.layout,
+    required this.bassSideStringCount,
+    required this.handedness,
+    required this.orientation,
+    required Map<int, StringWinding> windingOverrides,
+    required Map<int, PegRotationDirection> directionOverrides,
+  }) : windingOverrides = Map.unmodifiable(windingOverrides),
+       directionOverrides = Map.unmodifiable(directionOverrides) {
+    if (stringCount <= 0) {
+      throw ArgumentError.value(stringCount, 'stringCount');
+    }
+    if (layout != HeadstockLayout.inline &&
+        (bassSideStringCount <= 0 || bassSideStringCount >= stringCount)) {
+      throw ArgumentError.value(
+        bassSideStringCount,
+        'bassSideStringCount',
+        'A split layout needs pegs on both sides.',
+      );
+    }
+    if (layout == HeadstockLayout.inline &&
+        bassSideStringCount != stringCount) {
+      throw ArgumentError.value(
+        bassSideStringCount,
+        'bassSideStringCount',
+        'Inline layouts place every peg on one side.',
+      );
+    }
+    for (final stringNumber in {
+      ...windingOverrides.keys,
+      ...directionOverrides.keys,
+    }) {
+      _checkStringNumber(stringNumber);
+    }
+  }
+
+  factory InstrumentPegProfile.split({
+    required int stringCount,
+    required int bassSideStringCount,
+    InstrumentHandedness handedness = InstrumentHandedness.right,
+    HeadstockOrientation orientation = HeadstockOrientation.standard,
+    Map<int, StringWinding> windingOverrides = const {},
+    Map<int, PegRotationDirection> directionOverrides = const {},
+  }) {
+    return InstrumentPegProfile._(
+      stringCount: stringCount,
+      layout: HeadstockLayout.split,
+      bassSideStringCount: bassSideStringCount,
+      handedness: handedness,
+      orientation: orientation,
+      windingOverrides: windingOverrides,
+      directionOverrides: directionOverrides,
+    );
+  }
+
+  factory InstrumentPegProfile.inline({
+    required int stringCount,
+    InstrumentHandedness handedness = InstrumentHandedness.right,
+    HeadstockOrientation orientation = HeadstockOrientation.standard,
+    Map<int, StringWinding> windingOverrides = const {},
+    Map<int, PegRotationDirection> directionOverrides = const {},
+  }) {
+    return InstrumentPegProfile._(
+      stringCount: stringCount,
+      layout: HeadstockLayout.inline,
+      bassSideStringCount: stringCount,
+      handedness: handedness,
+      orientation: orientation,
+      windingOverrides: windingOverrides,
+      directionOverrides: directionOverrides,
+    );
+  }
+
+  factory InstrumentPegProfile.classicalSplit({
+    required int stringCount,
+    required int bassSideStringCount,
+    InstrumentHandedness handedness = InstrumentHandedness.right,
+    HeadstockOrientation orientation = HeadstockOrientation.standard,
+    Map<int, StringWinding> windingOverrides = const {},
+    Map<int, PegRotationDirection> directionOverrides = const {},
+  }) {
+    return InstrumentPegProfile._(
+      stringCount: stringCount,
+      layout: HeadstockLayout.classicalSplit,
+      bassSideStringCount: bassSideStringCount,
+      handedness: handedness,
+      orientation: orientation,
+      windingOverrides: windingOverrides,
+      directionOverrides: directionOverrides,
+    );
+  }
+
+  final int stringCount;
+  final HeadstockLayout layout;
+  final int bassSideStringCount;
+  final InstrumentHandedness handedness;
+  final HeadstockOrientation orientation;
+  final Map<int, StringWinding> windingOverrides;
+  final Map<int, PegRotationDirection> directionOverrides;
+
+  PegConfiguration configurationForString(int stringNumber) {
+    _checkStringNumber(stringNumber);
+    final side = layout == HeadstockLayout.inline
+        ? PegSide.bass
+        : stringNumber > stringCount - bassSideStringCount
+        ? PegSide.bass
+        : PegSide.treble;
+    return PegConfiguration(
+      side: side,
+      handedness: handedness,
+      orientation: orientation,
+      winding: windingOverrides[stringNumber] ?? StringWinding.standard,
+      mechanism: layout == HeadstockLayout.classicalSplit
+          ? PegMechanism.slottedRoller
+          : PegMechanism.verticalPost,
+      directionOverride: directionOverrides[stringNumber],
+    );
+  }
+
+  PegRotationDirection raisePitchDirectionForString(int stringNumber) {
+    return PegDirectionRule.raisePitchDirection(
+      configurationForString(stringNumber),
+    );
+  }
+
+  InstrumentPegProfile withDirectionOverride({
+    required int stringNumber,
+    required PegRotationDirection raisePitchDirection,
+  }) {
+    _checkStringNumber(stringNumber);
+    return InstrumentPegProfile._(
+      stringCount: stringCount,
+      layout: layout,
+      bassSideStringCount: bassSideStringCount,
+      handedness: handedness,
+      orientation: orientation,
+      windingOverrides: windingOverrides,
+      directionOverrides: {
+        ...directionOverrides,
+        stringNumber: raisePitchDirection,
+      },
+    );
+  }
+
+  void _checkStringNumber(int stringNumber) {
+    if (stringNumber < 1 || stringNumber > stringCount) {
+      throw RangeError.range(stringNumber, 1, stringCount, 'stringNumber');
+    }
   }
 }
 

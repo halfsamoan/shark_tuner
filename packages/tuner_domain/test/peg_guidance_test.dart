@@ -56,6 +56,106 @@ void main() {
     });
   });
 
+  group('InstrumentPegProfile', () {
+    test('maps a right-handed 3+3 headstock by physical string side', () {
+      final profile = InstrumentPegProfile.split(
+        stringCount: 6,
+        bassSideStringCount: 3,
+      );
+
+      expect(profile.configurationForString(6).side, PegSide.bass);
+      expect(profile.configurationForString(4).side, PegSide.bass);
+      expect(profile.configurationForString(3).side, PegSide.treble);
+      expect(profile.configurationForString(1).side, PegSide.treble);
+      expect(
+        profile.raisePitchDirectionForString(6),
+        PegRotationDirection.counterClockwise,
+      );
+      expect(
+        profile.raisePitchDirectionForString(1),
+        PegRotationDirection.clockwise,
+      );
+    });
+
+    test('maps every peg on a six-inline headstock to the bass side', () {
+      final profile = InstrumentPegProfile.inline(stringCount: 6);
+
+      for (var stringNumber = 1; stringNumber <= 6; stringNumber++) {
+        expect(profile.configurationForString(stringNumber).side, PegSide.bass);
+      }
+    });
+
+    test('left-handed and reverse headstocks each invert the truth table', () {
+      final right = InstrumentPegProfile.inline(stringCount: 6);
+      final left = InstrumentPegProfile.inline(
+        stringCount: 6,
+        handedness: InstrumentHandedness.left,
+      );
+      final reverse = InstrumentPegProfile.inline(
+        stringCount: 6,
+        orientation: HeadstockOrientation.reversed,
+      );
+
+      expect(
+        left.raisePitchDirectionForString(6),
+        right.raisePitchDirectionForString(6).opposite,
+      );
+      expect(
+        reverse.raisePitchDirectionForString(6),
+        right.raisePitchDirectionForString(6).opposite,
+      );
+    });
+
+    test('supports asymmetric split layouts for seven-string guitars', () {
+      final profile = InstrumentPegProfile.split(
+        stringCount: 7,
+        bassSideStringCount: 4,
+      );
+
+      expect(profile.configurationForString(4).side, PegSide.bass);
+      expect(profile.configurationForString(3).side, PegSide.treble);
+    });
+
+    test(
+      'classical rollers stay unknown until a per-peg override is saved',
+      () {
+        final profile = InstrumentPegProfile.classicalSplit(
+          stringCount: 6,
+          bassSideStringCount: 3,
+        );
+
+        expect(
+          () => profile.raisePitchDirectionForString(6),
+          throwsA(isA<StateError>()),
+        );
+
+        final calibrated = profile.withDirectionOverride(
+          stringNumber: 6,
+          raisePitchDirection: PegRotationDirection.clockwise,
+        );
+        expect(
+          calibrated.raisePitchDirectionForString(6),
+          PegRotationDirection.clockwise,
+        );
+        expect(
+          () => calibrated.raisePitchDirectionForString(5),
+          throwsA(isA<StateError>()),
+        );
+      },
+    );
+
+    test('rejects string numbers and split counts outside the profile', () {
+      expect(
+        () =>
+            InstrumentPegProfile.split(stringCount: 6, bassSideStringCount: 0),
+        throwsArgumentError,
+      );
+      final profile = InstrumentPegProfile.inline(stringCount: 6);
+      expect(() => profile.configurationForString(0), throwsRangeError);
+      expect(() => profile.configurationForString(7), throwsRangeError);
+    });
+  });
+
   group('PegDirectionMonitor', () {
     test('pauses guidance after two consecutive contradictions', () {
       final monitor = PegDirectionMonitor(
