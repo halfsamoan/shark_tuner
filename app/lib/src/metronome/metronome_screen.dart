@@ -53,12 +53,24 @@ class _MetronomeScreenState extends State<MetronomeScreen> {
   Future<void> _toggle() => _running ? _stop() : _start();
 
   Future<void> _start() async {
-    await _player.play(bpm: _bpm, beatsPerBar: _beatsPerBar);
+    // (Claude) Toggle the UI and visual beat immediately so the control always
+    // responds, then start audio; surface a failure instead of failing silently.
     setState(() {
       _running = true;
       _beat = 0;
     });
     _restartVisual();
+    try {
+      await _player.play(bpm: _bpm, beatsPerBar: _beatsPerBar);
+    } on Object {
+      _visualTimer?.cancel();
+      if (mounted) {
+        setState(() => _running = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('소리를 재생할 수 없습니다. 미디어 볼륨을 확인해 주세요.')),
+        );
+      }
+    }
   }
 
   Future<void> _stop() async {

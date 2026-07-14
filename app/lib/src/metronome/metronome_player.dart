@@ -106,10 +106,12 @@ final class AudioplayersMetronomePlayer implements MetronomePlayer {
     final wav = buildMetronomeBarWav(bpm: bpm, beatsPerBar: beatsPerBar);
     await _player.stop();
     await _player.setReleaseMode(ReleaseMode.loop);
+    // (Claude) mediaPlayer mode loops a BytesSource reliably; lowLatency
+    // (SoundPool) churns audio focus and does not sustain the looped bar.
     await _player.play(
       BytesSource(wav, mimeType: 'audio/wav'),
       volume: 1,
-      mode: PlayerMode.lowLatency,
+      mode: PlayerMode.mediaPlayer,
     );
   }
 
