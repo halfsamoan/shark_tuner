@@ -17,6 +17,13 @@ texts ship in `app/assets/fonts/licenses/` and are registered with Flutter's
 The font files are not modified or renamed. D2Coding is used for numeric and
 instrument-data roles; Pretendard is used for Korean prose and controls.
 
+## Runtime audio playback
+
+- `audioplayers` 6.8.1 and its federated platform packages, maintained by the
+  Blue Fire team. Source: [bluefireteam/audioplayers](https://github.com/bluefireteam/audioplayers).
+  License: MIT. toauner uses its local in-memory byte-source playback and loop
+  mode for reference tones; it does not use remote audio URLs.
+
 ## DSP corpus data
 
 toauner does not vendor third-party source code from the datasets below. The
