@@ -9,10 +9,12 @@ class InstrumentHeaderBar extends StatelessWidget
     super.key,
     required this.section,
     this.showBack = false,
+    this.actions = const [],
   });
 
   final String section;
   final bool showBack;
+  final List<Widget> actions;
 
   @override
   Size get preferredSize => const Size.fromHeight(56);
@@ -55,15 +57,21 @@ class InstrumentHeaderBar extends StatelessWidget
       ),
       actions: [
         Center(
-          child: Text(
-            section,
-            style: const TextStyle(
-              color: InstrumentColors.muted,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 116),
+            child: Text(
+              section,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: InstrumentColors.muted,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ),
+        ...actions,
         const SizedBox(width: 14),
       ],
     );

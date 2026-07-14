@@ -6,6 +6,7 @@ import 'package:tuner_domain/tuner_domain.dart';
 
 import '../app/instrument_theme.dart';
 import '../app/toauner_app.dart';
+import '../settings/app_information_screen.dart';
 import '../tuner/live_tuner_engine.dart';
 import '../tuner/precision_tuner_screen.dart';
 import '../ui/instrument_widgets.dart';
@@ -108,7 +109,29 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const InstrumentHeaderBar(section: '곡 찾기'),
+      appBar: InstrumentHeaderBar(
+        section: '곡 찾기',
+        actions: [
+          Semantics(
+            label: '개인정보 및 앱 정보',
+            button: true,
+            excludeSemantics: true,
+            child: IconButton(
+              key: const Key('app-information'),
+              tooltip: '개인정보 및 앱 정보',
+              onPressed: _openAppInformation,
+              icon: const Text(
+                'ⓘ',
+                style: TextStyle(
+                  color: InstrumentColors.information,
+                  fontFamily: 'D2Coding',
+                  fontSize: 20,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 26, 24, 28),
@@ -203,6 +226,12 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
           includeUnverifiedSongs: widget.includeUnverifiedSongs,
         ),
       ),
+    );
+  }
+
+  void _openAppInformation() {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(builder: (_) => const AppInformationScreen()),
     );
   }
 

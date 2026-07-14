@@ -11,6 +11,33 @@ import 'package:tuner_data/tuner_data.dart';
 import 'package:tuner_domain/tuner_domain.dart';
 
 void main() {
+  testWidgets('opens privacy and app information from the home header', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final catalog = _FakeSongCatalog();
+
+    await tester.pumpWidget(
+      ToaunerApp(
+        catalogLoader: () async => catalog,
+        tunerEngineFactory: _FakeTunerEngine.new,
+        includeUnverifiedSongs: false,
+      ),
+    );
+    await _pumpFrames(tester);
+
+    expect(find.bySemanticsLabel('개인정보 및 앱 정보'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('app-information')));
+    await _pumpFrames(tester);
+
+    expect(find.text('개인정보 및 앱 정보'), findsOneWidget);
+    expect(find.textContaining('기기 안에서 실시간으로 분석'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+    semantics.dispose();
+  });
+
   testWidgets('searches a song and carries its exact setup into the tuner', (
     tester,
   ) async {
