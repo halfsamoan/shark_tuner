@@ -33,6 +33,7 @@
       "required": [
         "id",
         "artist",
+        "searchAliases",
         "title",
         "tuningId",
         "tuningVersion",
@@ -46,6 +47,12 @@
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
         "artist": { "type": "string", "minLength": 1 },
+        "searchAliases": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
         "title": { "type": "string", "minLength": 1 },
         "tuningId": { "type": "string", "minLength": 1 },
         "tuningVersion": { "type": "integer", "minimum": 1 },

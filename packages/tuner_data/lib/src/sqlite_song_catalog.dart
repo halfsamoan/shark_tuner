@@ -153,17 +153,35 @@ final class SqliteSongCatalog implements SongCatalog {
         cents_offset REAL NOT NULL,
         verification_status TEXT NOT NULL,
         research_confidence TEXT NOT NULL,
+        search_aliases_json TEXT NOT NULL DEFAULT '[]',
         sources_json TEXT NOT NULL,
         notes TEXT NOT NULL,
         FOREIGN KEY (tuning_id, tuning_version)
           REFERENCES tuning (id, version)
       )
     ''');
+    final songColumns = _database
+        .select('PRAGMA table_info(song)')
+        .map((row) => row['name'] as String)
+        .toSet();
+    if (!songColumns.contains('search_aliases_json')) {
+      _database.execute(
+        "ALTER TABLE song ADD COLUMN search_aliases_json TEXT NOT NULL DEFAULT '[]'",
+      );
+    }
+    final searchColumns = _database
+        .select('PRAGMA table_info(song_fts)')
+        .map((row) => row['name'] as String)
+        .toSet();
+    if (searchColumns.isNotEmpty && !searchColumns.contains('aliases')) {
+      _database.execute('DROP TABLE song_fts');
+    }
     _database.execute('''
       CREATE VIRTUAL TABLE IF NOT EXISTS song_fts USING fts5(
         song_id UNINDEXED,
         title,
         artist,
+        aliases,
         tokenize = 'unicode61 remove_diacritics 2'
       )
     ''');
@@ -220,11 +238,12 @@ final class SqliteSongCatalog implements SongCatalog {
         INSERT INTO song (
           id, title, artist, tuning_id, tuning_version, capo_fret,
           cents_offset, verification_status, research_confidence,
-          sources_json, notes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          search_aliases_json, sources_json, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ''');
       final insertSearch = _database.prepare(
-        'INSERT INTO song_fts (song_id, title, artist) VALUES (?, ?, ?)',
+        'INSERT INTO song_fts (song_id, title, artist, aliases) '
+        'VALUES (?, ?, ?, ?)',
       );
       try {
         for (final song in songs) {
@@ -238,10 +257,16 @@ final class SqliteSongCatalog implements SongCatalog {
             song.centsOffset,
             _verificationStatusValue(song.verificationStatus),
             _researchConfidenceValue(song.researchConfidence),
+            jsonEncode(song.searchAliases),
             jsonEncode(song.sources.map(_sourceToJson).toList()),
             song.notes,
           ]);
-          insertSearch.execute([song.id, song.title, song.artist]);
+          insertSearch.execute([
+            song.id,
+            song.title,
+            song.artist,
+            song.searchAliases.join(' '),
+          ]);
         }
       } finally {
         insertSong.close();
@@ -269,6 +294,8 @@ final class SqliteSongCatalog implements SongCatalog {
       id: row['song_id'] as String,
       title: row['title'] as String,
       artist: row['artist'] as String,
+      searchAliases: (jsonDecode(row['search_aliases_json'] as String) as List)
+          .cast<String>(),
       tuningId: row['tuning_id'] as String,
       tuningVersion: row['tuning_version'] as int,
       capoFret: row['capo_fret'] as int,
@@ -322,6 +349,7 @@ const _joinedSelect = '''
     s.cents_offset AS song_cents_offset,
     s.verification_status,
     s.research_confidence,
+    s.search_aliases_json,
     s.sources_json,
     s.notes,
     t.id AS tuning_id,
@@ -411,6 +439,8 @@ List<SongTuningRecord> _parseSongs(String documentJson) {
           id: json['id'] as String,
           title: json['title'] as String,
           artist: json['artist'] as String,
+          searchAliases: (json['searchAliases'] as List? ?? const [])
+              .cast<String>(),
           tuningId: json['tuningId'] as String,
           tuningVersion: json['tuningVersion'] as int,
           capoFret: json['capoFret'] as int,

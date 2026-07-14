@@ -95,6 +95,30 @@ void main() {
     }
   });
 
+  test('search aliases are normalized discovery metadata', () {
+    final songs = (candidates['songs'] as List).cast<Map<String, dynamic>>();
+
+    for (final song in songs) {
+      final aliases = (song['searchAliases'] as List).cast<String>();
+      expect(aliases, isNotEmpty, reason: song['id'] as String);
+      expect(
+        aliases.every((alias) => alias == alias.trim() && alias.isNotEmpty),
+        isTrue,
+        reason: song['id'] as String,
+      );
+      expect(
+        aliases.toSet(),
+        hasLength(aliases.length),
+        reason: song['id'] as String,
+      );
+    }
+
+    final metallica = songs.firstWhere(
+      (song) => song['id'] == 'metallica-enter-sandman',
+    );
+    expect(metallica['searchAliases'], contains('메탈리카'));
+  });
+
   test('every release song keeps two human-approved independent sources', () {
     final songs = (releaseCatalog['songs'] as List)
         .cast<Map<String, dynamic>>();

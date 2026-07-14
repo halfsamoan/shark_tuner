@@ -13,6 +13,9 @@
     {
       "id": "acdc-back-in-black",
       "artist": "AC/DC",
+      "searchAliases": [
+        "에이씨디씨"
+      ],
       "title": "Back in Black",
       "tuningId": "guitar-6-standard",
       "tuningVersion": 1,
@@ -39,6 +42,9 @@
     {
       "id": "acdc-highway-to-hell",
       "artist": "AC/DC",
+      "searchAliases": [
+        "에이씨디씨"
+      ],
       "title": "Highway to Hell",
       "tuningId": "guitar-6-standard",
       "tuningVersion": 1,
@@ -65,6 +71,9 @@
     {
       "id": "metallica-enter-sandman",
       "artist": "Metallica",
+      "searchAliases": [
+        "메탈리카"
+      ],
       "title": "Enter Sandman",
       "tuningId": "guitar-6-standard",
       "tuningVersion": 1,
@@ -91,6 +100,9 @@
     {
       "id": "metallica-master-of-puppets",
       "artist": "Metallica",
+      "searchAliases": [
+        "메탈리카"
+      ],
       "title": "Master of Puppets",
       "tuningId": "guitar-6-standard",
       "tuningVersion": 1,
@@ -117,6 +129,9 @@
     {
       "id": "nirvana-smells-like-teen-spirit",
       "artist": "Nirvana",
+      "searchAliases": [
+        "너바나"
+      ],
       "title": "Smells Like Teen Spirit",
       "tuningId": "guitar-6-standard",
       "tuningVersion": 1,
@@ -143,6 +158,10 @@
     {
       "id": "guns-n-roses-sweet-child-o-mine",
       "artist": "Guns N' Roses",
+      "searchAliases": [
+        "건즈 앤 로지스",
+        "건스 앤 로지스"
+      ],
       "title": "Sweet Child O' Mine",
       "tuningId": "guitar-6-eb-standard",
       "tuningVersion": 1,
@@ -169,6 +188,9 @@
     {
       "id": "foo-fighters-everlong",
       "artist": "Foo Fighters",
+      "searchAliases": [
+        "푸 파이터스"
+      ],
       "title": "Everlong",
       "tuningId": "guitar-6-drop-d",
       "tuningVersion": 1,
@@ -195,6 +217,9 @@
     {
       "id": "rage-against-the-machine-killing-in-the-name",
       "artist": "Rage Against the Machine",
+      "searchAliases": [
+        "레이지 어게인스트 더 머신"
+      ],
       "title": "Killing in the Name",
       "tuningId": "guitar-6-drop-d",
       "tuningVersion": 1,
@@ -221,6 +246,9 @@
     {
       "id": "foo-fighters-my-hero",
       "artist": "Foo Fighters",
+      "searchAliases": [
+        "푸 파이터스"
+      ],
       "title": "My Hero",
       "tuningId": "guitar-6-standard",
       "tuningVersion": 1,
@@ -247,6 +275,9 @@
     {
       "id": "tool-schism",
       "artist": "Tool",
+      "searchAliases": [
+        "툴"
+      ],
       "title": "Schism",
       "tuningId": "guitar-6-drop-d",
       "tuningVersion": 1,
@@ -273,6 +304,9 @@
     {
       "id": "nirvana-come-as-you-are",
       "artist": "Nirvana",
+      "searchAliases": [
+        "너바나"
+      ],
       "title": "Come as You Are",
       "tuningId": "guitar-6-d-standard",
       "tuningVersion": 1,
@@ -299,6 +333,9 @@
     {
       "id": "deftones-my-own-summer",
       "artist": "Deftones",
+      "searchAliases": [
+        "데프톤즈"
+      ],
       "title": "My Own Summer (Shove It)",
       "tuningId": "guitar-6-drop-c-sharp",
       "tuningVersion": 1,
@@ -325,6 +362,10 @@
     {
       "id": "system-of-a-down-chop-suey",
       "artist": "System of a Down",
+      "searchAliases": [
+        "시스템 오브 어 다운",
+        "소아드"
+      ],
       "title": "Chop Suey!",
       "tuningId": "guitar-6-drop-c",
       "tuningVersion": 1,
@@ -351,6 +392,10 @@
     {
       "id": "system-of-a-down-toxicity",
       "artist": "System of a Down",
+      "searchAliases": [
+        "시스템 오브 어 다운",
+        "소아드"
+      ],
       "title": "Toxicity",
       "tuningId": "guitar-6-drop-c",
       "tuningVersion": 1,
@@ -377,6 +422,9 @@
     {
       "id": "slipknot-duality",
       "artist": "Slipknot",
+      "searchAliases": [
+        "슬립낫"
+      ],
       "title": "Duality",
       "tuningId": "guitar-6-drop-b",
       "tuningVersion": 1,
@@ -403,6 +451,9 @@
     {
       "id": "korn-blind",
       "artist": "Korn",
+      "searchAliases": [
+        "코른"
+      ],
       "title": "Blind",
       "tuningId": "guitar-7-a-standard",
       "tuningVersion": 1,
@@ -429,6 +480,9 @@
     {
       "id": "meshuggah-bleed",
       "artist": "Meshuggah",
+      "searchAliases": [
+        "메슈가"
+      ],
       "title": "Bleed",
       "tuningId": "guitar-8-f-standard",
       "tuningVersion": 1,
@@ -455,6 +509,9 @@
     {
       "id": "oasis-wonderwall",
       "artist": "Oasis",
+      "searchAliases": [
+        "오아시스"
+      ],
       "title": "Wonderwall",
       "tuningId": "guitar-6-standard",
       "tuningVersion": 1,
@@ -481,6 +538,9 @@
     {
       "id": "led-zeppelin-kashmir",
       "artist": "Led Zeppelin",
+      "searchAliases": [
+        "레드 제플린"
+      ],
       "title": "Kashmir",
       "tuningId": "guitar-6-dadgad",
       "tuningVersion": 1,
@@ -507,6 +567,10 @@
     {
       "id": "the-beatles-here-comes-the-sun",
       "artist": "The Beatles",
+      "searchAliases": [
+        "비틀즈",
+        "더 비틀즈"
+      ],
       "title": "Here Comes the Sun",
       "tuningId": "guitar-6-standard",
       "tuningVersion": 1,

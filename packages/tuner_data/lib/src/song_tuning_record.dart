@@ -37,10 +37,12 @@ final class SongTuningRecord {
     required this.verificationStatus,
     required this.researchConfidence,
     required List<SongMetadataSource> sources,
+    List<String> searchAliases = const [],
     this.capoFret = 0,
     this.centsOffset = 0,
     this.notes = '',
-  }) : sources = List.unmodifiable(sources) {
+  }) : searchAliases = _normalizeSearchAliases(searchAliases),
+       sources = List.unmodifiable(sources) {
     if (id.trim().isEmpty || title.trim().isEmpty || artist.trim().isEmpty) {
       throw ArgumentError('Song id, title, and artist must not be empty.');
     }
@@ -66,6 +68,7 @@ final class SongTuningRecord {
   final String id;
   final String title;
   final String artist;
+  final List<String> searchAliases;
   final String tuningId;
   final int tuningVersion;
   final int capoFret;
@@ -74,4 +77,15 @@ final class SongTuningRecord {
   final SongResearchConfidence researchConfidence;
   final List<SongMetadataSource> sources;
   final String notes;
+}
+
+List<String> _normalizeSearchAliases(List<String> aliases) {
+  final normalized = aliases.map((alias) => alias.trim()).toList();
+  if (normalized.any((alias) => alias.isEmpty)) {
+    throw ArgumentError.value(aliases, 'searchAliases', 'Must not be empty.');
+  }
+  if (normalized.toSet().length != normalized.length) {
+    throw ArgumentError.value(aliases, 'searchAliases', 'Must be unique.');
+  }
+  return List.unmodifiable(normalized);
 }
