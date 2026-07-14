@@ -270,6 +270,77 @@ void main() {
     await _pumpFrames(tester);
   });
 
+  testWidgets('song-first flow survives the required 1.3x text scale', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 3;
+    tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final catalog = _FakeSongCatalog(
+      currentMatch: _FakeSongCatalog.verifiedMatch,
+    );
+
+    await tester.pumpWidget(
+      ToaunerApp(
+        catalogLoader: () async => catalog,
+        tunerEngineFactory: _FakeTunerEngine.new,
+        includeUnverifiedSongs: false,
+      ),
+    );
+    await _pumpFrames(tester);
+    expect(find.text('곡명 또는 아티스트 검색'), findsOneWidget);
+
+    await tester.enterText(find.byType(EditableText), 'Eruption');
+    await _pumpFrames(tester);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(InkWell),
+        matching: find.text('Eruption'),
+      ),
+    );
+    await _pumpFrames(tester);
+
+    expect(find.text('E-flat Standard'), findsOneWidget);
+    expect(find.byKey(const Key('song-tune-cta')), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+  });
+
+  testWidgets('live tuner remains usable at 2.0x text scale', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 3;
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildInstrumentTheme(),
+        home: PrecisionTunerScreen(
+          match: _FakeSongCatalog.verifiedMatch,
+          catalog: _FakeSongCatalog(
+            currentMatch: _FakeSongCatalog.verifiedMatch,
+          ),
+          tunerEngineFactory: _FakeTunerEngine.new,
+          includeUnverifiedSongs: false,
+        ),
+      ),
+    );
+    await _pumpFrames(tester);
+
+    expect(find.byType(PitchTape), findsOneWidget);
+    expect(find.text('0.0¢'), findsOneWidget);
+    expect(find.byType(TuningNoteCell), findsNWidgets(6));
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+  });
+
   testWidgets('release song flow exposes trust without internal vocabulary', (
     tester,
   ) async {

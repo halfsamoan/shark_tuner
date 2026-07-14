@@ -84,11 +84,14 @@ class InstrumentStatusBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textScale = MediaQuery.textScalerOf(
+      context,
+    ).scale(1).clamp(1, 2).toDouble();
     return SafeArea(
       top: false,
       child: Container(
-        height: 32,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        constraints: const BoxConstraints(minHeight: 32),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: const BoxDecoration(
           color: InstrumentColors.chrome,
           border: Border(top: BorderSide(color: InstrumentColors.line)),
@@ -119,12 +122,18 @@ class InstrumentStatusBar extends StatelessWidget {
                 ),
               ),
             ),
-            Text(
-              detail.toUpperCase(),
-              style: const TextStyle(
-                color: InstrumentColors.muted,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                detail.toUpperCase(),
+                maxLines: textScale > 1.3 ? 2 : 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.end,
+                style: const TextStyle(
+                  color: InstrumentColors.muted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ],
@@ -248,6 +257,11 @@ class TuningNoteCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textScale = MediaQuery.textScalerOf(
+      context,
+    ).scale(1).clamp(1, 2).toDouble();
+    final width = 48 + 12 * (textScale - 1);
+    final height = 52 + 32 * (textScale - 1);
     final foreground = active
         ? InstrumentColors.accentInk
         : InstrumentColors.text;
@@ -259,9 +273,9 @@ class TuningNoteCell extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(3),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          width: 48,
-          height: 52,
+          duration: InstrumentMotion.instrument,
+          width: width,
+          height: height,
           decoration: BoxDecoration(
             color: active ? InstrumentColors.accent : InstrumentColors.panel,
             border: Border.all(
@@ -279,7 +293,9 @@ class TuningNoteCell extends StatelessWidget {
                       label,
                       style: TextStyle(
                         color: foreground,
-                        fontSize: 15,
+                        fontFamily: 'D2Coding',
+                        fontSize: 13,
+                        height: 1,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -290,7 +306,9 @@ class TuningNoteCell extends StatelessWidget {
                         color: active
                             ? const Color(0xFF32420E)
                             : InstrumentColors.muted,
-                        fontSize: 9,
+                        fontFamily: 'D2Coding',
+                        fontSize: 11,
+                        height: 1.2,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
