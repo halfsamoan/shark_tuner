@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:sqlite3/sqlite3.dart' as sqlite;
@@ -130,6 +131,37 @@ void main() {
       });
     } finally {
       await candidateCatalog.close();
+    }
+  });
+
+  test('preserves MBID identity and claim-scoped source provenance', () async {
+    final document = jsonDecode(candidateSongsJson) as Map<String, dynamic>;
+    final song = (document['songs'] as List).first as Map<String, dynamic>;
+    song['musicBrainzRecordingMbid'] = '11111111-1111-4111-8111-111111111111';
+    final source = (song['sources'] as List).first as Map<String, dynamic>;
+    source['kind'] = 'curation_oracle';
+    source['url'] = 'https://www.songsterr.com/a/wsa/example-tab-s1';
+    source['supports'] = ['tuning'];
+    final identityCatalog = SqliteSongCatalog.inMemory(
+      songsDocumentJson: jsonEncode(document),
+      tuningsDocumentJson: tuningsJson,
+    );
+    try {
+      final match = await identityCatalog.getById(
+        song['id'] as String,
+        includeUnverified: true,
+      );
+      expect(
+        match!.song.musicBrainzRecordingMbid,
+        '11111111-1111-4111-8111-111111111111',
+      );
+      expect(
+        match.song.sources.first.kind,
+        SongMetadataSourceKind.curationOracle,
+      );
+      expect(match.song.sources.first.supports, {SongMetadataClaim.tuning});
+    } finally {
+      await identityCatalog.close();
     }
   });
 

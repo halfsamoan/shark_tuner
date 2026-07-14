@@ -81,6 +81,37 @@ void main() {
       throwsArgumentError,
     );
   });
+
+  test('accepts one explicitly labeled Songsterr curation oracle', () {
+    final songs = (candidates['songs'] as List).cast<Map<String, dynamic>>();
+    songs.first['sources'] = [
+      {
+        'label': 'Independent factual source',
+        'url': 'https://en.wikipedia.org/wiki/Example',
+        'checkedAt': '2026-07-14',
+        'checkedBy': 'curator',
+        'kind': 'independent_reference',
+        'supports': ['tuning', 'capo_fret', 'cents_offset'],
+      },
+      {
+        'label': 'Songsterr MIDI tuning oracle',
+        'url': 'https://www.songsterr.com/a/wsa/example-tab-s1',
+        'checkedAt': '2026-07-14',
+        'checkedBy': 'curator',
+        'kind': 'curation_oracle',
+        'supports': ['tuning', 'capo_fret', 'cents_offset'],
+      },
+    ];
+
+    expect(
+      () => promoteSongCatalog(
+        candidates: candidates,
+        approvedBy: 'project-owner',
+        approvedAt: DateTime.utc(2026, 7, 14),
+      ),
+      returnsNormally,
+    );
+  });
 }
 
 File _workspaceFile(String relativePath) {
