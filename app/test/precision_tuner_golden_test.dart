@@ -20,6 +20,9 @@ void main() {
     await (FontLoader('IBM Plex Sans KR')
           ..addFont(rootBundle.load('assets/fonts/IBMPlexSansKR-Regular.ttf')))
         .load();
+    await (FontLoader('JetBrains Mono')
+          ..addFont(rootBundle.load('assets/fonts/JetBrainsMono-Regular.ttf')))
+        .load();
   });
 
   for (final themeId in const [

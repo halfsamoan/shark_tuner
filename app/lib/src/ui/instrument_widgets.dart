@@ -3,6 +3,7 @@ import 'package:tuner_data/tuner_data.dart';
 
 import '../app/app_preferences.dart';
 import '../app/instrument_theme.dart';
+import 'instrument_surface.dart';
 
 class BrandMark extends StatelessWidget {
   const BrandMark({super.key, this.width = 28, this.height = 22, this.color});
@@ -223,14 +224,19 @@ class DefinitionRow extends StatelessWidget {
     required this.label,
     required this.value,
     this.valueColor,
+    this.valueStyle,
   });
 
   final String label;
   final String value;
   final Color? valueColor;
+  final TextStyle? valueStyle;
 
   @override
   Widget build(BuildContext context) {
+    final resolvedValueStyle =
+        valueStyle ??
+        context.instrumentType.body.copyWith(fontWeight: FontWeight.w500);
     return Container(
       constraints: const BoxConstraints(minHeight: 44),
       padding: const EdgeInsets.symmetric(vertical: 11),
@@ -244,13 +250,282 @@ class DefinitionRow extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: context.instrumentType.body.copyWith(
-                color: valueColor ?? context.terminal.text,
-                fontWeight: FontWeight.w500,
+              style: resolvedValueStyle.copyWith(
+                color:
+                    valueColor ??
+                    resolvedValueStyle.color ??
+                    context.terminal.text,
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Instrument-grade frequency text: the live measurement is always distinct
+/// from the tuning target, while both values retain a tabular numeric role.
+class FrequencyReadout extends StatelessWidget {
+  const FrequencyReadout({
+    super.key,
+    required this.measuredHz,
+    required this.targetHz,
+  });
+
+  final double? measuredHz;
+  final double targetHz;
+
+  @override
+  Widget build(BuildContext context) {
+    final measured = measuredHz;
+    final target = targetHz.toStringAsFixed(2);
+    final semanticsLabel = measured == null
+        ? '주파수 측정 대기, 목표 $target Hz'
+        : '측정 주파수 ${measured.toStringAsFixed(2)} Hz, 목표 $target Hz';
+    final labelStyle = context.instrumentType.caption.copyWith(
+      color: context.terminal.textSecondary,
+    );
+    final valueStyle = context.instrumentType.measurement.copyWith(
+      color: context.terminal.text,
+    );
+    return Semantics(
+      label: semanticsLabel,
+      excludeSemantics: true,
+      child: Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+              text: measured == null ? '측정 대기' : '측정 ',
+              style: labelStyle,
+            ),
+            if (measured != null)
+              TextSpan(
+                text: '${measured.toStringAsFixed(2)} Hz',
+                style: valueStyle,
+              ),
+            TextSpan(text: '  ·  목표 ', style: labelStyle),
+            TextSpan(text: '$target Hz', style: valueStyle),
+          ],
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+}
+
+/// A calm, Adwaita-inspired navigation row rendered with the active
+/// instrument tokens. It owns one full-width mobile touch target.
+class InstrumentActionRow extends StatelessWidget {
+  const InstrumentActionRow({
+    super.key,
+    required this.rowKey,
+    required this.label,
+    required this.detail,
+    required this.onTap,
+    this.trailing,
+  });
+
+  final Key rowKey;
+  final String label;
+  final String detail;
+  final VoidCallback onTap;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: '$label, $detail',
+      excludeSemantics: true,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: rowKey,
+          onTap: onTap,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 56),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 9),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: context.terminal.line)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(label, style: context.instrumentType.body),
+                      const SizedBox(height: 2),
+                      Text(
+                        detail,
+                        style: context.instrumentType.caption.copyWith(
+                          color: context.terminal.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                trailing ??
+                    Text(
+                      '›',
+                      style: context.instrumentType.subhead.copyWith(
+                        color: context.terminal.accent,
+                      ),
+                    ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A grouped preference row with one switch and a full-row interaction target.
+class InstrumentToggleRow extends StatelessWidget {
+  const InstrumentToggleRow({
+    super.key,
+    required this.rowKey,
+    required this.label,
+    required this.detail,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final Key rowKey;
+  final String label;
+  final String detail;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final semanticsLabel = '$label, $detail, ${value ? '켜짐' : '꺼짐'}';
+    return Semantics(
+      label: semanticsLabel,
+      toggled: value,
+      onTap: () => onChanged(!value),
+      excludeSemantics: true,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: rowKey,
+          onTap: () => onChanged(!value),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 64),
+            padding: const EdgeInsets.only(left: 4, right: 4),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: context.terminal.line)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(label, style: context.instrumentType.body),
+                      const SizedBox(height: 2),
+                      Text(
+                        detail,
+                        style: context.instrumentType.caption.copyWith(
+                          color: context.terminal.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                ExcludeSemantics(
+                  child: Switch(value: value, onChanged: onChanged),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+enum InstrumentStateTone { neutral, warning, danger }
+
+/// Shared loading, empty, and error state treatment. It limits a state to one
+/// clear message and one recovery action instead of a dashboard of diagnostics.
+class InstrumentStatePanel extends StatelessWidget {
+  const InstrumentStatePanel({
+    super.key,
+    required this.tone,
+    required this.title,
+    required this.detail,
+    this.actionLabel,
+    this.onAction,
+    this.actionKey,
+  }) : assert(
+         (actionLabel == null) == (onAction == null),
+         'Provide both actionLabel and onAction, or neither.',
+       );
+
+  final InstrumentStateTone tone;
+  final String title;
+  final String detail;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+  final Key? actionKey;
+
+  @override
+  Widget build(BuildContext context) {
+    final stateColor = switch (tone) {
+      InstrumentStateTone.neutral => context.terminal.information,
+      InstrumentStateTone.warning => context.terminal.warning,
+      InstrumentStateTone.danger => context.terminal.danger,
+    };
+    return Semantics(
+      label: '$title, $detail',
+      child: InstrumentSurface(
+        level: InstrumentSurfaceLevel.panel,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: context.instrumentType.body.copyWith(
+                  color: stateColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                detail,
+                textAlign: TextAlign.center,
+                style: context.instrumentType.caption.copyWith(
+                  color: context.terminal.textSecondary,
+                ),
+              ),
+              if (actionLabel != null) ...[
+                const SizedBox(height: 12),
+                Center(
+                  child: OutlinedButton(
+                    key: actionKey,
+                    onPressed: onAction,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: stateColor,
+                      side: BorderSide(color: stateColor),
+                    ),
+                    child: Text(actionLabel!),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -16,6 +16,8 @@
 
 모든 팔레트는 `app/lib/src/app/instrument_theme.dart`의 `SharkTuneThemes`에서만 선언한다. 이 파일이 hex 값의 코드측 단일 기준이다. danger 값은 다음으로 고정한다.
 
+계측 타이포그래피는 `InstrumentTypeTheme.centsHero`와 `measurement` 역할을 통해 제공한다. cent·Hz·confidence·RMS·진단 수치는 JetBrains Mono를 사용하고, 음이름과 상태 라벨은 기존 IBM Plex 역할을 유지한다.
+
 | Theme | danger |
 | --- | --- |
 | Abyss | `#FF5C72` |
@@ -23,9 +25,9 @@
 | Amber | `#FF6B5C` |
 | Violet | `#FF5555` |
 | Paper | `#B3212D` |
-| Clipping | `#C6005C` |
+| Clipping | `#9E0049` |
 
-Paper만 일반 라이트 ColorScheme을 사용한다. Clipping은 일반 화면의 시맨틱 토큰과 별도로 라이브 튜너에서 `TunerSkin.clipping`을 사용한다.
+Paper만 일반 라이트 ColorScheme을 사용한다. Clipping은 밝은 충돌 팔레트 위에 전역 글리치 오버레이를 적용하고, 라이브 튜너에서 `TunerSkin.clipping`을 추가 사용한다.
 
 ## Figma components
 
@@ -36,7 +38,9 @@ Foundation 뒤에 다음 순서로 만든다.
 3. Button/Primary, Button/Secondary, Toggle, SettingRow, ThemeTile
 4. NoteChip, CentsReadout, PitchMeter, GuidanceSlot, StatusLine
 5. DefinitionRow, FirstTunePrimer
-6. 홈 검색 상태, 곡 상세, 튜너 상태, 도구 메뉴, 설정, 일반 테마 갤러리, Clipping 튜너 프레임
+6. 자유 튜닝 홈, 사용자 정의 튜닝 편집기, 홈 검색 상태, 곡 상세, 튜너 상태, 도구 메뉴, 설정, 일반 테마 갤러리, Clipping 튜너 프레임
+
+홈의 Figma 프레임과 Flutter 화면은 같은 짧은 카피를 사용한다: `튜닝 시작`, `기본 · 프리셋 · 내 튜닝`, `곡 검색`, `곡 튜닝 찾기`, `곡명 · 아티스트`. 곡 검색 진입은 별도 설명 카드+버튼 조합이 아니라 제목·부제·이동 표식으로 구성된 단일 48dp 이상 액션 행이다.
 
 Starter 변수 모드 제한을 피하려고 테마별 단일 모드 컬렉션을 사용한다. 각 컴포넌트는 변수 바인딩을 확인한 뒤 metadata와 screenshot을 각각 검증한다.
 

@@ -7,6 +7,7 @@ import '../songs/song_search_screen.dart';
 import '../string_care/string_care_store.dart';
 import '../tuner/live_tuner_engine.dart';
 import '../tuning_history/tuning_history_store.dart';
+import '../ui/clipping_glitch_overlay.dart';
 import 'app_preferences.dart';
 import 'instrument_theme.dart';
 
@@ -104,6 +105,12 @@ class _ToaunerAppState extends State<ToaunerApp> with WidgetsBindingObserver {
             themeAnimationDuration: reduceMotion
                 ? Duration.zero
                 : InstrumentMotion.instrument,
+            builder: (context, child) {
+              final app = child ?? const SizedBox.shrink();
+              return preferences.themeId == SharkTuneThemeId.clipping
+                  ? ClippingGlitchOverlay(child: app)
+                  : app;
+            },
             home: SongSearchScreen(
               catalogLoader: widget.catalogLoader,
               tunerEngineFactory: tunerEngineFactory,

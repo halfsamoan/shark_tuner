@@ -14,6 +14,7 @@ import '../stability/stability_check_screen.dart';
 import '../tuning_history/tuning_history_model.dart';
 import '../tuning_history/tuning_history_store.dart';
 import '../ui/instrument_widgets.dart';
+import '../ui/instrument_bottom_sheet.dart';
 import '../ui/throttled_live_region.dart';
 import 'live_tuner_engine.dart';
 import 'reference_tone_player.dart';
@@ -302,10 +303,8 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   }
 
   Future<void> _showPegSetup() async {
-    final profile = await showModalBottomSheet<InstrumentPegProfile>(
+    final profile = await showInstrumentBottomSheet<InstrumentPegProfile>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: context.terminal.raised,
       builder: (context) => _PegSetupSheet(
         stringCount: widget.tuning.strings.length,
         current: _activeInstrumentProfile,
@@ -475,11 +474,11 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     }
     _completionShown = true;
     unawaited(_recordCompletion());
-    showModalBottomSheet<void>(
+    showInstrumentBottomSheet<void>(
       context: context,
       isDismissible: false,
       enableDrag: false,
-      backgroundColor: context.terminal.raised,
+      showDragHandle: false,
       builder: (sheetContext) => _TuneCompleteSheet(
         tuning: widget.tuning,
         elapsed: _tuneUpTracker.state.elapsed,
@@ -700,10 +699,8 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   }
 
   void _showDiagnostics() {
-    showModalBottomSheet<void>(
+    showInstrumentBottomSheet<void>(
       context: context,
-      backgroundColor: context.terminal.raised,
-      isScrollControlled: true,
       builder: (context) => _DiagnosticsSheet(
         state: _liveState,
         tuning: widget.tuning,
@@ -853,22 +850,22 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Flexible(
-                          child: Text(
-                            '목표 ${_targetHz.toStringAsFixed(2)} Hz',
-                            maxLines: usesLargeText ? 2 : 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: context.instrumentType.caption.copyWith(
-                              color: context.terminal.textSecondary,
-                            ),
+                          child: FrequencyReadout(
+                            measuredHz: _referenceTonePlaying
+                                ? null
+                                : _liveState.frequencyHz,
+                            targetHz: _targetHz,
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Flexible(
+                        SizedBox(
+                          width: 64,
                           child: _ReferenceToneControl(
                             frequencyHz: _targetHz,
                             noteLabel: _selected.label,
                             playing: _referenceTonePlaying,
                             busy: _referenceToneBusy,
+                            compact: true,
                             onPressed: _toggleReferenceTone,
                           ),
                         ),

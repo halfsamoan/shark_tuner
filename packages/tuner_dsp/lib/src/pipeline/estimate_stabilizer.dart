@@ -47,8 +47,13 @@ final class EstimateStabilizer {
   double? _smoothedCents;
   int _missingFrames = 0;
 
-  StabilizedPitchEstimate? add(PitchEstimate? estimate) {
-    if (!_isTrusted(estimate)) {
+  StabilizedPitchEstimate? add(
+    PitchEstimate? estimate, {
+    double? minimumClarity,
+  }) {
+    final clarityFloor = minimumClarity ?? config.minimumClarity;
+    assert(clarityFloor >= 0 && clarityFloor <= 1);
+    if (!_isTrusted(estimate, clarityFloor)) {
       _missingFrames++;
       if (_missingFrames >= config.missingFramesBeforeReset) {
         reset();
@@ -87,12 +92,12 @@ final class EstimateStabilizer {
     _missingFrames = 0;
   }
 
-  bool _isTrusted(PitchEstimate? estimate) {
+  bool _isTrusted(PitchEstimate? estimate, double minimumClarity) {
     return estimate != null &&
         estimate.frequencyHz.isFinite &&
         estimate.frequencyHz > 0 &&
         estimate.clarity.isFinite &&
-        estimate.clarity >= config.minimumClarity &&
+        estimate.clarity >= minimumClarity &&
         estimate.clarity <= 1;
   }
 }

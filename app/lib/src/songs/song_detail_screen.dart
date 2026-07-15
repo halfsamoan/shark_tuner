@@ -40,7 +40,7 @@ class SongDetailScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
           children: [
-            InstrumentSectionLabel('곡 찾기  /  선택한 곡'),
+            InstrumentSectionLabel('곡 튜닝'),
             const SizedBox(height: 16),
             Text(song.title, style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 5),
@@ -64,10 +64,7 @@ class SongDetailScreen extends StatelessWidget {
             const SizedBox(height: 24),
             Divider(height: 1),
             const SizedBox(height: 20),
-            InstrumentSectionLabel(
-              'Song setup',
-              color: context.terminal.accent,
-            ),
+            InstrumentSectionLabel('튜닝', color: context.terminal.accent),
             const SizedBox(height: 10),
             DefinitionRow(label: '튜닝', value: tuning.name),
             DefinitionRow(
@@ -77,6 +74,7 @@ class SongDetailScreen extends StatelessWidget {
             DefinitionRow(
               label: '기준 피치',
               value: 'A4 ${tuning.referenceA4Hz.toStringAsFixed(2)} Hz',
+              valueStyle: context.instrumentType.measurement,
             ),
             DefinitionRow(
               label: '녹음 오프셋',
@@ -84,6 +82,7 @@ class SongDetailScreen extends StatelessWidget {
               valueColor: song.centsOffset == 0
                   ? context.terminal.text
                   : context.terminal.accent,
+              valueStyle: context.instrumentType.measurement,
             ),
             if (includeUnverifiedSongs)
               DefinitionRow(
@@ -91,7 +90,7 @@ class SongDetailScreen extends StatelessWidget {
                 value: '${tuning.id}@${tuning.version}',
               ),
             const SizedBox(height: 22),
-            InstrumentSectionLabel('Open strings  ·  low → high'),
+            InstrumentSectionLabel('개방현 · 저음 → 고음'),
             const SizedBox(height: 10),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -134,8 +133,8 @@ class SongDetailScreen extends StatelessWidget {
         children: [
           _StickyTuneBar(
             instruction: song.capoFret > 0
-                ? '개방현을 맞춘 뒤 카포 ${song.capoFret}를 장착하세요.'
-                : '개방현을 기준으로 낮은 줄부터 맞춥니다.',
+                ? '현을 맞춘 뒤 카포 ${song.capoFret}프렛'
+                : '낮은 줄부터 맞춥니다.',
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute<void>(
@@ -205,9 +204,7 @@ class _MetronomeEntry extends StatelessWidget {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          bpm == null
-                              ? '탭 템포로 이 곡 속도를 맞춰보세요'
-                              : '이 곡 속도에 맞춰 연습하세요',
+                          bpm == null ? '탭으로 속도 맞추기' : '연습 템포',
                           style: context.instrumentType.status.copyWith(
                             color: context.terminal.muted,
                           ),
@@ -266,14 +263,14 @@ class _TensionRecommendationEntry extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '이 튜닝에서 장력 확인',
+                      '장력 · 게이지',
                       style: context.instrumentType.caption.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '스케일과 현재 게이지를 기준으로 상위 3개 조합 계산',
+                      '상위 3개 조합',
                       style: context.instrumentType.status.copyWith(
                         color: context.terminal.muted,
                       ),
@@ -368,7 +365,7 @@ class _VerificationNotice extends StatelessWidget {
         children: [
           Text(
             verified
-                ? '검증된 튜닝 ✓'
+                ? '검증됨 ✓'
                 : showDevelopmentStatus
                 ? 'DEV·출처 확인 전 후보 데이터'
                 : '튜닝 확인 중',
@@ -382,7 +379,7 @@ class _VerificationNotice extends StatelessWidget {
           const SizedBox(height: 5),
           Text(
             verified
-                ? '독립 출처 ${song.sources.length}개를 확인했습니다.'
+                ? '출처 ${song.sources.length}개 확인'
                 : showDevelopmentStatus
                 ? 'DEV·독립 출처와 사람 검증 전에는 출시 곡에 포함되지 않습니다.'
                 : '확인이 끝난 곡만 검색 결과에 표시됩니다.',

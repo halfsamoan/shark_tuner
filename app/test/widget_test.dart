@@ -17,6 +17,95 @@ import 'package:tuner_data/tuner_data.dart';
 import 'package:tuner_domain/tuner_domain.dart';
 
 void main() {
+  testWidgets(
+    'home makes tuning primary and keeps the song catalog secondary',
+    (tester) async {
+      final catalog = _FakeSongCatalog();
+
+      await tester.pumpWidget(
+        ToaunerApp(
+          catalogLoader: () async => catalog,
+          tunerEngineFactory: _FakeTunerEngine.new,
+          includeUnverifiedSongs: false,
+        ),
+      );
+      await _pumpFrames(tester);
+
+      expect(find.byKey(const Key('free-tuning-home')), findsOneWidget);
+      expect(find.byKey(const Key('quick-tune-standard')), findsOneWidget);
+      expect(find.byKey(const Key('custom-tuning-entry')), findsOneWidget);
+      expect(find.byType(EditableText), findsNothing);
+      expect(find.text('Eruption'), findsNothing);
+      expect(find.text('튜닝 시작'), findsOneWidget);
+      expect(find.text('기본 · 프리셋 · 내 튜닝'), findsOneWidget);
+      expect(find.text('곡 검색'), findsOneWidget);
+      expect(find.text('곡 튜닝 찾기'), findsOneWidget);
+      expect(find.text('곡명 · 아티스트'), findsOneWidget);
+      expect(find.text('곡에 맞춰 튜닝'), findsNothing);
+      expect(find.text('곡별 튜닝이 필요하신가요?'), findsNothing);
+      expect(find.text('곡명이나 아티스트를 검색하면 저장된 튜닝과 카포 정보를 불러옵니다.'), findsNothing);
+
+      await _openSongSearch(tester);
+
+      expect(find.byKey(const Key('song-search-field')), findsOneWidget);
+      expect(find.text('Eruption'), findsOneWidget);
+    },
+  );
+
+  testWidgets('custom tuning edits a string and starts that exact definition', (
+    tester,
+  ) async {
+    final catalog = _FakeSongCatalog();
+    final engine = _ScriptedTunerEngine();
+
+    await tester.pumpWidget(
+      ToaunerApp(
+        catalogLoader: () async => catalog,
+        tunerEngineFactory: () => engine,
+        includeUnverifiedSongs: false,
+      ),
+    );
+    await _pumpFrames(tester);
+
+    await tester.tap(find.byKey(const Key('custom-tuning-entry')));
+    await _pumpFrames(tester);
+    expect(find.text('내 튜닝 만들기'), findsOneWidget);
+    expect(find.byKey(const Key('custom-note-6')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('custom-string-6-down')));
+    await tester.pump();
+    expect(find.text('E♭2'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('custom-tuning-start')));
+    await _pumpFrames(tester);
+
+    expect(engine.startedDefinitions, hasLength(1));
+    final tuning = engine.startedDefinitions.single;
+    expect(tuning.name, '내 튜닝');
+    expect(tuning.strings.first.stringNumber, 6);
+    expect(tuning.strings.first.midiNote, 39);
+    expect(tuning.strings.first.label, 'E♭2');
+  });
+
+  testWidgets('Clipping applies deterministic damage across the app shell', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ToaunerApp(
+        catalogLoader: () async => _FakeSongCatalog(),
+        tunerEngineFactory: _FakeTunerEngine.new,
+        initialPreferences: const AppPreferences(
+          themeId: SharkTuneThemeId.clipping,
+          hasSeenTunerPrimer: true,
+        ),
+        includeUnverifiedSongs: false,
+      ),
+    );
+    await _pumpFrames(tester);
+
+    expect(find.byKey(const Key('clipping-global-glitch')), findsOneWidget);
+  });
+
   testWidgets('home opens the local tuning completion history', (tester) async {
     final catalog = _FakeSongCatalog();
     final history = TuningHistoryLedger.empty().record(
@@ -143,6 +232,14 @@ void main() {
       await _pumpFrames(tester);
       _expectNoReleaseVocabulary();
 
+      await tester.ensureVisible(find.byKey(const Key('custom-tuning-entry')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('custom-tuning-entry')));
+      await _pumpFrames(tester);
+      _expectNoReleaseVocabulary();
+      await tester.tap(find.byTooltip('뒤로'));
+      await _pumpFrames(tester);
+
       await tester.tap(find.byKey(const Key('tool-menu-entry')));
       await tester.pumpAndSettle();
       _expectNoReleaseVocabulary();
@@ -170,6 +267,7 @@ void main() {
         ),
       );
       await _pumpFrames(tester);
+      await _openSongSearch(tester);
 
       await tester.tap(
         find.descendant(
@@ -206,6 +304,7 @@ void main() {
       ),
     );
     await _pumpFrames(tester);
+    await _openSongSearch(tester);
 
     expect(find.text('곡명 또는 아티스트 검색'), findsOneWidget);
     final searchInput = tester.widget<EditableText>(find.byType(EditableText));
@@ -237,7 +336,10 @@ void main() {
     expect(find.textContaining('ERUPTION'), findsOneWidget);
     expect(find.text('E♭2'), findsWidgets);
     expect(find.text('0.0¢'), findsOneWidget);
-    expect(find.textContaining('78.69 Hz'), findsNWidgets(2));
+    expect(
+      find.bySemanticsLabel('측정 주파수 78.69 Hz, 목표 78.69 Hz'),
+      findsOneWidget,
+    );
     expect(find.text('곡 기준 +20 cents 적용'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
@@ -257,11 +359,12 @@ void main() {
       ),
     );
     await _pumpFrames(tester);
+    await _openSongSearch(tester);
 
     await tester.enterText(find.byType(EditableText), 'unknown song');
     await _pumpFrames(tester);
 
-    expect(find.text('검색 결과가 없습니다.'), findsOneWidget);
+    expect(find.text('검색 결과 없음'), findsOneWidget);
     expect(find.text('추천 곡'), findsOneWidget);
     expect(find.text('Eruption'), findsOneWidget);
 
@@ -297,6 +400,7 @@ void main() {
         ),
       );
       await _pumpFrames(tester);
+      await _openSongSearch(tester);
       catalog.searchQueries.clear();
 
       await tester.enterText(find.byType(EditableText), 'E');
@@ -464,6 +568,7 @@ void main() {
       ),
     );
     await _pumpFrames(tester);
+    await _openSongSearch(tester);
     await tester.enterText(find.byType(EditableText), 'Eruption');
     await _pumpFrames(tester);
     await tester.tap(
@@ -629,7 +734,7 @@ void main() {
     await _pumpFrames(tester);
   });
 
-  testWidgets('song-first flow survives the required 1.3x text scale', (
+  testWidgets('secondary song flow survives the required 1.3x text scale', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(1080, 2340);
@@ -650,6 +755,7 @@ void main() {
       ),
     );
     await _pumpFrames(tester);
+    await _openSongSearch(tester);
     expect(find.text('곡명 또는 아티스트 검색'), findsOneWidget);
 
     await tester.enterText(find.byType(EditableText), 'Eruption');
@@ -722,7 +828,8 @@ void main() {
     await _pumpFrames(tester);
 
     expect(find.byKey(const Key('clipping-tuner-skin')), findsOneWidget);
-    expect(find.text('CLIP//LIVE'), findsOneWidget);
+    expect(find.byKey(const Key('clipping-signal-tear')), findsOneWidget);
+    expect(find.text('CLIP//LIVE_00'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await _pumpFrames(tester);
@@ -743,6 +850,7 @@ void main() {
       ),
     );
     await _pumpFrames(tester);
+    await _openSongSearch(tester);
     await tester.enterText(find.byType(EditableText), 'Eruption');
     await _pumpFrames(tester);
     final eruptionResult = find.descendant(
@@ -1307,7 +1415,7 @@ void main() {
     expect(engine.stopCount, 1);
     expect(player.playedFrequencies, hasLength(1));
     expect(player.playedFrequencies.single, closeTo(78.69, 0.01));
-    expect(find.textContaining('REF E♭2 정지'), findsOneWidget);
+    expect(find.bySemanticsLabel('E♭2 레퍼런스 톤 정지'), findsOneWidget);
 
     await tester.tap(find.text('E♭4').first);
     await _pumpFrames(tester);
@@ -1410,6 +1518,7 @@ final class _ScriptedTunerEngine implements TunerEngine {
   final _states = StreamController<LiveTunerState>.broadcast(sync: true);
   final manualTargets = <int?>[];
   final startedTunings = <String>[];
+  final startedDefinitions = <TuningDefinition>[];
   int stopCount = 0;
   LiveTunerState _current = LiveTunerState.idle;
 
@@ -1438,6 +1547,7 @@ final class _ScriptedTunerEngine implements TunerEngine {
   @override
   Future<void> start(TuningDefinition tuning) async {
     startedTunings.add(tuning.id);
+    startedDefinitions.add(tuning);
   }
 
   @override
@@ -1471,6 +1581,14 @@ Future<void> _pumpFrames(WidgetTester tester) async {
   for (var index = 0; index < 8; index++) {
     await tester.pump(const Duration(milliseconds: 80));
   }
+}
+
+Future<void> _openSongSearch(WidgetTester tester) async {
+  final entry = find.byKey(const Key('song-search-entry'));
+  await tester.ensureVisible(entry);
+  await tester.pumpAndSettle();
+  await tester.tap(entry);
+  await _pumpFrames(tester);
 }
 
 void _expectNoReleaseVocabulary() {

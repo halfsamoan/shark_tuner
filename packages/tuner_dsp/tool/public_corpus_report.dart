@@ -109,6 +109,7 @@ Future<Map<String, Object?>> buildPublicCorpusReport({
     'pipelineOrder': [
       'detector',
       'clarity_gate',
+      'target_assisted_confidence_recovery',
       'target_or_previous_stable_octave_sanity',
       'median_of_5',
       'log_frequency_ema',
@@ -173,8 +174,10 @@ Future<_FixtureMetrics> _analyzeFixture({
   final correctionEvents = <Map<String, Object?>>[];
   var attemptedWindowCount = 0;
   var clarityRejectedRawEstimateCount = 0;
+  var targetAssistedAcceptedRawEstimateCount = 0;
   var rawHalfFrequencyCorrectionCount = 0;
   var rawDoubleFrequencyCorrectionCount = 0;
+  var rawTripleFrequencyCorrectionCount = 0;
   final hopSamples = windowSamples == TunerDspConfig.lowTuningWindowSize
       ? TunerDspConfig.lowTuningHopSize
       : TunerDspConfig.hopSize;
@@ -195,6 +198,9 @@ Future<_FixtureMetrics> _analyzeFixture({
     if (raw != null && !tracked.confidenceAccepted) {
       clarityRejectedRawEstimateCount++;
     }
+    if (tracked.targetAssistedConfidence) {
+      targetAssistedAcceptedRawEstimateCount++;
+    }
     final octave = tracked.octaveSanity;
     if (octave?.corrected ?? false) {
       switch (octave!.kind) {
@@ -202,6 +208,8 @@ Future<_FixtureMetrics> _analyzeFixture({
           rawHalfFrequencyCorrectionCount++;
         case OctaveCorrectionKind.rawDoubleFrequency:
           rawDoubleFrequencyCorrectionCount++;
+        case OctaveCorrectionKind.rawTripleFrequency:
+          rawTripleFrequencyCorrectionCount++;
         case OctaveCorrectionKind.none:
           break;
       }
@@ -238,6 +246,9 @@ Future<_FixtureMetrics> _analyzeFixture({
     ),
     rawDoubleFrequencyCorrectionCount: rawDoubleFrequencyCorrectionCount,
     rawHalfFrequencyCorrectionCount: rawHalfFrequencyCorrectionCount,
+    rawTripleFrequencyCorrectionCount: rawTripleFrequencyCorrectionCount,
+    targetAssistedAcceptedRawEstimateCount:
+        targetAssistedAcceptedRawEstimateCount,
     segments: segments,
   );
 }
@@ -372,7 +383,9 @@ final class _FixtureMetrics {
     required this.rawDetector,
     required this.rawDoubleFrequencyCorrectionCount,
     required this.rawHalfFrequencyCorrectionCount,
+    required this.rawTripleFrequencyCorrectionCount,
     required this.segments,
+    required this.targetAssistedAcceptedRawEstimateCount,
   });
 
   final int clarityRejectedRawEstimateCount;
@@ -383,7 +396,9 @@ final class _FixtureMetrics {
   final _MetricSeries rawDetector;
   final int rawDoubleFrequencyCorrectionCount;
   final int rawHalfFrequencyCorrectionCount;
+  final int rawTripleFrequencyCorrectionCount;
   final Map<String, String> segments;
+  final int targetAssistedAcceptedRawEstimateCount;
 
   Map<String, Object?> get json => {
     'id': id,
@@ -395,7 +410,10 @@ final class _FixtureMetrics {
     'octaveSanity': {
       'rawHalfFrequencyCorrectionCount': rawHalfFrequencyCorrectionCount,
       'rawDoubleFrequencyCorrectionCount': rawDoubleFrequencyCorrectionCount,
+      'rawTripleFrequencyCorrectionCount': rawTripleFrequencyCorrectionCount,
       'clarityRejectedRawEstimateCount': clarityRejectedRawEstimateCount,
+      'targetAssistedAcceptedRawEstimateCount':
+          targetAssistedAcceptedRawEstimateCount,
       'events': correctionEvents,
     },
   };
@@ -434,6 +452,8 @@ final class _DualMetricAccumulator {
   int clarityRejectedRawEstimateCount = 0;
   int rawHalfFrequencyCorrectionCount = 0;
   int rawDoubleFrequencyCorrectionCount = 0;
+  int rawTripleFrequencyCorrectionCount = 0;
+  int targetAssistedAcceptedRawEstimateCount = 0;
   final _MetricAccumulator rawDetector = _MetricAccumulator();
   final _MetricAccumulator productPipeline = _MetricAccumulator();
 
@@ -445,6 +465,10 @@ final class _DualMetricAccumulator {
     rawHalfFrequencyCorrectionCount += metrics.rawHalfFrequencyCorrectionCount;
     rawDoubleFrequencyCorrectionCount +=
         metrics.rawDoubleFrequencyCorrectionCount;
+    rawTripleFrequencyCorrectionCount +=
+        metrics.rawTripleFrequencyCorrectionCount;
+    targetAssistedAcceptedRawEstimateCount +=
+        metrics.targetAssistedAcceptedRawEstimateCount;
   }
 
   Map<String, Object?> toJson() {
@@ -457,7 +481,10 @@ final class _DualMetricAccumulator {
       'octaveSanity': {
         'rawHalfFrequencyCorrectionCount': rawHalfFrequencyCorrectionCount,
         'rawDoubleFrequencyCorrectionCount': rawDoubleFrequencyCorrectionCount,
+        'rawTripleFrequencyCorrectionCount': rawTripleFrequencyCorrectionCount,
         'clarityRejectedRawEstimateCount': clarityRejectedRawEstimateCount,
+        'targetAssistedAcceptedRawEstimateCount':
+            targetAssistedAcceptedRawEstimateCount,
       },
     };
   }

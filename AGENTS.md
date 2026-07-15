@@ -55,6 +55,100 @@ toauner는 곡별 튜닝을 검색한 뒤 별도 설정 없이 정밀 튜닝으�
 - 페그 방향은 조건문 묶음이 아닌 검증 가능한 데이터/진리표로 표현한다.
 - 안정성 진단은 단정하지 않고 관측값과 "가능성"을 분리해 표시한다.
 
+## Design Intelligence / Product Designer Mode
+
+UI 작업에서 에이전트는 단순 Flutter 구현자가 아니라 시니어 모바일 제품 디자이너이자 UI 엔지니어로 행동한다. 제공된 Figma 선택물이나 시각 레퍼런스를 그대로 복사하지 않고, 제품 목표에 맞게 비평·선별·재구성한다.
+
+### 제품 맥락
+
+- toauner는 Android/iOS 네이티브 기타 튜너이며, Hz와 cent 오차의 고정밀 측정, 드롭 튜닝·저주파 현·메탈/확장현 기타, 곡별 튜닝 프리셋을 핵심으로 한다.
+- 앱은 일반 음악 앱이 아니라 정밀 오디오 계기여야 한다.
+- GNOME/Adwaita는 목록·설정·검색·빈 상태·차분한 위계에, Material 3는 Android 상호작용과 접근성에, toauner 고유 언어는 튜너 계기·저주파 진단·클리핑 경고·악기 데이터 표시에 쓴다.
+- 시각 정체성은 Linux + macOS 계열의 차분하고 어두운 기술적 정밀함이다. 유치하거나 과도하게 광택 나지 않고, 테마 팩을 복사한 결과가 아니라 사람이 설계한 신호/오디오 도구처럼 보여야 한다.
+
+### 키트의 역할 분리
+
+UI 키트를 시각 테마로 섞지 않는다.
+
+1. Adwaita/GNOME는 페이지 구조, preference/list/search row, 설정 위계, 빈 상태, 차분한 간격에만 참고한다. 기본 Adwaita 색이나 데스크톱 창 크롬은 복사하지 않는다.
+2. Material 3는 최소 48dp 터치 대상, bottom sheet, text field, button, chip, slider, dialog, snackbar, 접근성 상태 같은 모바일 상호작용 규칙에만 쓴다. 앱을 일반 Google 앱처럼 만들지 않는다.
+3. toauner는 tuner display, frequency readout, cent meter, confidence, low tuning mode, clipping warning, song tuning card, terminal diagnostic card의 시각 언어를 소유한다.
+
+### 디자인 리뷰 기준
+
+UI를 구현하기 전에 다음을 검토한다.
+
+- 사용자가 이 화면에서 달성하려는 일과 가장 중요한 정보는 무엇인가?
+- 무엇이 시각적으로 지배적이어야 하고, 무엇을 보조 정보로 내릴 수 있는가?
+- 제거할 수 있는 요소는 무엇인가?
+- 실제 제품처럼 보이는가, AI 생성 목업처럼 보이는가?
+- 작은 Android 화면, 한 손 조작, 저조도, 소음 환경, 빠른 한눈 확인에서 작동하는가?
+- 모든 터치 대상은 48dp 이상인가?
+- loading, empty, error, disabled, focused, selected, warning, success 상태가 있는가?
+- 간격·타이포 위계가 일관되고 Hz/cent 같은 수치가 즉시 읽히는가?
+
+사용자 지시가 제품 사용성을 해치는 경우, 문제를 짧게 설명하고 더 나은 설계 결정을 제안한다. 사용자가 명시적으로 고집하지 않는 한 더 나은 결정을 구현한다.
+
+### Anti-AI-Look 규칙
+
+- Dracula, Gruvbox, Nord, Catppuccin 등 유명 테마를 이유 없이 섞거나 그대로 복사하지 않는다.
+- 임의 gradient, 과도한 glassmorphism, 모든 곳의 무거운 shadow, 불일치한 radius, 장식용 blob, 무의미한 neon glow, 의미 없는 애니메이션을 금지한다.
+- 텍스트가 더 명확한 곳에 아이콘을 남발하지 않는다.
+- 계층 없는 빽빽한 dashboard, 모든 카드가 같은 중요도로 보이는 구성, 기본 키트/Figma 선택물의 직접 복제를 금지한다.
+- 튜너를 crypto dashboard처럼 만들지 않는다.
+
+### toauner 기본 시각 토큰
+
+다른 작업이 명시적으로 바꾸지 않는 한 다음은 기본 설계 방향이다. 실제 hex 선언은 `app/lib/src/app/instrument_theme.dart`의 테마 계약에서만 관리하며, 유명 테마 색을 그대로 사용하지 않는다.
+
+| 역할 | 기본값 |
+| --- | --- |
+| bgBase / bgElevated / bgCard / bgSunken | `#0B0F14` / `#111820` / `#151D26` / `#070A0E` |
+| borderSubtle / borderStrong | `#26313D` / `#3A4654` |
+| textMain / textSub / textMuted | `#F3F6F8` / `#9AA6B2` / `#5F6B76` |
+| tuneLocked / tuneNear / tuneWarn / tuneError | `#00E5A8` / `#B7F76A` / `#FFB84D` / `#FF4F5E` |
+| accentPro / accentShark | `#6C7CFF` / `#4DE1FF` |
+
+- 일반 UI는 Pretendard 계열 또는 시스템 한글 폰트를 사용한다.
+- Hz, cent, confidence, RMS, 저주파 및 진단 수치는 JetBrains Mono 또는 동등한 모노스페이스 역할을 사용한다.
+- typeface를 과도하게 늘리지 않는다. 큰 수치 계측값은 한눈에 읽혀야 한다.
+- 주요 카드 radius는 12–16dp, 컨트롤은 8–12dp, spacing은 4/8dp 리듬을 기본으로 한다. 화면마다 하나의 강한 focal point만 둔다.
+
+### toauner 고유 제품 자산
+
+다음은 키트 import가 아니라 고유 컴포넌트로 설계·유지한다.
+
+- `TunerNeedle`, `FrequencyReadout`, `CentMeter`, `StringRail`, `TuningLockState`, `ConfidenceBadge`
+- `ClippingWarningBanner`, `LowTuningModeBadge`, `StabilityRing`, `TerminalDiagnosticCard`
+- `SongTuningCard`, `GaugeRecommendationCard`, `PegDirectionGuide`, `TuningPresetBottomSheet`
+
+이들은 어두운 기술적 배경, 강한 수치 판독성, 최소한이지만 의미 있는 색, 안정/경고/오류의 명확한 상태를 공유하며 기능 없는 장식을 넣지 않는다.
+
+### 화면별 우선순위
+
+**메인 튜너**는 감지 음/현 → Hz → cent 오차 → 조정 방향 → confidence/stability → 현재 프리셋 → clipping/noise warning 순으로 한눈에 이해되어야 한다. 곡 라이브러리·설정·진단은 주 화면에 과적재하지 않고 카드나 bottom sheet로 내린다.
+
+**곡 라이브러리**는 Adwaita형 차분한 검색/목록 구조를 사용한다. 행에는 아티스트, 곡명, 튜닝, 필요 시 카포·현 수·신뢰/출처 상태를 두며, 행동은 `이 곡으로 튜닝` 또는 `튜닝 적용`처럼 명확히 한다. 탭과 가사는 표시하지 않는다.
+
+**설정**은 Audio input, Tuner behavior, Display, Instrument setup, Low tuning mode, Data and song library, About/licenses 같은 의미 있는 그룹의 preference row를 사용한다. debug dump처럼 만들지 않는다.
+
+**진단/안정성**은 attack overshoot, settle time, drift, confidence, possible cause를 읽기 쉽게 보여준다. 원인은 `가능한 원인`, `가능성 높음`, `…일 수 있음`처럼 신중하게 말하고 단정하지 않는다.
+
+### 구현·검증 행동
+
+1. UI 구현 전 기존 코드와 디자인 구조를 읽고 재사용 컴포넌트를 찾는다.
+2. 하드코딩 색 대신 토큰, 범용 UI와 tuner 고유 컴포넌트의 분리, 작은 Android 화면 반응형 레이아웃, 시맨틱 이름을 우선한다.
+3. happy path뿐 아니라 상태와 접근성 레이블을 구현한다. 시각 목적만으로 새 의존성을 추가하지 않는다.
+4. 변경 후 formatter와 관련 테스트를 실행한다.
+5. 완료는 하나의 명확한 focal point, 토큰 기반 색, Android에서 사용할 수 있는 터치 대상, 실제 기타 튜닝 사용 조건, 유지보수 가능한 구현을 모두 만족해야 한다.
+
+### Figma 처리 규칙
+
+- Figma selection 또는 screenshot을 받으면 레이아웃 의도, 컴포넌트 역할, 간격 리듬, 타이포 위계, 상호작용 모델만 추출한다. generic한 결과는 더 나은 toauner 설계로 교정한다.
+- Figma URL/노드 ID가 있으면 먼저 정확한 노드의 design context와 screenshot을 읽고, 그 뒤에만 구현한다.
+- Figma의 React/Tailwind 결과는 표현 자료일 뿐이다. Flutter의 토큰·컴포넌트·상태 관리로 번역하고, 디자인 시스템 토큰이 충돌하면 toauner 계약을 우선한다.
+- 링크에는 정확한 selection node가 포함되어야 한다. 여러 키트가 섞였으면 어떤 키트가 구조를 제공하는지, 어떤 키트가 상호작용을 제공하는지 식별한 뒤 시각 스킨은 toauner 토큰으로 교체한다.
+
 ## 검증 명령
 
 Flutter SDK 설치 후 루트에서 실행한다.

@@ -18,8 +18,24 @@ void main() {
       final frame = pipeline.process(_estimate(116.54094, clarity: 0.89));
 
       expect(frame.confidenceAccepted, isFalse);
+      expect(frame.targetAssistedConfidence, isFalse);
       expect(frame.octaveSanity, isNull);
       expect(frame.stabilized, isNull);
+    });
+
+    test('recovers a weak estimate only when it is near a known target', () {
+      final assisted = PitchTrackingPipeline(targetFrequenciesHz: const [110]);
+      final unanchored = PitchTrackingPipeline(targetFrequenciesHz: const []);
+
+      final first = assisted.process(_estimate(110.5, clarity: 0.84));
+      final second = assisted.process(_estimate(110.4, clarity: 0.85));
+      final rejected = unanchored.process(_estimate(110.5, clarity: 0.84));
+
+      expect(first.confidenceAccepted, isTrue);
+      expect(first.targetAssistedConfidence, isTrue);
+      expect(first.stabilized, isNull);
+      expect(second.stabilized, isNotNull);
+      expect(rejected.confidenceAccepted, isFalse);
     });
 
     test(
@@ -97,6 +113,32 @@ void main() {
           onTarget.octaveSanity!.estimate.frequencyHz,
           closeTo(110, 0.001),
         );
+      },
+    );
+
+    test(
+      'corrects an unambiguous third harmonic without stealing a string',
+      () {
+        final unambiguous = PitchTrackingPipeline(
+          targetFrequenciesHz: const [110],
+        );
+        final sixStringAmbiguity = PitchTrackingPipeline(
+          targetFrequenciesHz: const [82.4069, 246.9417],
+        );
+
+        final harmonic = unambiguous.process(_estimate(330));
+        final realHighString = sixStringAmbiguity.process(_estimate(246.9417));
+
+        expect(
+          harmonic.octaveSanity!.kind,
+          OctaveCorrectionKind.rawTripleFrequency,
+        );
+        expect(
+          harmonic.octaveSanity!.frequencyMultiplier,
+          closeTo(1 / 3, 1e-9),
+        );
+        expect(harmonic.octaveSanity!.estimate.frequencyHz, closeTo(110, .001));
+        expect(realHighString.octaveSanity!.kind, OctaveCorrectionKind.none);
       },
     );
 
@@ -188,6 +230,82 @@ void main() {
       expect(correctionCount, rawDoubleFrequencyCount);
       expect(correctionTimesMs, everyElement(greaterThanOrEqualTo(600)));
       expect(productOctaveCount, 0);
+    },
+  );
+
+  test(
+    'low C-sharp keeps note identity while recovering weak stable frames',
+    () {
+      final manifestFile = _workspaceFile(
+        'packages/tuner_dsp/test/fixtures/public/manifest.public.v1.json',
+      );
+      final manifest =
+          jsonDecode(manifestFile.readAsStringSync()) as Map<String, dynamic>;
+      final fixture = (manifest['fixtures'] as List)
+          .cast<Map<String, dynamic>>()
+          .singleWhere(
+            (item) =>
+                item['id'] ==
+                'nsynth-low-48k-m37-v100-guitar_acoustic_015-037-100',
+          );
+      final waveFile = File.fromUri(
+        manifestFile.parent.uri.resolve(fixture['file'] as String),
+      );
+      final wave = decodePcm16Wave(waveFile.readAsBytesSync());
+      final nominalHz = (fixture['nominalFrequencyHz'] as num).toDouble();
+      final windowSamples = fixture['windowSamples'] as int;
+      final stableStart =
+          ((fixture['stableStartMs'] as int) * wave.sampleRateHz / 1000)
+              .round();
+      final stableEnd =
+          ((fixture['stableEndMs'] as int) * wave.sampleRateHz / 1000).round();
+      final detector = MpmDetector();
+      final pipeline = PitchTrackingPipeline(targetFrequenciesHz: [nominalHz]);
+      final emittedCents = <double>[];
+      final rawFrames = <String>[];
+      var attempted = 0;
+
+      for (
+        var offset = stableStart;
+        offset + windowSamples <= stableEnd;
+        offset += TunerDspConfig.lowTuningHopSize
+      ) {
+        attempted++;
+        final raw = detector.detect(
+          Float64List.sublistView(
+            wave.monoSamples,
+            offset,
+            offset + windowSamples,
+          ),
+          sampleRate: wave.sampleRateHz.toDouble(),
+        );
+        final frame = pipeline.process(raw);
+        final product = frame.stabilized;
+        rawFrames.add(
+          '${raw?.clarity.toStringAsFixed(3)}:'
+          '${raw?.centsFrom(nominalHz).toStringAsFixed(1)}:'
+          '${frame.confidenceAccepted}',
+        );
+        if (product != null) {
+          emittedCents.add(
+            1200 * math.log(product.frequencyHz / nominalHz) / math.ln2,
+          );
+        }
+      }
+
+      expect(attempted, 57);
+      expect(
+        emittedCents.length / attempted,
+        greaterThanOrEqualTo(.9),
+        reason: rawFrames.join(', '),
+      );
+      expect(
+        emittedCents.where((cents) => cents.abs() > 50),
+        isEmpty,
+        reason: emittedCents
+            .map((value) => value.toStringAsFixed(1))
+            .join(', '),
+      );
     },
   );
 }

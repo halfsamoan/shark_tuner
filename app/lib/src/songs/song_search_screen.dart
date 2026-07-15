@@ -13,10 +13,12 @@ import '../settings/app_preferences_screen.dart';
 import '../string_care/string_care_screen.dart';
 import '../string_care/string_care_store.dart';
 import '../tuner/live_tuner_engine.dart';
+import '../tuner/custom_tuning_screen.dart';
 import '../tuner/precision_tuner_screen.dart';
 import '../tuning_history/tuning_history_model.dart';
 import '../tuning_history/tuning_history_screen.dart';
 import '../tuning_history/tuning_history_store.dart';
+import '../ui/instrument_bottom_sheet.dart';
 import '../ui/instrument_widgets.dart';
 import '../ui/tool_menu_sheet.dart';
 import 'song_detail_screen.dart';
@@ -61,6 +63,7 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
   int _requestId = 0;
   Timer? _searchDebounce;
   var _tuningHistoryLedger = TuningHistoryLedger.empty();
+  var _showSongSearch = false;
 
   @override
   void initState() {
@@ -165,8 +168,20 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: InstrumentHeaderBar(
-        section: '곡 찾기',
+        section: _showSongSearch ? '곡 찾기' : '튜닝',
         actions: [
+          if (_showSongSearch)
+            TextButton(
+              key: const Key('tuning-home-entry'),
+              onPressed: () => setState(() => _showSongSearch = false),
+              child: Text(
+                '튜닝',
+                style: context.instrumentType.caption.copyWith(
+                  color: context.terminal.accent,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
           Semantics(
             label: '도구 메뉴',
             button: true,
@@ -186,104 +201,148 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
         ],
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 26, 24, 28),
-          children: [
-            Text(
-              '어떤 곡을 연주하나요?',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              '곡을 고르면 맞는 튜닝으로 바로 이어집니다.',
-              style: context.instrumentType.caption.copyWith(
-                color: context.terminal.muted,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              key: const Key('song-search-field'),
-              controller: _searchController,
-              autofocus: false,
-              style: context.instrumentType.body.copyWith(
-                color: context.terminal.text,
-              ),
-              cursorColor: context.terminal.accent,
-              textInputAction: TextInputAction.search,
-              onChanged: _scheduleSearch,
-              onSubmitted: (query) {
-                _searchDebounce?.cancel();
-                unawaited(_search(query));
-              },
-              decoration: InputDecoration(
-                hintText: '곡명 또는 아티스트 검색',
-                prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                suffixIcon: _searchController.text.isEmpty
-                    ? null
-                    : IconButton(
-                        key: const Key('clear-song-search'),
-                        tooltip: '검색어 지우기',
-                        onPressed: _clearSearch,
-                        icon: Text(
-                          '×',
-                          style: context.instrumentType.subhead.copyWith(
-                            color: context.terminal.textSecondary,
-                          ),
-                        ),
-                      ),
-              ),
-            ),
-            if (_searchController.text.isEmpty &&
-                context.appPreferences.value.recentSearches.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              _RecentSearches(
-                queries: context.appPreferences.value.recentSearches,
-                onSelected: _selectRecentSearch,
-                onClear: context.appPreferences.clearRecentSearches,
-              ),
-            ],
-            const SizedBox(height: 20),
-            InstrumentSectionLabel('검색 결과  ${_results.length}곡'),
-            const SizedBox(height: 10),
-            if (_loading) const LinearProgressIndicator(minHeight: 2),
-            if (_error != null) _CatalogError(onRetry: () => _load()),
-            if (!_loading && _error == null && _results.isEmpty)
-              _EmptyResults(
-                popularResults: _popularResults,
-                onShowAll: _showAllSongs,
-                onSongSelected: _openSong,
-              ),
-            if (_error == null)
-              for (final match in _results)
-                _SongResultRow(match: match, onTap: () => _openSong(match)),
-            const SizedBox(height: 18),
-            _QuickTunePanel(
-              enabled: _catalog != null,
-              onSelected: _openDirectTuner,
-            ),
-            if (widget.includeUnverifiedSongs) ...[
-              const SizedBox(height: 16),
-              Text(
-                'DEV·검토 전 후보까지 표시',
-                style: context.instrumentType.status.copyWith(
-                  color: context.terminal.amber,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ],
-        ),
+        child: _showSongSearch
+            ? _buildSongSearchBody(context)
+            : _buildTuningHome(context),
       ),
       bottomNavigationBar: InstrumentStatusBar(
         state: _loading
-            ? '곡 준비 중'
-            : widget.includeUnverifiedSongs
-            ? 'DEV·곡 찾기 준비됨'
-            : '곡 찾기 준비됨',
-        detail: '${_results.length}곡 │ 오프라인',
+            ? '튜너 준비 중'
+            : _showSongSearch
+            ? '곡 찾기 준비됨'
+            : '튜너 준비됨',
+        detail: _showSongSearch ? '${_results.length}곡 │ 오프라인' : 'MIC │ 로컬 처리',
         active: !_loading && _error == null,
       ),
     );
+  }
+
+  Widget _buildTuningHome(BuildContext context) {
+    return ListView(
+      key: const Key('free-tuning-home'),
+      padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
+      children: [
+        InstrumentSectionLabel(
+          'READY / FREE TUNING',
+          color: context.terminal.accent,
+        ),
+        const SizedBox(height: 10),
+        Text('튜닝 시작', style: context.instrumentType.title),
+        const SizedBox(height: 8),
+        Text(
+          '기본 · 프리셋 · 내 튜닝',
+          style: context.instrumentType.caption.copyWith(
+            color: context.terminal.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 24),
+        _QuickTunePanel(
+          enabled: _catalog != null,
+          onSelected: _openDirectTuner,
+          onCustom: _openCustomTuning,
+        ),
+        const SizedBox(height: 28),
+        const InstrumentSectionLabel('곡 검색'),
+        const SizedBox(height: 10),
+        InstrumentActionRow(
+          rowKey: const Key('song-search-entry'),
+          label: '곡 튜닝 찾기',
+          detail: '곡명 · 아티스트',
+          onTap: () => setState(() => _showSongSearch = true),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSongSearchBody(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(24, 26, 24, 28),
+      children: [
+        Text('어떤 곡을 연주하나요?', style: context.instrumentType.title),
+        const SizedBox(height: 6),
+        Text(
+          '곡을 고르면 맞는 튜닝으로 바로 이어집니다.',
+          style: context.instrumentType.caption.copyWith(
+            color: context.terminal.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          key: const Key('song-search-field'),
+          controller: _searchController,
+          autofocus: false,
+          style: context.instrumentType.body.copyWith(
+            color: context.terminal.text,
+          ),
+          cursorColor: context.terminal.accent,
+          textInputAction: TextInputAction.search,
+          onChanged: _scheduleSearch,
+          onSubmitted: (query) {
+            _searchDebounce?.cancel();
+            unawaited(_search(query));
+          },
+          decoration: InputDecoration(
+            hintText: '곡명 또는 아티스트 검색',
+            prefixIcon: const Icon(Icons.search_rounded, size: 20),
+            suffixIcon: _searchController.text.isEmpty
+                ? null
+                : IconButton(
+                    key: const Key('clear-song-search'),
+                    tooltip: '검색어 지우기',
+                    onPressed: _clearSearch,
+                    icon: Text(
+                      '×',
+                      style: context.instrumentType.subhead.copyWith(
+                        color: context.terminal.textSecondary,
+                      ),
+                    ),
+                  ),
+          ),
+        ),
+        if (_searchController.text.isEmpty &&
+            context.appPreferences.value.recentSearches.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          _RecentSearches(
+            queries: context.appPreferences.value.recentSearches,
+            onSelected: _selectRecentSearch,
+            onClear: context.appPreferences.clearRecentSearches,
+          ),
+        ],
+        const SizedBox(height: 20),
+        InstrumentSectionLabel('검색 결과  ${_results.length}곡'),
+        const SizedBox(height: 10),
+        if (_loading) const LinearProgressIndicator(minHeight: 2),
+        if (_error != null) _CatalogError(onRetry: _load),
+        if (!_loading && _error == null && _results.isEmpty)
+          _EmptyResults(
+            popularResults: _popularResults,
+            onShowAll: _showAllSongs,
+            onSongSelected: _openSong,
+          ),
+        if (_error == null)
+          for (final match in _results)
+            _SongResultRow(match: match, onTap: () => _openSong(match)),
+        if (widget.includeUnverifiedSongs) ...[
+          const SizedBox(height: 16),
+          Text(
+            'DEV·검토 전 후보까지 표시',
+            style: context.instrumentType.status.copyWith(
+              color: context.terminal.amber,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _openCustomTuning() async {
+    final tuning = await Navigator.of(context).push<TuningDefinition>(
+      MaterialPageRoute(builder: (_) => const CustomTuningScreen()),
+    );
+    if (tuning != null && mounted) {
+      await _openDirectTuner(tuning);
+    }
   }
 
   Future<void> _openDirectTuner(TuningDefinition tuning) async {
@@ -328,10 +387,8 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
   }
 
   void _openToolMenu() {
-    showModalBottomSheet<void>(
+    showInstrumentBottomSheet<void>(
       context: context,
-      backgroundColor: context.terminal.raised,
-      isScrollControlled: true,
       builder: (sheetContext) => ToolMenuSheet(
         historyCount: _tuningHistoryLedger.entries.length,
         onMetronome: () {
@@ -464,15 +521,20 @@ class _RecentSearches extends StatelessWidget {
 }
 
 class _QuickTunePanel extends StatelessWidget {
-  const _QuickTunePanel({required this.enabled, required this.onSelected});
+  const _QuickTunePanel({
+    required this.enabled,
+    required this.onSelected,
+    required this.onCustom,
+  });
 
   final bool enabled;
   final ValueChanged<TuningDefinition> onSelected;
+  final VoidCallback onCustom;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
       decoration: BoxDecoration(
         color: context.terminal.panel,
         border: Border.all(color: context.terminal.line),
@@ -480,21 +542,32 @@ class _QuickTunePanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Expanded(child: InstrumentSectionLabel('곡 없이 튜닝')),
-              OutlinedButton(
-                key: const Key('quick-tune-standard'),
-                onPressed: enabled
-                    ? () => onSelected(BuiltInTunings.standardGuitar)
-                    : null,
-                child: const Text('E Standard 시작'),
-              ),
-            ],
-          ),
+          const InstrumentSectionLabel('6현 기타 / 기본'),
           const SizedBox(height: 8),
+          Text('E Standard', style: context.instrumentType.subhead),
+          const SizedBox(height: 4),
+          Text(
+            'E2   A2   D3   G3   B3   E4',
+            style: context.instrumentType.status.copyWith(
+              color: context.terminal.textSecondary,
+              letterSpacing: .7,
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              key: const Key('quick-tune-standard'),
+              onPressed: enabled
+                  ? () => onSelected(BuiltInTunings.standardGuitar)
+                  : null,
+              child: const Text('E Standard로 시작'),
+            ),
+          ),
+          const SizedBox(height: 12),
           Wrap(
             spacing: 8,
+            runSpacing: 8,
             children: [
               ActionChip(
                 key: const Key('quick-tune-eb'),
@@ -517,16 +590,23 @@ class _QuickTunePanel extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              key: const Key('custom-tuning-entry'),
+              onPressed: enabled ? onCustom : null,
+              child: const Text('내 튜닝 만들기'),
+            ),
+          ),
         ],
       ),
     );
   }
 
   void _showPresetPicker(BuildContext context) {
-    showModalBottomSheet<void>(
+    showInstrumentBottomSheet<void>(
       context: context,
-      backgroundColor: context.terminal.raised,
-      isScrollControlled: true,
       builder: (sheetContext) => _DirectTuningSheet(
         tunings: BuiltInTunings.sixStringPresets,
         onSelected: (tuning) {
@@ -720,43 +800,26 @@ class _EmptyResults extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            '검색 결과가 없습니다.',
-            textAlign: TextAlign.center,
-            style: context.instrumentType.body.copyWith(
-              color: context.terminal.text,
-            ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            '곡명 철자를 확인하거나 아티스트 이름으로 찾아보세요.',
-            textAlign: TextAlign.center,
-            style: context.instrumentType.caption.copyWith(
-              color: context.terminal.muted,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Center(
-            child: OutlinedButton(
-              key: const Key('show-all-songs'),
-              onPressed: onShowAll,
-              child: const Text('전체 곡 다시 보기'),
-            ),
-          ),
-          if (popularResults.isNotEmpty) ...[
-            const SizedBox(height: 28),
-            InstrumentSectionLabel('추천 곡'),
-            const SizedBox(height: 8),
-            for (final match in popularResults)
-              _SongResultRow(match: match, onTap: () => onSongSelected(match)),
-          ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 20),
+        InstrumentStatePanel(
+          tone: InstrumentStateTone.neutral,
+          title: '검색 결과 없음',
+          detail: '곡명 또는 아티스트를 확인해 보세요',
+          actionKey: const Key('show-all-songs'),
+          actionLabel: '전체 곡 보기',
+          onAction: onShowAll,
+        ),
+        if (popularResults.isNotEmpty) ...[
+          const SizedBox(height: 28),
+          InstrumentSectionLabel('추천 곡'),
+          const SizedBox(height: 8),
+          for (final match in popularResults)
+            _SongResultRow(match: match, onTap: () => onSongSelected(match)),
         ],
-      ),
+      ],
     );
   }
 }
@@ -769,16 +832,13 @@ class _CatalogError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      child: Column(
-        children: [
-          Text(
-            '곡 카탈로그를 열지 못했습니다.',
-            style: TextStyle(color: context.terminal.danger),
-          ),
-          const SizedBox(height: 10),
-          TextButton(onPressed: onRetry, child: const Text('다시 시도')),
-        ],
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: InstrumentStatePanel(
+        tone: InstrumentStateTone.danger,
+        title: '곡을 불러올 수 없음',
+        detail: '연결을 확인하고 다시 시도해 보세요',
+        actionLabel: '다시 시도',
+        onAction: onRetry,
       ),
     );
   }

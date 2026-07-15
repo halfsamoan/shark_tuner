@@ -31,21 +31,66 @@ class _TunerSkinFrame extends StatelessWidget {
             child: Row(
               children: [
                 Text(
-                  'CLIP//LIVE',
+                  'CLIP//LIVE_00',
                   style: context.instrumentType.status.copyWith(
                     color: context.terminal.accent,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1,
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'CH-01  OVERDRIVE SAFE',
+                    'ERR//CH-01  OVERDRIVE',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.end,
                     style: context.instrumentType.status.copyWith(
                       color: context.terminal.danger,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            key: const Key('clipping-signal-tear'),
+            height: 24,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned(
+                  left: 0,
+                  top: 4,
+                  width: 116,
+                  height: 5,
+                  child: ColoredBox(color: context.terminal.phosphorEdge),
+                ),
+                Positioned(
+                  left: 34,
+                  top: 7,
+                  width: 148,
+                  height: 5,
+                  child: ColoredBox(color: context.terminal.accent),
+                ),
+                Positioned(
+                  right: -8,
+                  top: 2,
+                  child: Transform.rotate(
+                    angle: -.035,
+                    child: Container(
+                      color: context.terminal.ink,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      child: Text(
+                        'SIGNAL TEAR / 02',
+                        style: context.instrumentType.status.copyWith(
+                          color: context.terminal.raised,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
                     ),
                   ),
                 ),

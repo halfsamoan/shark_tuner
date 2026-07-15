@@ -83,14 +83,14 @@ class AppPreferencesScreen extends StatelessWidget {
             const SizedBox(height: 24),
             const InstrumentSectionLabel('편의'),
             const SizedBox(height: 8),
-            SettingToggleRow(
+            InstrumentToggleRow(
               rowKey: const Key('haptics-toggle'),
               label: '햅틱',
               detail: '현 잠금과 완료를 진동으로 알림',
               value: preferences.hapticsEnabled,
               onChanged: controller.setHapticsEnabled,
             ),
-            SettingToggleRow(
+            InstrumentToggleRow(
               rowKey: const Key('reduce-motion-toggle'),
               label: '모션 줄이기',
               detail: '전환과 락 효과를 즉시 표시',
@@ -131,10 +131,10 @@ class ThemeTile extends StatelessWidget {
         key: Key('theme-${themeId.name}'),
         onTap: onTap,
         child: Container(
-          constraints: const BoxConstraints(minHeight: 64),
+          constraints: const BoxConstraints(minHeight: 76),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: context.terminal.panel,
+            color: selected ? context.terminal.raised : context.terminal.panel,
             border: Border.all(
               width: selected ? 2 : 1,
               color: selected ? context.terminal.accent : context.terminal.line,
@@ -142,16 +142,7 @@ class ThemeTile extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: preview.canvas,
-                  border: Border.all(color: preview.line),
-                ),
-                alignment: Alignment.center,
-                child: Container(width: 18, height: 3, color: preview.accent),
-              ),
+              _ThemePreview(theme: preview),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -188,41 +179,51 @@ class ThemeTile extends StatelessWidget {
   }
 }
 
-class SettingToggleRow extends StatelessWidget {
-  const SettingToggleRow({
-    super.key,
-    required this.rowKey,
-    required this.label,
-    required this.detail,
-    required this.value,
-    required this.onChanged,
-  });
+class _ThemePreview extends StatelessWidget {
+  const _ThemePreview({required this.theme});
 
-  final Key rowKey;
-  final String label;
-  final String detail;
-  final bool value;
-  final ValueChanged<bool> onChanged;
+  final TerminalTheme theme;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 64),
+      width: 64,
+      height: 52,
+      padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: context.terminal.line)),
+        color: theme.canvas,
+        border: Border.all(color: theme.line, width: 2),
       ),
-      child: SwitchListTile(
-        key: rowKey,
-        contentPadding: EdgeInsets.zero,
-        title: Text(label, style: context.instrumentType.body),
-        subtitle: Text(
-          detail,
-          style: context.instrumentType.caption.copyWith(
-            color: context.terminal.textSecondary,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(height: 8, color: theme.header),
+          const SizedBox(height: 4),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              color: theme.panel,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Container(height: 3, color: theme.ink),
+                        const SizedBox(height: 3),
+                        Container(height: 2, color: theme.textSecondary),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Container(width: 10, color: theme.accent),
+                ],
+              ),
+            ),
           ),
-        ),
-        value: value,
-        onChanged: onChanged,
+          const SizedBox(height: 3),
+          Container(height: 3, color: theme.raised),
+        ],
       ),
     );
   }
