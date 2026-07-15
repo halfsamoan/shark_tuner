@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../app/app_preferences.dart';
 import '../app/instrument_theme.dart';
 import '../ui/instrument_widgets.dart';
 import 'metronome_player.dart';
@@ -17,8 +18,8 @@ const _timeSignatures = <(int, String)>[
   (6, '6/8'),
 ];
 
-TextStyle get _mono =>
-    InstrumentTypeTheme.standard.subhead.copyWith(fontFamily: 'D2Coding');
+TextStyle _mono(BuildContext context) =>
+    context.instrumentType.subhead.copyWith(fontFamily: 'IBM Plex Mono');
 
 class MetronomeScreen extends StatefulWidget {
   const MetronomeScreen({
@@ -142,7 +143,7 @@ class _MetronomeScreenState extends State<MetronomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: InstrumentColors.canvas,
+      backgroundColor: context.terminal.canvas,
       appBar: const InstrumentHeaderBar(section: '메트로놈', showBack: true),
       body: SafeArea(
         child: Padding(
@@ -150,7 +151,7 @@ class _MetronomeScreenState extends State<MetronomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const InstrumentSectionLabel('TEMPO'),
+              InstrumentSectionLabel('TEMPO'),
               const SizedBox(height: 4),
               _BpmRow(
                 bpm: _bpm,
@@ -217,16 +218,16 @@ class _BpmRow extends StatelessWidget {
               Text(
                 '$bpm',
                 textAlign: TextAlign.center,
-                style: InstrumentTypeTheme.standard.centsHero.copyWith(
-                  color: InstrumentColors.accent,
+                style: context.instrumentType.centsHero.copyWith(
+                  color: context.terminal.accent,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 'BPM',
-                style: InstrumentTypeTheme.standard.status.copyWith(
-                  color: InstrumentColors.textSecondary,
+                style: context.instrumentType.status.copyWith(
+                  color: context.terminal.textSecondary,
                   letterSpacing: 4,
                 ),
               ),
@@ -257,7 +258,7 @@ class _Stepper extends StatelessWidget {
         child: Center(
           child: Text(
             glyph,
-            style: _mono.copyWith(color: InstrumentColors.ink),
+            style: _mono(context).copyWith(color: context.terminal.ink),
           ),
         ),
       ),
@@ -295,16 +296,18 @@ class _BeatBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final onColor = accent
-        ? InstrumentColors.lockFlood
-        : InstrumentColors.accent;
+        ? context.terminal.lockFlood
+        : context.terminal.accent;
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 70),
+      duration: shouldReduceMotion(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 70),
       width: accent ? 30 : 24,
       height: 44,
       decoration: BoxDecoration(
-        color: active ? onColor : InstrumentColors.gridTick,
+        color: active ? onColor : context.terminal.gridTick,
         border: Border.all(
-          color: active ? onColor : InstrumentColors.line,
+          color: active ? onColor : context.terminal.line,
           width: 1,
         ),
       ),
@@ -326,8 +329,8 @@ class _TimeSignatureRow extends StatelessWidget {
         children: [
           Text(
             '박자',
-            style: InstrumentTypeTheme.standard.body.copyWith(
-              color: InstrumentColors.textSecondary,
+            style: context.instrumentType.body.copyWith(
+              color: context.terminal.textSecondary,
             ),
           ),
           const SizedBox(width: 12),
@@ -340,10 +343,10 @@ class _TimeSignatureRow extends StatelessWidget {
                     onTap: () => onChanged(value),
                     child: Text(
                       beats == value ? '[$label]' : label,
-                      style: _mono.copyWith(
+                      style: _mono(context).copyWith(
                         color: beats == value
-                            ? InstrumentColors.accent
-                            : InstrumentColors.textSecondary,
+                            ? context.terminal.accent
+                            : context.terminal.textSecondary,
                       ),
                     ),
                   ),
@@ -361,7 +364,7 @@ class _Hairline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) =>
-      const Divider(height: 1, thickness: 1, color: InstrumentColors.line);
+      Divider(height: 1, thickness: 1, color: context.terminal.line);
 }
 
 class _PrimaryButton extends StatelessWidget {
@@ -383,16 +386,16 @@ class _PrimaryButton extends StatelessWidget {
         height: 56,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: active ? InstrumentColors.panel : InstrumentColors.accent,
-          border: Border.all(color: InstrumentColors.accent, width: 1.5),
+          color: active ? context.terminal.panel : context.terminal.accent,
+          border: Border.all(color: context.terminal.accent, width: 1.5),
         ),
         child: Text(
           active ? '■ $label' : '▶ $label',
-          style: InstrumentTypeTheme.standard.subhead.copyWith(
+          style: context.instrumentType.subhead.copyWith(
             fontWeight: FontWeight.w700,
             color: active
-                ? InstrumentColors.accent
-                : InstrumentColors.accentInk,
+                ? context.terminal.accent
+                : context.terminal.accentInk,
           ),
         ),
       ),
@@ -414,12 +417,12 @@ class _GhostButton extends StatelessWidget {
         height: 56,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          border: Border.all(color: InstrumentColors.line, width: 1),
+          border: Border.all(color: context.terminal.line, width: 1),
         ),
         child: Text(
           label,
-          style: InstrumentTypeTheme.standard.body.copyWith(
-            color: InstrumentColors.ink,
+          style: context.instrumentType.body.copyWith(
+            color: context.terminal.ink,
           ),
         ),
       ),

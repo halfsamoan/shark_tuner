@@ -4,11 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:tuner_data/tuner_data.dart';
 import 'package:tuner_domain/tuner_domain.dart';
 
+import '../app/app_preferences.dart';
 import '../app/instrument_theme.dart';
 import '../app/toauner_app.dart';
-import '../metronome/metronome_screen.dart'; // (Claude)
+import '../metronome/metronome_screen.dart';
 import '../settings/app_information_screen.dart';
-import '../string_care/string_care_model.dart';
+import '../settings/app_preferences_screen.dart';
 import '../string_care/string_care_screen.dart';
 import '../string_care/string_care_store.dart';
 import '../tuner/live_tuner_engine.dart';
@@ -17,6 +18,7 @@ import '../tuning_history/tuning_history_model.dart';
 import '../tuning_history/tuning_history_screen.dart';
 import '../tuning_history/tuning_history_store.dart';
 import '../ui/instrument_widgets.dart';
+import '../ui/tool_menu_sheet.dart';
 import 'song_detail_screen.dart';
 
 class SongSearchScreen extends StatefulWidget {
@@ -57,14 +59,13 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
   bool _loading = true;
   Object? _error;
   int _requestId = 0;
-  var _stringCareLedger = StringCareLedger.empty();
+  Timer? _searchDebounce;
   var _tuningHistoryLedger = TuningHistoryLedger.empty();
 
   @override
   void initState() {
     super.initState();
     unawaited(_load());
-    unawaited(_loadStringCare());
     unawaited(_loadTuningHistory());
   }
 
@@ -76,17 +77,6 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
       }
     } on Object {
       // Song search remains usable if local session history is unavailable.
-    }
-  }
-
-  Future<void> _loadStringCare() async {
-    try {
-      final ledger = await widget.stringCareLoader();
-      if (mounted) {
-        setState(() => _stringCareLedger = ledger);
-      }
-    } on Object {
-      // The song catalog remains usable if local care data is unavailable.
     }
   }
 
@@ -143,8 +133,26 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
     }
   }
 
+  void _scheduleSearch(String query) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(
+      const Duration(milliseconds: 250),
+      () => unawaited(_search(query)),
+    );
+    setState(() {});
+  }
+
+  void _clearSearch() {
+    _searchDebounce?.cancel();
+    _searchController.clear();
+    FocusScope.of(context).unfocus();
+    unawaited(_search(''));
+    setState(() {});
+  }
+
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     final catalog = _catalog;
     if (catalog != null) {
@@ -159,61 +167,18 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
       appBar: InstrumentHeaderBar(
         section: '곡 찾기',
         actions: [
-          // (Claude) Metronome entry point.
           Semantics(
-            label: '메트로놈',
+            label: '도구 메뉴',
             button: true,
             excludeSemantics: true,
-            child: IconButton(
-              key: const Key('metronome-entry'),
-              tooltip: '메트로놈',
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const MetronomeScreen(),
-                ),
-              ),
-              icon: Text(
-                '♩',
-                style: InstrumentTypeTheme.standard.subhead.copyWith(
-                  color: InstrumentColors.accent,
-                  fontFamily: 'D2Coding',
-                ),
-              ),
-            ),
-          ),
-          Semantics(
-            label: '튜닝 기록 ${_tuningHistoryLedger.entries.length}회',
-            button: true,
-            excludeSemantics: true,
-            child: IconButton(
-              key: const Key('tuning-history-entry'),
-              tooltip: '튜닝 기록',
-              onPressed: _openTuningHistory,
-              icon: Text(
-                _tuningHistoryLedger.entries.isEmpty
-                    ? 'LOG'
-                    : 'LOG·${_tuningHistoryLedger.entries.length}',
-                style: InstrumentTypeTheme.standard.status.copyWith(
-                  color: InstrumentColors.lockHold,
-                  fontFamily: 'D2Coding',
+            child: TextButton(
+              key: const Key('tool-menu-entry'),
+              onPressed: _openToolMenu,
+              child: Text(
+                '도구',
+                style: context.instrumentType.caption.copyWith(
+                  color: context.terminal.accent,
                   fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-          Semantics(
-            label: '개인정보 및 앱 정보',
-            button: true,
-            excludeSemantics: true,
-            child: IconButton(
-              key: const Key('app-information'),
-              tooltip: '개인정보 및 앱 정보',
-              onPressed: _openAppInformation,
-              icon: Text(
-                'ⓘ',
-                style: InstrumentTypeTheme.standard.subhead.copyWith(
-                  color: InstrumentColors.information,
-                  fontFamily: 'D2Coding',
                 ),
               ),
             ),
@@ -230,36 +195,53 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              '오프라인 카탈로그에서 튜닝을 찾습니다.',
-              style: InstrumentTypeTheme.standard.caption.copyWith(
-                color: InstrumentColors.muted,
+              '곡을 고르면 맞는 튜닝으로 바로 이어집니다.',
+              style: context.instrumentType.caption.copyWith(
+                color: context.terminal.muted,
               ),
             ),
             const SizedBox(height: 16),
-            _QuickTunePanel(
-              enabled: _catalog != null,
-              onSelected: _openDirectTuner,
-            ),
-            const SizedBox(height: 12),
-            _StringCareSummaryRow(
-              status: _stringCareLedger.statusOn(widget.stringCareNow()),
-              onTap: _openStringCare,
-            ),
-            const SizedBox(height: 20),
             TextField(
+              key: const Key('song-search-field'),
               controller: _searchController,
               autofocus: false,
-              style: InstrumentTypeTheme.standard.body.copyWith(
-                color: InstrumentColors.text,
+              style: context.instrumentType.body.copyWith(
+                color: context.terminal.text,
               ),
-              cursorColor: InstrumentColors.accent,
+              cursorColor: context.terminal.accent,
               textInputAction: TextInputAction.search,
-              onChanged: _search,
-              decoration: const InputDecoration(
+              onChanged: _scheduleSearch,
+              onSubmitted: (query) {
+                _searchDebounce?.cancel();
+                unawaited(_search(query));
+              },
+              decoration: InputDecoration(
                 hintText: '곡명 또는 아티스트 검색',
-                prefixIcon: Icon(Icons.search_rounded, size: 20),
+                prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                suffixIcon: _searchController.text.isEmpty
+                    ? null
+                    : IconButton(
+                        key: const Key('clear-song-search'),
+                        tooltip: '검색어 지우기',
+                        onPressed: _clearSearch,
+                        icon: Text(
+                          '×',
+                          style: context.instrumentType.subhead.copyWith(
+                            color: context.terminal.textSecondary,
+                          ),
+                        ),
+                      ),
               ),
             ),
+            if (_searchController.text.isEmpty &&
+                context.appPreferences.value.recentSearches.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _RecentSearches(
+                queries: context.appPreferences.value.recentSearches,
+                onSelected: _selectRecentSearch,
+                onClear: context.appPreferences.clearRecentSearches,
+              ),
+            ],
             const SizedBox(height: 20),
             InstrumentSectionLabel('검색 결과  ${_results.length}곡'),
             const SizedBox(height: 10),
@@ -274,12 +256,17 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
             if (_error == null)
               for (final match in _results)
                 _SongResultRow(match: match, onTap: () => _openSong(match)),
+            const SizedBox(height: 18),
+            _QuickTunePanel(
+              enabled: _catalog != null,
+              onSelected: _openDirectTuner,
+            ),
             if (widget.includeUnverifiedSongs) ...[
               const SizedBox(height: 16),
               Text(
                 'DEV·검토 전 후보까지 표시',
-                style: InstrumentTypeTheme.standard.status.copyWith(
-                  color: InstrumentColors.amber,
+                style: context.instrumentType.status.copyWith(
+                  color: context.terminal.amber,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -328,6 +315,49 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
     );
   }
 
+  void _openSettings() {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(builder: (_) => const AppPreferencesScreen()),
+    );
+  }
+
+  void _openMetronome() {
+    Navigator.of(
+      context,
+    ).push<void>(MaterialPageRoute(builder: (_) => const MetronomeScreen()));
+  }
+
+  void _openToolMenu() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: context.terminal.raised,
+      isScrollControlled: true,
+      builder: (sheetContext) => ToolMenuSheet(
+        historyCount: _tuningHistoryLedger.entries.length,
+        onMetronome: () {
+          Navigator.of(sheetContext).pop();
+          _openMetronome();
+        },
+        onHistory: () {
+          Navigator.of(sheetContext).pop();
+          unawaited(_openTuningHistory());
+        },
+        onStringCare: () {
+          Navigator.of(sheetContext).pop();
+          unawaited(_openStringCare());
+        },
+        onSettings: () {
+          Navigator.of(sheetContext).pop();
+          _openSettings();
+        },
+        onInformation: () {
+          Navigator.of(sheetContext).pop();
+          _openAppInformation();
+        },
+      ),
+    );
+  }
+
   Future<void> _openStringCare() async {
     await Navigator.of(context).push<void>(
       MaterialPageRoute(
@@ -338,9 +368,6 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
         ),
       ),
     );
-    if (mounted) {
-      await _loadStringCare();
-    }
   }
 
   Future<void> _openTuningHistory() async {
@@ -358,12 +385,22 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
   }
 
   void _showAllSongs() {
-    _searchController.clear();
-    FocusScope.of(context).unfocus();
-    unawaited(_search(''));
+    _clearSearch();
+  }
+
+  void _selectRecentSearch(String query) {
+    _searchDebounce?.cancel();
+    _searchController.text = query;
+    _searchController.selection = TextSelection.collapsed(offset: query.length);
+    unawaited(_search(query));
+    setState(() {});
   }
 
   Future<void> _openSong(SongTuningMatch match) async {
+    final query = _searchController.text.trim();
+    context.appPreferences.recordRecentSearch(
+      query.isEmpty ? match.song.title : query,
+    );
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => SongDetailScreen(
@@ -382,80 +419,46 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
   }
 }
 
-class _StringCareSummaryRow extends StatelessWidget {
-  const _StringCareSummaryRow({required this.status, required this.onTap});
+class _RecentSearches extends StatelessWidget {
+  const _RecentSearches({
+    required this.queries,
+    required this.onSelected,
+    required this.onClear,
+  });
 
-  final StringCareStatus status;
-  final VoidCallback onTap;
+  final List<String> queries;
+  final ValueChanged<String> onSelected;
+  final VoidCallback onClear;
 
   @override
   Widget build(BuildContext context) {
-    final warning =
-        status.kind == StringCareStatusKind.due ||
-        status.kind == StringCareStatusKind.overdue;
-    final (label, detail) = switch (status.kind) {
-      StringCareStatusKind.noRecord => ('줄 교체 기록', '설치일 기록하기'),
-      StringCareStatusKind.fresh => (
-        '현재 줄 ${status.ageDays}일째',
-        '점검 D-${status.daysUntilReminder}',
-      ),
-      StringCareStatusKind.dueSoon => (
-        '줄 교체 점검 예정',
-        'D-${status.daysUntilReminder}',
-      ),
-      StringCareStatusKind.due => ('줄 교체 점검 · 오늘', '기록 열기'),
-      StringCareStatusKind.overdue => (
-        '줄 교체 점검 · ${-status.daysUntilReminder!}일 지남',
-        '기록 열기',
-      ),
-    };
-    return Semantics(
-      button: true,
-      label: '$label, $detail',
-      child: InkWell(
-        key: const Key('string-care-entry'),
-        onTap: onTap,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 52),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-          decoration: BoxDecoration(
-            color: InstrumentColors.panel,
-            border: Border(
-              left: BorderSide(
-                width: 2,
-                color: warning
-                    ? InstrumentColors.amber
-                    : InstrumentColors.information,
-              ),
-              top: const BorderSide(color: InstrumentColors.line),
-              right: const BorderSide(color: InstrumentColors.line),
-              bottom: const BorderSide(color: InstrumentColors.line),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(child: InstrumentSectionLabel('최근 검색')),
+            TextButton(
+              key: const Key('clear-recent-searches'),
+              onPressed: onClear,
+              child: const Text('전체 지우기'),
             ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  label,
-                  style: InstrumentTypeTheme.standard.caption.copyWith(
-                    color: warning
-                        ? InstrumentColors.amber
-                        : InstrumentColors.text,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '$detail  ›',
-                style: InstrumentTypeTheme.standard.status.copyWith(
-                  color: InstrumentColors.muted,
-                ),
-              ),
-            ],
-          ),
+          ],
         ),
-      ),
+        const SizedBox(height: 4),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final query in queries)
+              ActionChip(
+                key: Key('recent-search-$query'),
+                onPressed: () => onSelected(query),
+                label: Text(query),
+              ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -469,26 +472,25 @@ class _QuickTunePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
       decoration: BoxDecoration(
-        color: InstrumentColors.panel,
-        border: Border.all(color: InstrumentColors.line),
+        color: context.terminal.panel,
+        border: Border.all(color: context.terminal.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const InstrumentSectionLabel('바로 튜닝', color: InstrumentColors.accent),
-          const SizedBox(height: 9),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              key: const Key('quick-tune-standard'),
-              onPressed: enabled
-                  ? () => onSelected(BuiltInTunings.standardGuitar)
-                  : null,
-              icon: Text('●', style: InstrumentTypeTheme.standard.status),
-              label: const Text('바로 튜닝하기 · E Standard'),
-            ),
+          Row(
+            children: [
+              const Expanded(child: InstrumentSectionLabel('곡 없이 튜닝')),
+              OutlinedButton(
+                key: const Key('quick-tune-standard'),
+                onPressed: enabled
+                    ? () => onSelected(BuiltInTunings.standardGuitar)
+                    : null,
+                child: const Text('E Standard 시작'),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -523,7 +525,7 @@ class _QuickTunePanel extends StatelessWidget {
   void _showPresetPicker(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: InstrumentColors.raised,
+      backgroundColor: context.terminal.raised,
       isScrollControlled: true,
       builder: (sheetContext) => _DirectTuningSheet(
         tunings: BuiltInTunings.sixStringPresets,
@@ -555,21 +557,21 @@ class _DirectTuningSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const InstrumentSectionLabel(
+                  InstrumentSectionLabel(
                     '튜닝 선택',
-                    color: InstrumentColors.accent,
+                    color: context.terminal.accent,
                   ),
                   const SizedBox(height: 6),
                   Text(
                     '원하는 튜닝을 고르면 각 줄을 목표 음까지 차례로 안내합니다.',
-                    style: InstrumentTypeTheme.standard.caption.copyWith(
-                      color: InstrumentColors.muted,
+                    style: context.instrumentType.caption.copyWith(
+                      color: context.terminal.muted,
                     ),
                   ),
                 ],
               ),
             ),
-            const Divider(height: 1),
+            Divider(height: 1),
             Expanded(
               child: ListView.builder(
                 itemCount: tunings.length,
@@ -584,17 +586,17 @@ class _DirectTuningSheet extends StatelessWidget {
                         horizontal: 24,
                         vertical: 11,
                       ),
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         border: Border(
-                          bottom: BorderSide(color: InstrumentColors.line),
+                          bottom: BorderSide(color: context.terminal.line),
                         ),
                       ),
                       child: Row(
                         children: [
                           Text(
                             '${index + 1}'.padLeft(2, '0'),
-                            style: InstrumentTypeTheme.standard.status.copyWith(
-                              color: InstrumentColors.muted,
+                            style: context.instrumentType.status.copyWith(
+                              color: context.terminal.muted,
                             ),
                           ),
                           const SizedBox(width: 14),
@@ -604,16 +606,18 @@ class _DirectTuningSheet extends StatelessWidget {
                               children: [
                                 Text(
                                   tuning.name,
-                                  style: InstrumentTypeTheme.standard.body
-                                      .copyWith(fontWeight: FontWeight.w600),
+                                  style: context.instrumentType.body.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                                 const SizedBox(height: 3),
                                 Text(
                                   tuning.strings
                                       .map((string) => string.label)
                                       .join('  '),
-                                  style: InstrumentTypeTheme.standard.status
-                                      .copyWith(color: InstrumentColors.muted),
+                                  style: context.instrumentType.status.copyWith(
+                                    color: context.terminal.muted,
+                                  ),
                                 ),
                               ],
                             ),
@@ -651,9 +655,9 @@ class _SongResultRow extends StatelessWidget {
       child: Container(
         constraints: const BoxConstraints(minHeight: 72),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
-        decoration: const BoxDecoration(
-          color: InstrumentColors.panel,
-          border: Border(bottom: BorderSide(color: InstrumentColors.line)),
+        decoration: BoxDecoration(
+          color: context.terminal.panel,
+          border: Border(bottom: BorderSide(color: context.terminal.line)),
         ),
         child: Row(
           children: [
@@ -663,15 +667,15 @@ class _SongResultRow extends StatelessWidget {
                 children: [
                   Text(
                     song.title,
-                    style: InstrumentTypeTheme.standard.body.copyWith(
+                    style: context.instrumentType.body.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 3),
                   Text(
                     song.artist,
-                    style: InstrumentTypeTheme.standard.caption.copyWith(
-                      color: InstrumentColors.muted,
+                    style: context.instrumentType.caption.copyWith(
+                      color: context.terminal.muted,
                     ),
                   ),
                 ],
@@ -682,16 +686,16 @@ class _SongResultRow extends StatelessWidget {
               children: [
                 Text(
                   match.tuning.name.toUpperCase(),
-                  style: InstrumentTypeTheme.standard.status.copyWith(
-                    color: InstrumentColors.accent,
+                  style: context.instrumentType.status.copyWith(
+                    color: context.terminal.accent,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   secondary,
-                  style: InstrumentTypeTheme.standard.status.copyWith(
-                    color: InstrumentColors.muted,
+                  style: context.instrumentType.status.copyWith(
+                    color: context.terminal.muted,
                   ),
                 ),
               ],
@@ -724,16 +728,16 @@ class _EmptyResults extends StatelessWidget {
           Text(
             '검색 결과가 없습니다.',
             textAlign: TextAlign.center,
-            style: InstrumentTypeTheme.standard.body.copyWith(
-              color: InstrumentColors.text,
+            style: context.instrumentType.body.copyWith(
+              color: context.terminal.text,
             ),
           ),
           const SizedBox(height: 5),
           Text(
             '곡명 철자를 확인하거나 아티스트 이름으로 찾아보세요.',
             textAlign: TextAlign.center,
-            style: InstrumentTypeTheme.standard.caption.copyWith(
-              color: InstrumentColors.muted,
+            style: context.instrumentType.caption.copyWith(
+              color: context.terminal.muted,
             ),
           ),
           const SizedBox(height: 14),
@@ -746,7 +750,7 @@ class _EmptyResults extends StatelessWidget {
           ),
           if (popularResults.isNotEmpty) ...[
             const SizedBox(height: 28),
-            const InstrumentSectionLabel('추천 곡'),
+            InstrumentSectionLabel('추천 곡'),
             const SizedBox(height: 8),
             for (final match in popularResults)
               _SongResultRow(match: match, onTap: () => onSongSelected(match)),
@@ -768,9 +772,9 @@ class _CatalogError extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
         children: [
-          const Text(
+          Text(
             '곡 카탈로그를 열지 못했습니다.',
-            style: TextStyle(color: InstrumentColors.danger),
+            style: TextStyle(color: context.terminal.danger),
           ),
           const SizedBox(height: 10),
           TextButton(onPressed: onRetry, child: const Text('다시 시도')),

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:toauner_app/main.dart';
+import 'package:toauner_app/src/app/app_preferences.dart';
 import 'package:toauner_app/src/app/instrument_theme.dart';
 import 'package:toauner_app/src/string_care/string_care_model.dart';
 import 'package:toauner_app/src/string_care/string_care_screen.dart';
@@ -41,7 +42,9 @@ void main() {
     );
     await _pumpFrames(tester);
 
-    expect(find.text('LOG·1'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('tool-menu-entry')));
+    await tester.pumpAndSettle();
+    expect(find.text('1회 완료'), findsOneWidget);
     await tester.tap(find.byKey(const Key('tuning-history-entry')));
     await _pumpFrames(tester);
     expect(find.text('LOCAL SESSION LOG'), findsOneWidget);
@@ -51,7 +54,7 @@ void main() {
     await _pumpFrames(tester);
   });
 
-  testWidgets('home surfaces an overdue string check and opens its log', (
+  testWidgets('tool menu exposes string care and opens an overdue log', (
     tester,
   ) async {
     final catalog = _FakeSongCatalog();
@@ -76,7 +79,9 @@ void main() {
     );
     await _pumpFrames(tester);
 
-    expect(find.text('줄 교체 점검 · 13일 지남'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('tool-menu-entry')));
+    await tester.pumpAndSettle();
+    expect(find.text('줄 관리'), findsOneWidget);
     await tester.tap(find.byKey(const Key('string-care-entry')));
     await _pumpFrames(tester);
     expect(find.byType(StringCareScreen), findsOneWidget);
@@ -86,7 +91,7 @@ void main() {
     await _pumpFrames(tester);
   });
 
-  testWidgets('opens privacy and app information from the home header', (
+  testWidgets('opens privacy and app information from the tool menu', (
     tester,
   ) async {
     final semantics = tester.ensureSemantics();
@@ -101,7 +106,10 @@ void main() {
     );
     await _pumpFrames(tester);
 
-    expect(find.bySemanticsLabel('개인정보 및 앱 정보'), findsOneWidget);
+    expect(find.bySemanticsLabel('도구 메뉴'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('tool-menu-entry')));
+    await tester.pumpAndSettle();
+    expect(find.text('개인정보 및 앱 정보'), findsOneWidget);
     await tester.tap(find.byKey(const Key('app-information')));
     await _pumpFrames(tester);
 
@@ -113,6 +121,77 @@ void main() {
     await _pumpFrames(tester);
     semantics.dispose();
   });
+
+  testWidgets(
+    'release copy audit covers home, tools, settings, privacy, song, and tuner',
+    (tester) async {
+      final preferences = AppPreferencesController(
+        initialValue: const AppPreferences(),
+        saver: (_) async {},
+      );
+      final catalog = _FakeSongCatalog(
+        currentMatch: _FakeSongCatalog.verifiedMatch,
+      );
+      await tester.pumpWidget(
+        ToaunerApp(
+          catalogLoader: () async => catalog,
+          tunerEngineFactory: _FakeTunerEngine.new,
+          preferencesController: preferences,
+          includeUnverifiedSongs: false,
+        ),
+      );
+      await _pumpFrames(tester);
+      _expectNoReleaseVocabulary();
+
+      await tester.tap(find.byKey(const Key('tool-menu-entry')));
+      await tester.pumpAndSettle();
+      _expectNoReleaseVocabulary();
+      await tester.tap(find.byKey(const Key('settings-entry')));
+      await _pumpFrames(tester);
+      _expectNoReleaseVocabulary();
+
+      await tester.tap(find.byTooltip('뒤로'));
+      await _pumpFrames(tester);
+      await tester.tap(find.byKey(const Key('tool-menu-entry')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('app-information')));
+      await _pumpFrames(tester);
+      _expectNoReleaseVocabulary();
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await _pumpFrames(tester);
+      await tester.pumpWidget(
+        ToaunerApp(
+          catalogLoader: () async =>
+              _FakeSongCatalog(currentMatch: _FakeSongCatalog.verifiedMatch),
+          tunerEngineFactory: _FakeTunerEngine.new,
+          preferencesController: preferences,
+          includeUnverifiedSongs: false,
+        ),
+      );
+      await _pumpFrames(tester);
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(InkWell),
+          matching: find.text('Eruption'),
+        ),
+      );
+      await _pumpFrames(tester);
+      _expectNoReleaseVocabulary();
+
+      await tester.tap(find.byKey(const Key('song-tune-cta')));
+      await _pumpFrames(tester);
+      _expectNoReleaseVocabulary();
+      await tester.tap(find.byKey(const Key('enable-microphone')));
+      await _pumpFrames(tester);
+      _expectNoReleaseVocabulary();
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await _pumpFrames(tester);
+      preferences.dispose();
+    },
+  );
 
   testWidgets('searches a song and carries its exact setup into the tuner', (
     tester,
@@ -130,7 +209,7 @@ void main() {
 
     expect(find.text('곡명 또는 아티스트 검색'), findsOneWidget);
     final searchInput = tester.widget<EditableText>(find.byType(EditableText));
-    expect(searchInput.style.color, InstrumentColors.text);
+    expect(searchInput.style.color, SharkTuneThemes.abyss.text);
 
     await tester.enterText(find.byType(EditableText), 'Eruption');
     await _pumpFrames(tester);
@@ -197,6 +276,181 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
     await _pumpFrames(tester);
+  });
+
+  testWidgets(
+    'search debounces input, clears it, and stores selected queries',
+    (tester) async {
+      final catalog = _FakeSongCatalog();
+      final saved = <AppPreferences>[];
+      final preferences = AppPreferencesController(
+        initialValue: const AppPreferences(hasSeenTunerPrimer: true),
+        saver: (value) async => saved.add(value),
+      );
+
+      await tester.pumpWidget(
+        ToaunerApp(
+          catalogLoader: () async => catalog,
+          tunerEngineFactory: _FakeTunerEngine.new,
+          preferencesController: preferences,
+          includeUnverifiedSongs: true,
+        ),
+      );
+      await _pumpFrames(tester);
+      catalog.searchQueries.clear();
+
+      await tester.enterText(find.byType(EditableText), 'E');
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.enterText(find.byType(EditableText), 'Eruption');
+      await tester.pump(const Duration(milliseconds: 249));
+      expect(catalog.searchQueries, isEmpty);
+      await tester.pump(const Duration(milliseconds: 1));
+      await tester.pump();
+      expect(catalog.searchQueries, ['Eruption']);
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(InkWell),
+          matching: find.text('Eruption'),
+        ),
+      );
+      await _pumpFrames(tester);
+      expect(preferences.value.recentSearches, ['Eruption']);
+      expect(saved.last.recentSearches, ['Eruption']);
+
+      await tester.tap(find.byTooltip('뒤로'));
+      await _pumpFrames(tester);
+      await tester.tap(find.byKey(const Key('clear-song-search')));
+      await _pumpFrames(tester);
+      expect(find.byKey(const Key('recent-search-Eruption')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('clear-recent-searches')));
+      await tester.pump();
+      expect(preferences.value.recentSearches, isEmpty);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await _pumpFrames(tester);
+      preferences.dispose();
+    },
+  );
+
+  testWidgets('settings changes theme, tolerance, haptics, and motion', (
+    tester,
+  ) async {
+    final catalog = _FakeSongCatalog();
+    final preferences = AppPreferencesController(
+      initialValue: const AppPreferences(hasSeenTunerPrimer: true),
+      saver: (_) async {},
+    );
+
+    await tester.pumpWidget(
+      ToaunerApp(
+        catalogLoader: () async => catalog,
+        tunerEngineFactory: _FakeTunerEngine.new,
+        preferencesController: preferences,
+        includeUnverifiedSongs: false,
+      ),
+    );
+    await _pumpFrames(tester);
+    await tester.tap(find.byKey(const Key('tool-menu-entry')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('settings-entry')));
+    await _pumpFrames(tester);
+
+    await tester.ensureVisible(find.byKey(const Key('theme-paper')));
+    await tester.tap(find.byKey(const Key('theme-paper')));
+    await _pumpFrames(tester);
+    expect(preferences.value.themeId, SharkTuneThemeId.paper);
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.theme!.brightness, Brightness.light);
+
+    await tester.ensureVisible(find.byKey(const Key('tolerance-pro')));
+    await tester.tap(find.byKey(const Key('tolerance-pro')));
+    await tester.pump();
+    expect(preferences.value.toleranceMode, TunerToleranceMode.pro);
+
+    await tester.ensureVisible(find.byKey(const Key('haptics-toggle')));
+    await tester.tap(find.byKey(const Key('haptics-toggle')));
+    await tester.pump();
+    expect(preferences.value.hapticsEnabled, isFalse);
+
+    await tester.ensureVisible(find.byKey(const Key('reduce-motion-toggle')));
+    await tester.tap(find.byKey(const Key('reduce-motion-toggle')));
+    await tester.pump();
+    expect(preferences.value.reduceMotion, isTrue);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+    preferences.dispose();
+  });
+
+  testWidgets('system accessibility motion reduction overrides app motion', (
+    tester,
+  ) async {
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await tester.pumpWidget(
+      ToaunerApp(
+        catalogLoader: () async => _FakeSongCatalog(),
+        tunerEngineFactory: _FakeTunerEngine.new,
+        includeUnverifiedSongs: false,
+      ),
+    );
+    await _pumpFrames(tester);
+
+    expect(
+      tester
+          .widget<MaterialApp>(find.byType(MaterialApp))
+          .themeAnimationDuration,
+      InstrumentMotion.instrument,
+    );
+
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<MaterialApp>(find.byType(MaterialApp))
+          .themeAnimationDuration,
+      Duration.zero,
+    );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+  });
+
+  testWidgets('user motion preference removes instrument transitions', (
+    tester,
+  ) async {
+    final preferences = AppPreferencesController(
+      initialValue: const AppPreferences(hasSeenTunerPrimer: true),
+      saver: (_) async {},
+    );
+    await tester.pumpWidget(
+      AppPreferencesScope(
+        controller: preferences,
+        child: MaterialApp(
+          theme: buildInstrumentTheme(),
+          home: const Scaffold(
+            body: TuningNoteCell(label: 'E2', stringNumber: 6),
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      tester.widget<AnimatedContainer>(find.byType(AnimatedContainer)).duration,
+      InstrumentMotion.instrument,
+    );
+    preferences.setReduceMotion(true);
+    await tester.pump();
+    expect(
+      tester.widget<AnimatedContainer>(find.byType(AnimatedContainer)).duration,
+      Duration.zero,
+    );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    preferences.dispose();
   });
 
   testWidgets('opens gauge recommendations from a song setup', (tester) async {
@@ -441,6 +695,34 @@ void main() {
     expect(find.byType(PitchTape), findsOneWidget);
     expect(find.text('0.0¢'), findsOneWidget);
     expect(find.byType(TuningNoteCell), findsNWidgets(6));
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+  });
+
+  testWidgets('Clipping uses its dedicated live-tuner frame', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildInstrumentTheme(SharkTuneThemeId.clipping),
+        home: PrecisionTunerScreen(
+          match: _FakeSongCatalog.verifiedMatch,
+          catalog: _FakeSongCatalog(
+            currentMatch: _FakeSongCatalog.verifiedMatch,
+          ),
+          tunerEngineFactory: _FakeTunerEngine.new,
+          includeUnverifiedSongs: false,
+        ),
+      ),
+    );
+    await _pumpFrames(tester);
+
+    expect(find.byKey(const Key('clipping-tuner-skin')), findsOneWidget);
+    expect(find.text('CLIP//LIVE'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await _pumpFrames(tester);
@@ -710,6 +992,39 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
     await _pumpFrames(tester);
+  });
+
+  testWidgets('shows the first-tune primer once even with permission granted', (
+    tester,
+  ) async {
+    final engine = _ScriptedTunerEngine();
+    final preferences = AppPreferencesController(
+      initialValue: const AppPreferences(),
+      saver: (_) async {},
+    );
+
+    await tester.pumpWidget(
+      ToaunerApp(
+        catalogLoader: () async => _FakeSongCatalog(),
+        tunerEngineFactory: () => engine,
+        preferencesController: preferences,
+        includeUnverifiedSongs: false,
+      ),
+    );
+    await _pumpFrames(tester);
+    await tester.tap(find.byKey(const Key('quick-tune-standard')));
+    await _pumpFrames(tester);
+
+    expect(find.text('마이크 사용 안내'), findsOneWidget);
+    expect(engine.startedTunings, isEmpty);
+    await tester.tap(find.byKey(const Key('enable-microphone')));
+    await _pumpFrames(tester);
+    expect(preferences.value.hasSeenTunerPrimer, isTrue);
+    expect(engine.startedTunings, ['guitar-6-standard']);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+    preferences.dispose();
   });
 
   testWidgets('microphone denial offers a working app settings action', (
@@ -1158,11 +1473,30 @@ Future<void> _pumpFrames(WidgetTester tester) async {
   }
 }
 
+void _expectNoReleaseVocabulary() {
+  for (final internalCopy in const [
+    'toauner',
+    'FTS5',
+    'UNPROCESSED',
+    'VOICE_RECOGNITION',
+    'DSP',
+    'isolate',
+    'samples',
+    'DEVELOPMENT',
+    'DEV·',
+    '사람 검증 필요',
+    '출처 확인 전 후보',
+  ]) {
+    expect(find.textContaining(internalCopy), findsNothing);
+  }
+}
+
 final class _FakeSongCatalog implements SongCatalog {
   _FakeSongCatalog({SongTuningMatch? currentMatch})
     : currentMatch = currentMatch ?? match;
 
   final SongTuningMatch currentMatch;
+  final List<String> searchQueries = [];
 
   static final match = SongTuningMatch(
     song: SongTuningRecord(
@@ -1244,6 +1578,7 @@ final class _FakeSongCatalog implements SongCatalog {
     String query, {
     bool includeUnverified = false,
   }) async {
+    searchQueries.add(query);
     final normalized = query.trim().toLowerCase();
     if (normalized.isEmpty) {
       return [currentMatch];

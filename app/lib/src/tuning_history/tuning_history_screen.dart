@@ -102,10 +102,10 @@ class _TuningHistoryScreenState extends State<TuningHistoryScreen> {
           children: [
             Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: InstrumentSectionLabel(
                     'LOCAL SESSION LOG',
-                    color: InstrumentColors.information,
+                    color: context.terminal.information,
                   ),
                 ),
                 if (entries.isNotEmpty)
@@ -119,8 +119,8 @@ class _TuningHistoryScreenState extends State<TuningHistoryScreen> {
             const SizedBox(height: 8),
             Text(
               '모든 현을 맞춘 완료 시점만 이 기기에 기록합니다. 최대 100회 보관합니다.',
-              style: InstrumentTypeTheme.standard.caption.copyWith(
-                color: InstrumentColors.muted,
+              style: context.instrumentType.caption.copyWith(
+                color: context.terminal.muted,
               ),
             ),
             const SizedBox(height: 18),
@@ -160,8 +160,8 @@ class _HistoryRow extends StatelessWidget {
     return Container(
       constraints: const BoxConstraints(minHeight: 76),
       padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: InstrumentColors.line)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: context.terminal.line)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -170,8 +170,8 @@ class _HistoryRow extends StatelessWidget {
             width: 30,
             child: Text(
               '${index + 1}'.padLeft(2, '0'),
-              style: InstrumentTypeTheme.standard.status.copyWith(
-                color: InstrumentColors.gridTick,
+              style: context.instrumentType.status.copyWith(
+                color: context.terminal.gridTick,
               ),
             ),
           ),
@@ -181,15 +181,15 @@ class _HistoryRow extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: InstrumentTypeTheme.standard.body.copyWith(
+                  style: context.instrumentType.body.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   secondary,
-                  style: InstrumentTypeTheme.standard.caption.copyWith(
-                    color: InstrumentColors.muted,
+                  style: context.instrumentType.caption.copyWith(
+                    color: context.terminal.muted,
                   ),
                 ),
               ],
@@ -201,16 +201,16 @@ class _HistoryRow extends StatelessWidget {
             children: [
               Text(
                 '${entry.stringCount}현 완료 · ${_elapsedLabel(entry.elapsed)}',
-                style: InstrumentTypeTheme.standard.status.copyWith(
-                  color: InstrumentColors.lockHold,
+                style: context.instrumentType.status.copyWith(
+                  color: context.terminal.lockHold,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 _timestampLabel(entry.completedAtUtc.toLocal()),
-                style: InstrumentTypeTheme.standard.status.copyWith(
-                  color: InstrumentColors.muted,
+                style: context.instrumentType.status.copyWith(
+                  color: context.terminal.muted,
                 ),
               ),
             ],
@@ -227,17 +227,17 @@ class _EmptyHistory extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(vertical: 36),
-    decoration: const BoxDecoration(
+    decoration: BoxDecoration(
       border: Border(
-        top: BorderSide(color: InstrumentColors.line),
-        bottom: BorderSide(color: InstrumentColors.line),
+        top: BorderSide(color: context.terminal.line),
+        bottom: BorderSide(color: context.terminal.line),
       ),
     ),
     child: Text(
       '아직 완료한 튜닝이 없습니다.',
       textAlign: TextAlign.center,
-      style: InstrumentTypeTheme.standard.body.copyWith(
-        color: InstrumentColors.muted,
+      style: context.instrumentType.body.copyWith(
+        color: context.terminal.muted,
       ),
     ),
   );
@@ -251,9 +251,9 @@ class _HistoryError extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Column(
     children: [
-      const Text(
+      Text(
         '로컬 튜닝 기록을 열지 못했습니다.',
-        style: TextStyle(color: InstrumentColors.danger),
+        style: TextStyle(color: context.terminal.danger),
       ),
       TextButton(onPressed: onRetry, child: const Text('다시 시도')),
     ],

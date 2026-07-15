@@ -90,9 +90,9 @@ class _StabilityCheckScreenState extends State<StabilityCheckScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 18, 24, 32),
           children: [
-            const InstrumentSectionLabel(
+            InstrumentSectionLabel(
               '30 sec check  /  같은 줄 반복 측정',
-              color: InstrumentColors.accent,
+              color: context.terminal.accent,
             ),
             const SizedBox(height: 10),
             Text(
@@ -102,12 +102,12 @@ class _StabilityCheckScreenState extends State<StabilityCheckScreen> {
             const SizedBox(height: 8),
             Text(
               '같은 줄을 중간 세기로 한 번 튕기고 약 3초간 울려 주세요. 최소 3회부터 결과를 표시하며, 5회면 반복 측정의 재현성도 확인합니다.',
-              style: InstrumentTypeTheme.standard.caption.copyWith(
-                color: InstrumentColors.muted,
+              style: context.instrumentType.caption.copyWith(
+                color: context.terminal.muted,
               ),
             ),
             const SizedBox(height: 22),
-            const InstrumentSectionLabel('01  /  측정할 줄'),
+            InstrumentSectionLabel('01  /  측정할 줄'),
             const SizedBox(height: 8),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -141,8 +141,8 @@ class _StabilityCheckScreenState extends State<StabilityCheckScreen> {
               const SizedBox(height: 10),
               Text(
                 '$heard번 줄 소리가 들립니다. ${_selected.stringNumber}번 줄만 튕겨 주세요.',
-                style: InstrumentTypeTheme.standard.caption.copyWith(
-                  color: InstrumentColors.amber,
+                style: context.instrumentType.caption.copyWith(
+                  color: context.terminal.amber,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -152,13 +152,13 @@ class _StabilityCheckScreenState extends State<StabilityCheckScreen> {
               const SizedBox(height: 10),
               Text(
                 '마이크 입력을 사용할 수 없습니다. 이전 화면에서 마이크 권한과 입력 상태를 확인해 주세요.',
-                style: InstrumentTypeTheme.standard.caption.copyWith(
-                  color: InstrumentColors.danger,
+                style: context.instrumentType.caption.copyWith(
+                  color: context.terminal.danger,
                 ),
               ),
             ],
             const SizedBox(height: 26),
-            const InstrumentSectionLabel('02  /  관측값'),
+            InstrumentSectionLabel('02  /  관측값'),
             const SizedBox(height: 4),
             if (trusted == 0)
               const _EmptyResult(
@@ -191,20 +191,20 @@ class _StabilityCheckScreenState extends State<StabilityCheckScreen> {
                   value:
                       'CV ${(repeatability * 100).toStringAsFixed(0)}% ${repeatability <= .3 ? '· 일관됨' : '· 피킹 편차 큼'}',
                   valueColor: repeatability <= .3
-                      ? InstrumentColors.accent
-                      : InstrumentColors.amber,
+                      ? context.terminal.accent
+                      : context.terminal.amber,
                 ),
             ],
             const SizedBox(height: 26),
-            const InstrumentSectionLabel('03  /  가능한 원인'),
+            InstrumentSectionLabel('03  /  가능한 원인'),
             const SizedBox(height: 8),
             _HypothesisResult(assessment: assessment),
             if (evidence.rejectedPluckCount > 0) ...[
               const SizedBox(height: 8),
               Text(
                 '신호가 약하거나 불규칙해 제외한 피킹 ${evidence.rejectedPluckCount}회',
-                style: InstrumentTypeTheme.standard.status.copyWith(
-                  color: InstrumentColors.muted,
+                style: context.instrumentType.status.copyWith(
+                  color: context.terminal.muted,
                 ),
               ),
             ],
@@ -255,9 +255,9 @@ class _CaptureStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border.symmetric(
-          horizontal: BorderSide(color: InstrumentColors.line),
+          horizontal: BorderSide(color: context.terminal.line),
         ),
       ),
       child: Row(
@@ -267,10 +267,10 @@ class _CaptureStrip extends StatelessWidget {
               width: 24,
               height: 6,
               color: index < completed
-                  ? InstrumentColors.accent
+                  ? context.terminal.accent
                   : index == completed && capturing
-                  ? InstrumentColors.amber
-                  : InstrumentColors.line,
+                  ? context.terminal.amber
+                  : context.terminal.line,
             ),
             if (index != 4) const SizedBox(width: 5),
           ],
@@ -283,10 +283,10 @@ class _CaptureStrip extends StatelessWidget {
                 : trusted >= 3
                 ? '결과 확보 · 5회 권장'
                 : '중간 세기로 튕기세요',
-            style: InstrumentTypeTheme.standard.status.copyWith(
+            style: context.instrumentType.status.copyWith(
               color: complete || trusted >= 3
-                  ? InstrumentColors.accent
-                  : InstrumentColors.muted,
+                  ? context.terminal.accent
+                  : context.terminal.muted,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -307,8 +307,8 @@ class _EmptyResult extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Text(
         text,
-        style: InstrumentTypeTheme.standard.caption.copyWith(
-          color: InstrumentColors.muted,
+        style: context.instrumentType.caption.copyWith(
+          color: context.terminal.muted,
         ),
       ),
     );
@@ -328,18 +328,18 @@ class _HypothesisResult extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 13),
       decoration: BoxDecoration(
-        color: InstrumentColors.panel,
-        border: Border.all(color: InstrumentColors.line),
+        color: context.terminal.panel,
+        border: Border.all(color: context.terminal.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             insufficient ? '판단하기 어려움' : '측정 기반 안내',
-            style: InstrumentTypeTheme.standard.caption.copyWith(
+            style: context.instrumentType.caption.copyWith(
               color: insufficient
-                  ? InstrumentColors.amber
-                  : InstrumentColors.accent,
+                  ? context.terminal.amber
+                  : context.terminal.accent,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -347,15 +347,15 @@ class _HypothesisResult extends StatelessWidget {
           for (final hypothesis in assessment.hypotheses)
             Text(
               _hypothesisCopy(hypothesis.kind),
-              style: InstrumentTypeTheme.standard.caption.copyWith(
-                color: InstrumentColors.text,
+              style: context.instrumentType.caption.copyWith(
+                color: context.terminal.text,
               ),
             ),
           const SizedBox(height: 6),
           Text(
             '원인은 확정 진단이 아니라 현재 관측값으로 설명 가능한 가능성입니다.',
-            style: InstrumentTypeTheme.standard.status.copyWith(
-              color: InstrumentColors.muted,
+            style: context.instrumentType.status.copyWith(
+              color: context.terminal.muted,
             ),
           ),
         ],

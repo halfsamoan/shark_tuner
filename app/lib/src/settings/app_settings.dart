@@ -4,7 +4,7 @@ typedef AppSettingsLauncher = Future<bool> Function();
 
 const _channel = MethodChannel('app.toauner/settings');
 
-/// Opens the platform settings page for toauner.
+/// Opens the platform settings page for SharkTune.
 ///
 /// Platform failures are reported as `false` so the permission recovery card
 /// remains usable even when an adapter is temporarily unavailable.

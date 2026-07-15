@@ -1,103 +1,164 @@
 import 'package:flutter/material.dart';
 
+enum SharkTuneThemeId { abyss, onyx, amber, violet, paper, clipping }
+
+extension SharkTuneThemeIdPresentation on SharkTuneThemeId {
+  String get label => switch (this) {
+    SharkTuneThemeId.abyss => 'Abyss',
+    SharkTuneThemeId.onyx => 'Onyx',
+    SharkTuneThemeId.amber => 'Amber',
+    SharkTuneThemeId.violet => 'Violet',
+    SharkTuneThemeId.paper => 'Paper',
+    SharkTuneThemeId.clipping => 'Clipping',
+  };
+
+  String get description => switch (this) {
+    SharkTuneThemeId.abyss => '깊은 아쿠아 계기판',
+    SharkTuneThemeId.onyx => '순흑 무대 모드',
+    SharkTuneThemeId.amber => '따뜻한 클래식',
+    SharkTuneThemeId.violet => '보라색 야간 모드',
+    SharkTuneThemeId.paper => '밝은 종이 계기판',
+    SharkTuneThemeId.clipping => '실험적인 글리치 스킨',
+  };
+
+  bool get isExperimental => this == SharkTuneThemeId.clipping;
+}
+
+@immutable
+class SharkTuneThemeSelection extends ThemeExtension<SharkTuneThemeSelection> {
+  const SharkTuneThemeSelection(this.id);
+
+  final SharkTuneThemeId id;
+
+  @override
+  SharkTuneThemeSelection copyWith({SharkTuneThemeId? id}) =>
+      SharkTuneThemeSelection(id ?? this.id);
+
+  @override
+  SharkTuneThemeSelection lerp(
+    covariant SharkTuneThemeSelection? other,
+    double t,
+  ) => t < 0.5 || other == null ? this : other;
+}
+
 @immutable
 class TerminalTheme extends ThemeExtension<TerminalTheme> {
   const TerminalTheme({
+    required this.brightness,
     required this.backgroundSunken,
     required this.backgroundCanvas,
     required this.backgroundPanel,
     required this.backgroundRaised,
     required this.backgroundHeader,
     required this.lineHairline,
-    required this.brandPhosphor,
-    required this.phosphorEdge,
-    required this.lockFlood,
-    required this.lockHold,
-    required this.warningAmber,
+    required this.accent,
+    required this.accentEdge,
+    required this.onAccent,
+    required this.successFlood,
+    required this.successHold,
+    required this.warning,
     required this.warningStroke,
-    required this.informationTeal,
+    required this.information,
+    required this.danger,
+    required this.onDanger,
     required this.ink,
     required this.inkSecondary,
     required this.textSecondary,
     required this.gridTick,
+    required this.surfaceHighlight,
+    required this.surfaceGroundLine,
   });
 
-  static const dark = TerminalTheme(
-    backgroundSunken: Color(0xFF070A08),
-    backgroundCanvas: Color(0xFF0B0F0A),
-    backgroundPanel: Color(0xFF131A15),
-    backgroundRaised: Color(0xFF1C241E),
-    backgroundHeader: Color(0xFF232D26),
-    lineHairline: Color(0xFF2A342C),
-    brandPhosphor: Color(0xFFA9E34B),
-    phosphorEdge: Color(0xFFB8F34A),
-    lockFlood: Color(0xFF46D67F),
-    lockHold: Color(0xFF5FD98A),
-    warningAmber: Color(0xFFF2A93B),
-    warningStroke: Color(0xFFFFB000),
-    informationTeal: Color(0xFF4FB0A6),
-    ink: Color(0xFFE6EFE8),
-    inkSecondary: Color(0xFFBCC9C0),
-    textSecondary: Color(0xFF8CA093),
-    gridTick: Color(0xFF46554C),
-  );
-
+  final Brightness brightness;
   final Color backgroundSunken;
   final Color backgroundCanvas;
   final Color backgroundPanel;
   final Color backgroundRaised;
   final Color backgroundHeader;
   final Color lineHairline;
-  final Color brandPhosphor;
-  final Color phosphorEdge;
-  final Color lockFlood;
-  final Color lockHold;
-  final Color warningAmber;
+  final Color accent;
+  final Color accentEdge;
+  final Color onAccent;
+  final Color successFlood;
+  final Color successHold;
+  final Color warning;
   final Color warningStroke;
-  final Color informationTeal;
+  final Color information;
+  final Color danger;
+  final Color onDanger;
   final Color ink;
   final Color inkSecondary;
   final Color textSecondary;
   final Color gridTick;
+  final Color surfaceHighlight;
+  final Color surfaceGroundLine;
+
+  // Short semantic aliases keep call sites readable without reintroducing a
+  // global static palette. Every value still resolves from the active theme.
+  Color get sunken => backgroundSunken;
+  Color get canvas => backgroundCanvas;
+  Color get panel => backgroundPanel;
+  Color get raised => backgroundRaised;
+  Color get header => backgroundHeader;
+  Color get line => lineHairline;
+  Color get phosphorEdge => accentEdge;
+  Color get lockFlood => successFlood;
+  Color get lockHold => successHold;
+  Color get amber => warning;
+  Color get text => ink;
+  Color get muted => textSecondary;
+  Color get accentInk => onAccent;
 
   @override
   TerminalTheme copyWith({
+    Brightness? brightness,
     Color? backgroundSunken,
     Color? backgroundCanvas,
     Color? backgroundPanel,
     Color? backgroundRaised,
     Color? backgroundHeader,
     Color? lineHairline,
-    Color? brandPhosphor,
-    Color? phosphorEdge,
-    Color? lockFlood,
-    Color? lockHold,
-    Color? warningAmber,
+    Color? accent,
+    Color? accentEdge,
+    Color? onAccent,
+    Color? successFlood,
+    Color? successHold,
+    Color? warning,
     Color? warningStroke,
-    Color? informationTeal,
+    Color? information,
+    Color? danger,
+    Color? onDanger,
     Color? ink,
     Color? inkSecondary,
     Color? textSecondary,
     Color? gridTick,
+    Color? surfaceHighlight,
+    Color? surfaceGroundLine,
   }) {
     return TerminalTheme(
+      brightness: brightness ?? this.brightness,
       backgroundSunken: backgroundSunken ?? this.backgroundSunken,
       backgroundCanvas: backgroundCanvas ?? this.backgroundCanvas,
       backgroundPanel: backgroundPanel ?? this.backgroundPanel,
       backgroundRaised: backgroundRaised ?? this.backgroundRaised,
       backgroundHeader: backgroundHeader ?? this.backgroundHeader,
       lineHairline: lineHairline ?? this.lineHairline,
-      brandPhosphor: brandPhosphor ?? this.brandPhosphor,
-      phosphorEdge: phosphorEdge ?? this.phosphorEdge,
-      lockFlood: lockFlood ?? this.lockFlood,
-      lockHold: lockHold ?? this.lockHold,
-      warningAmber: warningAmber ?? this.warningAmber,
+      accent: accent ?? this.accent,
+      accentEdge: accentEdge ?? this.accentEdge,
+      onAccent: onAccent ?? this.onAccent,
+      successFlood: successFlood ?? this.successFlood,
+      successHold: successHold ?? this.successHold,
+      warning: warning ?? this.warning,
       warningStroke: warningStroke ?? this.warningStroke,
-      informationTeal: informationTeal ?? this.informationTeal,
+      information: information ?? this.information,
+      danger: danger ?? this.danger,
+      onDanger: onDanger ?? this.onDanger,
       ink: ink ?? this.ink,
       inkSecondary: inkSecondary ?? this.inkSecondary,
       textSecondary: textSecondary ?? this.textSecondary,
       gridTick: gridTick ?? this.gridTick,
+      surfaceHighlight: surfaceHighlight ?? this.surfaceHighlight,
+      surfaceGroundLine: surfaceGroundLine ?? this.surfaceGroundLine,
     );
   }
 
@@ -105,6 +166,7 @@ class TerminalTheme extends ThemeExtension<TerminalTheme> {
   TerminalTheme lerp(covariant TerminalTheme? other, double t) {
     if (other == null) return this;
     return TerminalTheme(
+      brightness: t < .5 ? brightness : other.brightness,
       backgroundSunken: Color.lerp(
         backgroundSunken,
         other.backgroundSunken,
@@ -127,17 +189,30 @@ class TerminalTheme extends ThemeExtension<TerminalTheme> {
         t,
       )!,
       lineHairline: Color.lerp(lineHairline, other.lineHairline, t)!,
-      brandPhosphor: Color.lerp(brandPhosphor, other.brandPhosphor, t)!,
-      phosphorEdge: Color.lerp(phosphorEdge, other.phosphorEdge, t)!,
-      lockFlood: Color.lerp(lockFlood, other.lockFlood, t)!,
-      lockHold: Color.lerp(lockHold, other.lockHold, t)!,
-      warningAmber: Color.lerp(warningAmber, other.warningAmber, t)!,
+      accent: Color.lerp(accent, other.accent, t)!,
+      accentEdge: Color.lerp(accentEdge, other.accentEdge, t)!,
+      onAccent: Color.lerp(onAccent, other.onAccent, t)!,
+      successFlood: Color.lerp(successFlood, other.successFlood, t)!,
+      successHold: Color.lerp(successHold, other.successHold, t)!,
+      warning: Color.lerp(warning, other.warning, t)!,
       warningStroke: Color.lerp(warningStroke, other.warningStroke, t)!,
-      informationTeal: Color.lerp(informationTeal, other.informationTeal, t)!,
+      information: Color.lerp(information, other.information, t)!,
+      danger: Color.lerp(danger, other.danger, t)!,
+      onDanger: Color.lerp(onDanger, other.onDanger, t)!,
       ink: Color.lerp(ink, other.ink, t)!,
       inkSecondary: Color.lerp(inkSecondary, other.inkSecondary, t)!,
       textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
       gridTick: Color.lerp(gridTick, other.gridTick, t)!,
+      surfaceHighlight: Color.lerp(
+        surfaceHighlight,
+        other.surfaceHighlight,
+        t,
+      )!,
+      surfaceGroundLine: Color.lerp(
+        surfaceGroundLine,
+        other.surfaceGroundLine,
+        t,
+      )!,
     );
   }
 }
@@ -146,6 +221,7 @@ class TerminalTheme extends ThemeExtension<TerminalTheme> {
 class InstrumentTypeTheme extends ThemeExtension<InstrumentTypeTheme> {
   const InstrumentTypeTheme({
     required this.centsHero,
+    required this.noteHero,
     required this.title,
     required this.subhead,
     required this.body,
@@ -153,54 +229,71 @@ class InstrumentTypeTheme extends ThemeExtension<InstrumentTypeTheme> {
     required this.status,
   });
 
-  static const standard = InstrumentTypeTheme(
-    centsHero: TextStyle(
-      color: InstrumentColors.ink,
-      fontFamily: 'D2Coding',
-      fontSize: 96,
-      height: 1,
-      letterSpacing: -1.92,
-      fontWeight: FontWeight.w400,
-    ),
-    title: TextStyle(
-      color: InstrumentColors.ink,
-      fontFamily: 'Pretendard',
-      fontSize: 32,
-      height: 1.1,
-      fontWeight: FontWeight.w600,
-    ),
-    subhead: TextStyle(
-      color: InstrumentColors.ink,
-      fontFamily: 'Pretendard',
-      fontSize: 20,
-      height: 1.3,
-      fontWeight: FontWeight.w600,
-    ),
-    body: TextStyle(
-      color: InstrumentColors.ink,
-      fontFamily: 'Pretendard',
-      fontSize: 16,
-      height: 1.5,
-      fontWeight: FontWeight.w400,
-    ),
-    caption: TextStyle(
-      color: InstrumentColors.textSecondary,
-      fontFamily: 'Pretendard',
-      fontSize: 13,
-      height: 1.45,
-      fontWeight: FontWeight.w400,
-    ),
-    status: TextStyle(
-      color: InstrumentColors.textSecondary,
-      fontFamily: 'D2Coding',
-      fontSize: 11,
-      height: 1.2,
-      letterSpacing: .44,
-      fontWeight: FontWeight.w400,
-    ),
-  );
+  factory InstrumentTypeTheme.forTerminal(TerminalTheme terminal) {
+    return InstrumentTypeTheme(
+      centsHero: TextStyle(
+        color: terminal.ink,
+        fontFamily: 'IBM Plex Mono',
+        fontFamilyFallback: const ['IBM Plex Sans KR'],
+        fontSize: 96,
+        height: 1,
+        letterSpacing: -1.5,
+        fontWeight: FontWeight.w400,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      ),
+      noteHero: TextStyle(
+        color: terminal.ink,
+        fontFamily: 'IBM Plex Mono',
+        fontFamilyFallback: const ['IBM Plex Sans KR'],
+        fontSize: 52,
+        height: 56 / 52,
+        letterSpacing: -0.8,
+        fontWeight: FontWeight.w500,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      ),
+      title: TextStyle(
+        color: terminal.ink,
+        fontFamily: 'IBM Plex Sans KR',
+        fontSize: 28,
+        height: 36 / 28,
+        fontWeight: FontWeight.w600,
+      ),
+      subhead: TextStyle(
+        color: terminal.ink,
+        fontFamily: 'IBM Plex Sans KR',
+        fontSize: 20,
+        height: 1.4,
+        fontWeight: FontWeight.w500,
+      ),
+      body: TextStyle(
+        color: terminal.ink,
+        fontFamily: 'IBM Plex Sans KR',
+        fontSize: 16,
+        height: 1.5,
+        fontWeight: FontWeight.w400,
+      ),
+      caption: TextStyle(
+        color: terminal.textSecondary,
+        fontFamily: 'IBM Plex Sans KR',
+        fontSize: 13,
+        height: 19 / 13,
+        fontWeight: FontWeight.w400,
+      ),
+      status: TextStyle(
+        color: terminal.textSecondary,
+        fontFamily: 'IBM Plex Mono',
+        fontFamilyFallback: const ['IBM Plex Sans KR'],
+        fontSize: 11,
+        height: 14 / 11,
+        letterSpacing: .33,
+        fontWeight: FontWeight.w400,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      ),
+    );
+  }
 
   final TextStyle centsHero;
+  final TextStyle noteHero;
   final TextStyle title;
   final TextStyle subhead;
   final TextStyle body;
@@ -210,6 +303,7 @@ class InstrumentTypeTheme extends ThemeExtension<InstrumentTypeTheme> {
   @override
   InstrumentTypeTheme copyWith({
     TextStyle? centsHero,
+    TextStyle? noteHero,
     TextStyle? title,
     TextStyle? subhead,
     TextStyle? body,
@@ -218,6 +312,7 @@ class InstrumentTypeTheme extends ThemeExtension<InstrumentTypeTheme> {
   }) {
     return InstrumentTypeTheme(
       centsHero: centsHero ?? this.centsHero,
+      noteHero: noteHero ?? this.noteHero,
       title: title ?? this.title,
       subhead: subhead ?? this.subhead,
       body: body ?? this.body,
@@ -231,6 +326,7 @@ class InstrumentTypeTheme extends ThemeExtension<InstrumentTypeTheme> {
     if (other == null) return this;
     return InstrumentTypeTheme(
       centsHero: TextStyle.lerp(centsHero, other.centsHero, t)!,
+      noteHero: TextStyle.lerp(noteHero, other.noteHero, t)!,
       title: TextStyle.lerp(title, other.title, t)!,
       subhead: TextStyle.lerp(subhead, other.subhead, t)!,
       body: TextStyle.lerp(body, other.body, t)!,
@@ -257,62 +353,235 @@ abstract final class InstrumentMetrics {
 
 abstract final class InstrumentMotion {
   static const immediate = Duration.zero;
-  static const instrument = Duration(milliseconds: 120);
-  static const lockFlash = Duration(milliseconds: 180);
+  static const instrument = Duration(milliseconds: 140);
+  static const lockFlash = Duration(milliseconds: 350);
 }
 
-abstract final class InstrumentColors {
-  static const sunken = Color(0xFF070A08);
-  static const canvas = Color(0xFF0B0F0A);
-  static const panel = Color(0xFF131A15);
-  static const raised = Color(0xFF1C241E);
-  static const header = Color(0xFF232D26);
-  static const line = Color(0xFF2A342C);
-  static const accent = Color(0xFFA9E34B);
-  static const phosphorEdge = Color(0xFFB8F34A);
-  static const lockFlood = Color(0xFF46D67F);
-  static const lockHold = Color(0xFF5FD98A);
-  static const amber = Color(0xFFF2A93B);
-  static const warningStroke = Color(0xFFFFB000);
-  static const information = Color(0xFF4FB0A6);
-  static const ink = Color(0xFFE6EFE8);
-  static const inkSecondary = Color(0xFFBCC9C0);
-  static const textSecondary = Color(0xFF8CA093);
-  static const gridTick = Color(0xFF46554C);
-
-  // Text compatibility aliases retain readable names while visual surfaces use
-  // explicit elevation roles throughout the UI.
-  static const text = ink;
-  static const muted = textSecondary;
-  static const accentInk = sunken;
-  static const danger = amber;
-}
-
-ThemeData buildInstrumentTheme() {
-  const terminal = TerminalTheme.dark;
-  const type = InstrumentTypeTheme.standard;
-  const scheme = ColorScheme.dark(
-    primary: InstrumentColors.accent,
-    onPrimary: InstrumentColors.accentInk,
-    surface: InstrumentColors.canvas,
-    onSurface: InstrumentColors.ink,
-    error: InstrumentColors.danger,
+abstract final class SharkTuneThemes {
+  static const abyss = TerminalTheme(
+    brightness: Brightness.dark,
+    backgroundSunken: Color(0xFF020605),
+    backgroundCanvas: Color(0xFF050909),
+    backgroundPanel: Color(0xFF0C1212),
+    backgroundRaised: Color(0xFF141F1E),
+    backgroundHeader: Color(0xFF1B2A28),
+    lineHairline: Color(0xFF223330),
+    accent: Color(0xFF2FD6C6),
+    accentEdge: Color(0xFF80FFF1),
+    onAccent: Color(0xFF04211E),
+    successFlood: Color(0xFF4FD99A),
+    successHold: Color(0xFF63D39C),
+    warning: Color(0xFFF2A93B),
+    warningStroke: Color(0xFFFFB000),
+    information: Color(0xFF5AA8E0),
+    danger: Color(0xFFFF5C72),
+    onDanger: Color(0xFF210208),
+    ink: Color(0xFFE7F2EF),
+    inkSecondary: Color(0xFFB7C9C4),
+    textSecondary: Color(0xFF8EA4A0),
+    gridTick: Color(0xFF37504C),
+    surfaceHighlight: Color(0x0DE7F2EF),
+    surfaceGroundLine: Color(0x73000000),
   );
-  const outline = OutlineInputBorder(
-    borderRadius: BorderRadius.all(Radius.circular(4)),
-    borderSide: BorderSide(color: InstrumentColors.line),
+
+  static const onyx = TerminalTheme(
+    brightness: Brightness.dark,
+    backgroundSunken: Color(0xFF000000),
+    backgroundCanvas: Color(0xFF030505),
+    backgroundPanel: Color(0xFF0A0E0E),
+    backgroundRaised: Color(0xFF121A19),
+    backgroundHeader: Color(0xFF182322),
+    lineHairline: Color(0xFF1E2B2A),
+    accent: Color(0xFF2AB6AC),
+    accentEdge: Color(0xFF56C9C0),
+    onAccent: Color(0xFF04140F),
+    successFlood: Color(0xFF4FB98C),
+    successHold: Color(0xFF5FB394),
+    warning: Color(0xFFD69A45),
+    warningStroke: Color(0xFFE0A84E),
+    information: Color(0xFF4E93C0),
+    danger: Color(0xFFE06172),
+    onDanger: Color(0xFF1D0207),
+    ink: Color(0xFFD4E3DF),
+    inkSecondary: Color(0xFF98AAA6),
+    textSecondary: Color(0xFF6F8480),
+    gridTick: Color(0xFF2C3E3B),
+    surfaceHighlight: Color(0x0DD4E3DF),
+    surfaceGroundLine: Color(0x80000000),
+  );
+
+  static const amber = TerminalTheme(
+    brightness: Brightness.dark,
+    backgroundSunken: Color(0xFF1D2021),
+    backgroundCanvas: Color(0xFF282828),
+    backgroundPanel: Color(0xFF3C3836),
+    backgroundRaised: Color(0xFF504945),
+    backgroundHeader: Color(0xFF665C54),
+    lineHairline: Color(0xFF5A524C),
+    accent: Color(0xFFFABD2F),
+    accentEdge: Color(0xFFFFD152),
+    onAccent: Color(0xFF1D2021),
+    successFlood: Color(0xFFB8BB26),
+    successHold: Color(0xFFA9B665),
+    warning: Color(0xFFFE8019),
+    warningStroke: Color(0xFFFB4934),
+    information: Color(0xFF83A598),
+    danger: Color(0xFFFF6B5C),
+    onDanger: Color(0xFF260300),
+    ink: Color(0xFFEBDBB2),
+    inkSecondary: Color(0xFFD5C4A1),
+    textSecondary: Color(0xFFA89984),
+    gridTick: Color(0xFF7C6F64),
+    surfaceHighlight: Color(0x14EBDBB2),
+    surfaceGroundLine: Color(0x73000000),
+  );
+
+  static const violet = TerminalTheme(
+    brightness: Brightness.dark,
+    backgroundSunken: Color(0xFF21222C),
+    backgroundCanvas: Color(0xFF282A36),
+    backgroundPanel: Color(0xFF313442),
+    backgroundRaised: Color(0xFF3B3E4E),
+    backgroundHeader: Color(0xFF44475A),
+    lineHairline: Color(0xFF4D5066),
+    accent: Color(0xFFBD93F9),
+    accentEdge: Color(0xFFD6BBFF),
+    onAccent: Color(0xFF282A36),
+    successFlood: Color(0xFF50FA7B),
+    successHold: Color(0xFF69D98A),
+    warning: Color(0xFFFFB86C),
+    warningStroke: Color(0xFFFF9C4A),
+    information: Color(0xFF8BE9FD),
+    danger: Color(0xFFFF5555),
+    onDanger: Color(0xFF260000),
+    ink: Color(0xFFF8F8F2),
+    inkSecondary: Color(0xFFD5D6E8),
+    textSecondary: Color(0xFFA0A4CC),
+    gridTick: Color(0xFF565973),
+    surfaceHighlight: Color(0x14F8F8F2),
+    surfaceGroundLine: Color(0x73000000),
+  );
+
+  static const paper = TerminalTheme(
+    brightness: Brightness.light,
+    backgroundSunken: Color(0xFFE3DAC0),
+    backgroundCanvas: Color(0xFFEEE8D5),
+    backgroundPanel: Color(0xFFFDF6E3),
+    backgroundRaised: Color(0xFFFFFBED),
+    backgroundHeader: Color(0xFFE4DCC6),
+    lineHairline: Color(0xFFB7AC91),
+    accent: Color(0xFF268BD2),
+    accentEdge: Color(0xFF1C7CBE),
+    onAccent: Color(0xFFFDF6E3),
+    successFlood: Color(0xFF6C8E00),
+    successHold: Color(0xFF5E7C00),
+    warning: Color(0xFFC1600F),
+    warningStroke: Color(0xFFB5410F),
+    information: Color(0xFF167F78),
+    danger: Color(0xFFB3212D),
+    onDanger: Color(0xFFFFFFFF),
+    ink: Color(0xFF073642),
+    inkSecondary: Color(0xFF40585F),
+    textSecondary: Color(0xFF52666D),
+    gridTick: Color(0xFF7C8D8D),
+    surfaceHighlight: Color(0xB3FFFFFF),
+    surfaceGroundLine: Color(0x33586E75),
+  );
+
+  static const clipping = TerminalTheme(
+    brightness: Brightness.dark,
+    backgroundSunken: Color(0xFF06222A),
+    backgroundCanvas: Color(0xFFF4EEF2),
+    backgroundPanel: Color(0xFFFFF9FC),
+    backgroundRaised: Color(0xFFFFFFFF),
+    backgroundHeader: Color(0xFF06222A),
+    lineHairline: Color(0xFF0B0709),
+    accent: Color(0xFFFF2E88),
+    accentEdge: Color(0xFF007E8C),
+    onAccent: Color(0xFF0B0709),
+    successFlood: Color(0xFFE8FF3A),
+    successHold: Color(0xFF687500),
+    warning: Color(0xFF795F00),
+    warningStroke: Color(0xFF5E4900),
+    information: Color(0xFF00717F),
+    danger: Color(0xFFC6005C),
+    onDanger: Color(0xFFFFFFFF),
+    ink: Color(0xFF0B0709),
+    inkSecondary: Color(0xFF3E3137),
+    textSecondary: Color(0xFF66555E),
+    gridTick: Color(0xFF8E7882),
+    surfaceHighlight: Color(0xFFFFFFFF),
+    surfaceGroundLine: Color(0x520B0709),
+  );
+
+  static const values = <SharkTuneThemeId, TerminalTheme>{
+    SharkTuneThemeId.abyss: abyss,
+    SharkTuneThemeId.onyx: onyx,
+    SharkTuneThemeId.amber: amber,
+    SharkTuneThemeId.violet: violet,
+    SharkTuneThemeId.paper: paper,
+    SharkTuneThemeId.clipping: clipping,
+  };
+
+  static TerminalTheme resolve(SharkTuneThemeId id) => values[id]!;
+}
+
+extension InstrumentThemeContext on BuildContext {
+  TerminalTheme get terminal {
+    final value = Theme.of(this).extension<TerminalTheme>();
+    assert(value != null, 'TerminalTheme must be registered on ThemeData.');
+    return value!;
+  }
+
+  InstrumentTypeTheme get instrumentType {
+    final value = Theme.of(this).extension<InstrumentTypeTheme>();
+    assert(
+      value != null,
+      'InstrumentTypeTheme must be registered on ThemeData.',
+    );
+    return value!;
+  }
+
+  SharkTuneThemeId get sharkTuneThemeId {
+    final value = Theme.of(this).extension<SharkTuneThemeSelection>();
+    assert(value != null, 'SharkTuneThemeSelection must be registered.');
+    return value!.id;
+  }
+}
+
+ThemeData buildInstrumentTheme([
+  SharkTuneThemeId themeId = SharkTuneThemeId.abyss,
+]) {
+  final terminal = SharkTuneThemes.resolve(themeId);
+  final type = InstrumentTypeTheme.forTerminal(terminal);
+  final scheme = ColorScheme(
+    brightness: terminal.brightness,
+    primary: terminal.accent,
+    onPrimary: terminal.onAccent,
+    secondary: terminal.information,
+    onSecondary: terminal.backgroundSunken,
+    error: terminal.danger,
+    onError: terminal.onDanger,
+    surface: terminal.backgroundCanvas,
+    onSurface: terminal.ink,
+  );
+  final outline = OutlineInputBorder(
+    borderRadius: const BorderRadius.all(Radius.circular(2)),
+    borderSide: BorderSide(color: terminal.lineHairline),
   );
 
   return ThemeData(
     useMaterial3: true,
-    brightness: Brightness.dark,
+    brightness: terminal.brightness,
     colorScheme: scheme,
-    extensions: [terminal, type],
-    scaffoldBackgroundColor: InstrumentColors.canvas,
-    dividerColor: InstrumentColors.line,
-    splashFactory: InkSparkle.splashFactory,
+    extensions: [terminal, type, SharkTuneThemeSelection(themeId)],
+    fontFamily: 'IBM Plex Sans KR',
+    scaffoldBackgroundColor: terminal.backgroundCanvas,
+    dividerColor: terminal.lineHairline,
+    splashFactory: NoSplash.splashFactory,
     textTheme: TextTheme(
       displayLarge: type.centsHero,
+      displayMedium: type.noteHero,
       headlineMedium: type.title,
       titleMedium: type.subhead,
       bodyMedium: type.body,
@@ -321,24 +590,32 @@ ThemeData buildInstrumentTheme() {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: InstrumentColors.panel,
-      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+      fillColor: terminal.backgroundPanel,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
       hintStyle: type.caption,
-      prefixIconColor: InstrumentColors.textSecondary,
-      suffixIconColor: InstrumentColors.textSecondary,
+      prefixIconColor: terminal.textSecondary,
+      suffixIconColor: terminal.textSecondary,
       enabledBorder: outline,
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(4)),
-        borderSide: BorderSide(color: InstrumentColors.phosphorEdge),
+        borderRadius: const BorderRadius.all(Radius.circular(2)),
+        borderSide: BorderSide(color: terminal.accentEdge),
       ),
-      errorBorder: outline,
-      focusedErrorBorder: outline,
+      errorBorder: OutlineInputBorder(
+        borderRadius: const BorderRadius.all(Radius.circular(2)),
+        borderSide: BorderSide(color: terminal.danger),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: const BorderRadius.all(Radius.circular(2)),
+        borderSide: BorderSide(color: terminal.danger, width: 2),
+      ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         minimumSize: const Size(0, 48),
+        foregroundColor: terminal.onAccent,
+        backgroundColor: terminal.accent,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(4)),
+          borderRadius: BorderRadius.all(Radius.circular(2)),
         ),
         textStyle: type.body.copyWith(fontWeight: FontWeight.w600),
       ),

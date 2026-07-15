@@ -23,9 +23,9 @@ class AppInformationScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'toauner는 기타 소리를 기기 안에서 실시간으로 분석합니다.',
-                  style: InstrumentTypeTheme.standard.body.copyWith(
-                    color: InstrumentColors.inkSecondary,
+                  'SharkTune은 기타 소리를 기기 안에서 실시간으로 분석합니다.',
+                  style: context.instrumentType.body.copyWith(
+                    color: context.terminal.inkSecondary,
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -79,7 +79,7 @@ class AppInformationScreen extends StatelessWidget {
                     key: const Key('open-source-licenses'),
                     onPressed: () => showLicensePage(
                       context: context,
-                      applicationName: 'toauner',
+                      applicationName: 'SharkTune',
                       applicationLegalese: '오픈소스 구성요소와 글꼴 라이선스',
                     ),
                     child: const Text('오픈소스 라이선스 보기'),
@@ -114,20 +114,20 @@ class _InformationSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.only(bottom: 22),
       margin: const EdgeInsets.only(bottom: 22),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: InstrumentColors.line)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: context.terminal.line)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          InstrumentSectionLabel(label, color: InstrumentColors.information),
+          InstrumentSectionLabel(label, color: context.terminal.information),
           const SizedBox(height: 8),
           Text(title, style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 6),
           Text(
             body,
-            style: InstrumentTypeTheme.standard.body.copyWith(
-              color: InstrumentColors.inkSecondary,
+            style: context.instrumentType.body.copyWith(
+              color: context.terminal.inkSecondary,
             ),
           ),
         ],

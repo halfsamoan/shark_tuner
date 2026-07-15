@@ -3,6 +3,25 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('legacy theme access only exists in the shrinking file allowlist', () {
+    final violations = <String>[];
+    for (final source in _productionDartSources()) {
+      final usesLegacy =
+          source.contents.contains('InstrumentColors.') ||
+          source.contents.contains('InstrumentTypeTheme.standard');
+      if (usesLegacy && !_legacyThemeAllowlist.contains(source.path)) {
+        violations.add(source.path);
+      }
+    }
+
+    expect(violations, isEmpty);
+    expect(
+      _legacyThemeAllowlist,
+      isEmpty,
+      reason: 'Remove a file from this allowlist immediately after migration.',
+    );
+  });
+
   test(
     'production UI uses semantic surfaces instead of the flat chrome alias',
     () {
@@ -24,7 +43,6 @@ void main() {
         '0xFF101512': 'retired single panel color',
         '0xFF33FF66': 'retired neon lock green',
         '0xFF5A6E5E': 'retired low-contrast text color',
-        'BoxShadow(': 'generic drop shadow',
         'LinearGradient(': 'generic gradient',
         'RadialGradient(': 'generic gradient',
         'SweepGradient(': 'generic gradient',
@@ -40,8 +58,18 @@ void main() {
 
   test('screen files do not invent colors outside the token module', () {
     final violations = _productionDartSources()
-        .where((source) => !source.path.endsWith('instrument_theme.dart'))
+        .where((source) => !_paletteDeclarationFiles.contains(source.path))
         .where((source) => RegExp(r'\bColor\(0x').hasMatch(source.contents))
+        .map((source) => source.path)
+        .toList();
+
+    expect(violations, isEmpty);
+  });
+
+  test('surface shadows are isolated in the material component', () {
+    final violations = _productionDartSources()
+        .where((source) => !_surfaceEffectFiles.contains(source.path))
+        .where((source) => source.contents.contains('BoxShadow('))
         .map((source) => source.path)
         .toList();
 
@@ -111,6 +139,12 @@ void main() {
     expect(violations, isEmpty);
   });
 }
+
+const _legacyThemeAllowlist = <String>{};
+
+const _paletteDeclarationFiles = {'app\\lib\\src\\app\\instrument_theme.dart'};
+
+const _surfaceEffectFiles = {'app\\lib\\src\\ui\\instrument_surface.dart'};
 
 List<({String path, String contents})> _productionDartSources() {
   final root = _workspaceRoot();

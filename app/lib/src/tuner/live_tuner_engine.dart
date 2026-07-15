@@ -147,15 +147,15 @@ abstract interface class TunerEngine {
 
 typedef TunerEngineFactory = TunerEngine Function();
 
-TunerEngine createLiveTunerEngine() {
+TunerEngine createLiveTunerEngine({double toleranceCents = 5}) {
   return IsolateTunerEngine(
     audioCapture: RecordAudioCapture(),
     audioCaptureConfig: audioCaptureConfigForTargetPlatform(
       defaultTargetPlatform,
     ),
-    lockConfig: const InTuneLockConfig(
-      toleranceCents: 5,
-      releaseToleranceCents: 7,
+    lockConfig: InTuneLockConfig(
+      toleranceCents: toleranceCents,
+      releaseToleranceCents: toleranceCents + 2,
     ),
   );
 }

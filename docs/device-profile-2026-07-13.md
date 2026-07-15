@@ -4,6 +4,8 @@
 
 - Device: Samsung SM-S926N
 - Android: 16 / API 36
+- Captured app frame: 1,080 × 2,340 physical px
+- Flutter reference viewport: 360 × 780 logical px at DPR 3
 - Build: Flutter profile APK
 - Capture: `UNPROCESSED`, actual 48,000 Hz, mono PCM16
 - DSP execution: long-lived Dart isolate (`toauner-dsp`)

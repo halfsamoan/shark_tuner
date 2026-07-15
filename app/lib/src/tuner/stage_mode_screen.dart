@@ -53,7 +53,11 @@ class _StageModeScreenState extends State<StageModeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final presentation = _StagePresentation.from(_state, _target);
+    final presentation = _StagePresentation.from(
+      _state,
+      _target,
+      context.terminal,
+    );
     return Scaffold(
       appBar: const InstrumentHeaderBar(section: '무대', showBack: true),
       body: SafeArea(
@@ -67,18 +71,18 @@ class _StageModeScreenState extends State<StageModeScreen> {
                   horizontal: InstrumentMetrics.space12,
                   vertical: InstrumentMetrics.space8,
                 ),
-                decoration: const BoxDecoration(
-                  color: InstrumentColors.header,
+                decoration: BoxDecoration(
+                  color: context.terminal.header,
                   border: Border.fromBorderSide(
-                    BorderSide(color: InstrumentColors.line),
+                    BorderSide(color: context.terminal.line),
                   ),
                 ),
                 child: Text(
                   '${widget.tuning.name} │ A4 ${widget.tuning.referenceA4Hz.toStringAsFixed(0)}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: InstrumentTypeTheme.standard.status.copyWith(
-                    color: InstrumentColors.muted,
+                  style: context.instrumentType.status.copyWith(
+                    color: context.terminal.muted,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -94,22 +98,23 @@ class _StageModeScreenState extends State<StageModeScreen> {
                           _target.label,
                           key: const Key('stage-note'),
                           maxLines: 1,
-                          style: InstrumentTypeTheme.standard.centsHero
-                              .copyWith(color: presentation.color),
+                          style: context.instrumentType.centsHero.copyWith(
+                            color: presentation.color,
+                          ),
                         ),
                         const SizedBox(height: InstrumentMetrics.space8),
                         Text(
                           presentation.centsLabel,
-                          style: InstrumentTypeTheme.standard.title.copyWith(
+                          style: context.instrumentType.title.copyWith(
                             color: presentation.color,
-                            fontFamily: 'D2Coding',
+                            fontFamily: 'IBM Plex Mono',
                           ),
                         ),
                         const SizedBox(height: InstrumentMetrics.space12),
                         Text(
                           presentation.actionLabel,
                           textAlign: TextAlign.center,
-                          style: InstrumentTypeTheme.standard.subhead.copyWith(
+                          style: context.instrumentType.subhead.copyWith(
                             color: presentation.color,
                           ),
                         ),
@@ -150,14 +155,18 @@ final class _StagePresentation {
     required this.color,
   });
 
-  factory _StagePresentation.from(LiveTunerState state, TuningString target) {
+  factory _StagePresentation.from(
+    LiveTunerState state,
+    TuningString target,
+    TerminalTheme terminal,
+  ) {
     final cents = state.cents;
     if (cents == null || !cents.isFinite) {
       return _StagePresentation(
         centsLabel: '—¢',
         actionLabel: '줄을 한 번 튕겨 주세요',
         spokenLabel: '${target.stringNumber}번 줄 ${target.label}, 줄을 한 번 튕겨 주세요',
-        color: InstrumentColors.text,
+        color: terminal.text,
       );
     }
     final rounded = cents.round();
@@ -167,7 +176,7 @@ final class _StagePresentation {
         centsLabel: centsLabel,
         actionLabel: '✓ 인튠',
         spokenLabel: '${target.stringNumber}번 줄 ${target.label}, 인튠',
-        color: InstrumentColors.lockHold,
+        color: terminal.lockHold,
       );
     }
     if (cents > 2) {
@@ -176,7 +185,7 @@ final class _StagePresentation {
         actionLabel: '▼ 낮추세요',
         spokenLabel:
             '${target.stringNumber}번 줄 ${target.label}, ${cents.abs().round()}센트 높음, 낮추세요',
-        color: InstrumentColors.amber,
+        color: terminal.amber,
       );
     }
     if (cents < -2) {
@@ -185,7 +194,7 @@ final class _StagePresentation {
         actionLabel: '▲ 올리세요',
         spokenLabel:
             '${target.stringNumber}번 줄 ${target.label}, ${cents.abs().round()}센트 낮음, 올리세요',
-        color: InstrumentColors.amber,
+        color: terminal.amber,
       );
     }
     return _StagePresentation(
@@ -193,7 +202,7 @@ final class _StagePresentation {
       actionLabel: '… 거의 맞았어요',
       spokenLabel:
           '${target.stringNumber}번 줄 ${target.label}, ${cents.abs().round()}센트, 거의 맞았어요',
-      color: InstrumentColors.accent,
+      color: terminal.accent,
     );
   }
 

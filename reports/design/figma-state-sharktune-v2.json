@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 2,
+  "updatedAt": "2026-07-15T14:16:21+09:00",
+  "canonicalFileKey": "jCX0Z6nibXQ9H6ehFpkbJr",
+  "canonicalFileUrl": "https://www.figma.com/design/jCX0Z6nibXQ9H6ehFpkbJr",
+  "legacyReferenceFileKey": "COwsi0untcn8JZi9Bggpou",
+  "status": "canonical_file_verified_write_blocked_by_starter_rate_limit",
+  "codeContract": {
+    "themes": ["abyss", "onyx", "amber", "violet", "paper", "clipping"],
+    "physicalFrame": "1080x2340",
+    "logicalViewport": "360x780@3x",
+    "goldens": ["tuner/abyss", "tuner/paper", "tuner/clipping"],
+    "latinMeasureFont": "IBM Plex Mono",
+    "koreanInterfaceFont": "IBM Plex Sans KR"
+  },
+  "plannedCollections": [
+    "Primitives",
+    "Dimensions",
+    "Typography",
+    "Motion",
+    "Theme/Abyss",
+    "Theme/Onyx",
+    "Theme/Amber",
+    "Theme/Violet",
+    "Theme/Paper",
+    "Theme/Clipping"
+  ],
+  "plannedComponents": [
+    "BrandMark",
+    "AppHeader",
+    "ToolMenuRow",
+    "SearchField",
+    "SearchResultRow",
+    "Loading/Empty/Error",
+    "Button/Primary",
+    "Button/Secondary",
+    "NoteChip",
+    "CentsReadout",
+    "PitchMeter",
+    "GuidanceSlot",
+    "StatusLine",
+    "DefinitionRow",
+    "ThemeTile",
+    "SettingRow",
+    "Toggle",
+    "FirstTunePrimer"
+  ],
+  "nextFigmaAction": "When the Starter rate limit resets, inspect the canonical file and its published libraries once, then build foundations before components and screens.",
+  "evidence": {
+    "goldenDirectory": "app/test/goldens",
+    "implementationContract": "docs/theme-system-design-2026-07-15.md",
+    "playbook": "docs/design-playbook.md"
+  }
+}

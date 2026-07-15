@@ -77,7 +77,7 @@ class _TensionRecommendationScreenState
           children: [
             InstrumentSectionLabel(
               'Tension design  /  ${widget.tuning.name}',
-              color: InstrumentColors.accent,
+              color: context.terminal.accent,
             ),
             const SizedBox(height: 10),
             Text(
@@ -87,12 +87,12 @@ class _TensionRecommendationScreenState
             const SizedBox(height: 8),
             Text(
               '장력은 현의 굵기뿐 아니라 스케일 길이와 목표 음정으로 계산합니다. 숫자는 이상적인 장력 추정치이며 실제 촉감은 코어와 제조사에 따라 달라집니다.',
-              style: InstrumentTypeTheme.standard.caption.copyWith(
-                color: InstrumentColors.muted,
+              style: context.instrumentType.caption.copyWith(
+                color: context.terminal.muted,
               ),
             ),
             const SizedBox(height: 24),
-            const InstrumentSectionLabel('01  /  내 기타 기준'),
+            InstrumentSectionLabel('01  /  내 기타 기준'),
             const SizedBox(height: 8),
             _ScaleSelector(
               options: _scaleOptions,
@@ -132,7 +132,7 @@ class _TensionRecommendationScreenState
                   dense: true,
                   title: Text(
                     '3번 줄을 wound로 계산',
-                    style: InstrumentTypeTheme.standard.caption,
+                    style: context.instrumentType.caption,
                   ),
                 ),
               Align(
@@ -145,9 +145,9 @@ class _TensionRecommendationScreenState
               ),
             ],
             const SizedBox(height: 24),
-            const InstrumentSectionLabel(
+            InstrumentSectionLabel(
               '02  /  추천 세트',
-              color: InstrumentColors.accent,
+              color: context.terminal.accent,
             ),
             const SizedBox(height: 8),
             for (var index = 0; index < recommendations.length; index++) ...[
@@ -162,7 +162,7 @@ class _TensionRecommendationScreenState
                 const SizedBox(height: 8),
             ],
             const SizedBox(height: 24),
-            const InstrumentSectionLabel('03  /  세트에 없는 현별 조합'),
+            InstrumentSectionLabel('03  /  세트에 없는 현별 조합'),
             const SizedBox(height: 8),
             _RecommendationSection(
               rank: 0,
@@ -253,7 +253,7 @@ class _ScaleSelector extends StatelessWidget {
       children: [
         Text(
           '스케일 길이',
-          style: InstrumentTypeTheme.standard.caption.copyWith(
+          style: context.instrumentType.caption.copyWith(
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -274,20 +274,20 @@ class _ScaleSelector extends StatelessWidget {
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           color: selected == option
-                              ? InstrumentColors.accent
-                              : InstrumentColors.panel,
+                              ? context.terminal.accent
+                              : context.terminal.panel,
                           border: Border.all(
                             color: selected == option
-                                ? InstrumentColors.accent
-                                : InstrumentColors.line,
+                                ? context.terminal.accent
+                                : context.terminal.line,
                           ),
                         ),
                         child: Text(
                           '${option.toStringAsFixed(option % 1 == 0 ? 0 : 2)}″',
-                          style: InstrumentTypeTheme.standard.status.copyWith(
+                          style: context.instrumentType.status.copyWith(
                             color: selected == option
-                                ? InstrumentColors.accentInk
-                                : InstrumentColors.text,
+                                ? context.terminal.accentInk
+                                : context.terminal.text,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -319,22 +319,22 @@ class _CurrentGaugeStrip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
       decoration: BoxDecoration(
-        color: InstrumentColors.panel,
-        border: Border.all(color: InstrumentColors.line),
+        color: context.terminal.panel,
+        border: Border.all(color: context.terminal.line),
       ),
       child: Row(
         children: [
           Text(
             '현재 현',
-            style: InstrumentTypeTheme.standard.status.copyWith(
-              color: InstrumentColors.muted,
+            style: context.instrumentType.status.copyWith(
+              color: context.terminal.muted,
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               gaugeSet.displayName,
-              style: InstrumentTypeTheme.standard.caption.copyWith(
+              style: context.instrumentType.caption.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -369,50 +369,50 @@ class _RecommendationSection extends StatelessWidget {
     final warning = recommendation.floppyStringNumbers.isNotEmpty;
     return Container(
       decoration: BoxDecoration(
-        color: InstrumentColors.panel,
+        color: context.terminal.panel,
         border: Border.all(
-          color: warning ? InstrumentColors.amber : InstrumentColors.line,
+          color: warning ? context.terminal.amber : context.terminal.line,
         ),
       ),
       child: ExpansionTile(
         initiallyExpanded: expanded,
         tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
         childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-        shape: const Border(),
-        collapsedShape: const Border(),
+        shape: Border(),
+        collapsedShape: Border(),
         leading: SizedBox(
           width: 30,
           child: Text(
             rank == 0 ? 'C' : rank.toString().padLeft(2, '0'),
-            style: InstrumentTypeTheme.standard.caption.copyWith(
+            style: context.instrumentType.caption.copyWith(
               color: rank == 1
-                  ? InstrumentColors.accent
-                  : InstrumentColors.muted,
+                  ? context.terminal.accent
+                  : context.terminal.muted,
               fontWeight: FontWeight.w800,
             ),
           ),
         ),
         title: Text(
           recommendation.gaugeSet.displayName,
-          style: InstrumentTypeTheme.standard.caption.copyWith(
+          style: context.instrumentType.caption.copyWith(
             fontWeight: FontWeight.w700,
           ),
         ),
         subtitle: Text(
           '${recommendation.totalTensionLbf.toStringAsFixed(1)} lbf total · ${warning ? '느슨한 현 확인' : 'floppy 경고 없음'}',
-          style: InstrumentTypeTheme.standard.status.copyWith(
-            color: warning ? InstrumentColors.amber : InstrumentColors.muted,
+          style: context.instrumentType.status.copyWith(
+            color: warning ? context.terminal.amber : context.terminal.muted,
           ),
         ),
         children: [
-          const Divider(height: 1),
+          Divider(height: 1),
           const SizedBox(height: 9),
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
               recommendation.reason,
-              style: InstrumentTypeTheme.standard.caption.copyWith(
-                color: InstrumentColors.muted,
+              style: context.instrumentType.caption.copyWith(
+                color: context.terminal.muted,
               ),
             ),
           ),
@@ -422,8 +422,8 @@ class _RecommendationSection extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 '! $note',
-                style: InstrumentTypeTheme.standard.caption.copyWith(
-                  color: InstrumentColors.amber,
+                style: context.instrumentType.caption.copyWith(
+                  color: context.terminal.amber,
                 ),
               ),
             ),
@@ -454,8 +454,8 @@ class _TensionTableHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
-      children: [
+    return Row(
+      children: const [
         SizedBox(width: 38, child: InstrumentSectionLabel('현')),
         SizedBox(width: 48, child: InstrumentSectionLabel('음')),
         Expanded(child: InstrumentSectionLabel('게이지')),
@@ -473,45 +473,45 @@ class _TensionTableRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cellStyle = context.instrumentType.status.copyWith(
+      color: context.terminal.text,
+    );
     final (label, color) = switch (result.band) {
-      TensionBand.floppy => ('느슨', InstrumentColors.amber),
-      TensionBand.comfortable => ('적정', InstrumentColors.accent),
-      TensionBand.firm => ('단단', InstrumentColors.text),
-      TensionBand.tight => ('과함', InstrumentColors.danger),
+      TensionBand.floppy => ('느슨', context.terminal.amber),
+      TensionBand.comfortable => ('적정', context.terminal.accent),
+      TensionBand.firm => ('단단', context.terminal.text),
+      TensionBand.tight => ('과함', context.terminal.danger),
     };
     return Container(
       constraints: const BoxConstraints(minHeight: 34),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: InstrumentColors.line)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: context.terminal.line)),
       ),
       child: Row(
         children: [
           SizedBox(
             width: 38,
-            child: Text('${result.target.stringNumber}', style: _cellStyle),
+            child: Text('${result.target.stringNumber}', style: cellStyle),
           ),
           SizedBox(
             width: 48,
-            child: Text(result.target.label, style: _cellStyle),
+            child: Text(result.target.label, style: cellStyle),
           ),
           Expanded(
             child: Text(
               '.${(result.gauge.gaugeInches * 1000).round().toString().padLeft(3, '0')} ${result.gauge.construction == StringConstruction.wound ? 'w' : 'p'}',
-              style: _cellStyle,
+              style: cellStyle,
             ),
           ),
           SizedBox(
             width: 52,
-            child: Text(
-              result.tensionLbf.toStringAsFixed(1),
-              style: _cellStyle,
-            ),
+            child: Text(result.tensionLbf.toStringAsFixed(1), style: cellStyle),
           ),
           SizedBox(
             width: 54,
             child: Text(
               label,
-              style: InstrumentTypeTheme.standard.status.copyWith(
+              style: context.instrumentType.status.copyWith(
                 color: color,
                 fontWeight: FontWeight.w700,
               ),
@@ -521,10 +521,6 @@ class _TensionTableRow extends StatelessWidget {
       ),
     );
   }
-
-  static final _cellStyle = InstrumentTypeTheme.standard.status.copyWith(
-    color: InstrumentColors.text,
-  );
 }
 
 class _ModelNotice extends StatelessWidget {
@@ -536,16 +532,16 @@ class _ModelNotice extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(
-          left: BorderSide(color: InstrumentColors.muted, width: 2),
+          left: BorderSide(color: context.terminal.muted, width: 2),
         ),
       ),
       child: Text(
         '계산 모델 v${metadata.version} · 공식 계산기 20개 스팟체크 최대 오차 3% 미만\n'
         'plain은 강선 밀도로 계산하고 wound는 니켈 라운드와운드 보간값을 사용합니다. 제조사·코어·권선 구조에 따라 실제 장력과 촉감은 달라질 수 있습니다.',
-        style: InstrumentTypeTheme.standard.caption.copyWith(
-          color: InstrumentColors.muted,
+        style: context.instrumentType.caption.copyWith(
+          color: context.terminal.muted,
         ),
       ),
     );

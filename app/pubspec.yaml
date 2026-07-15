@@ -56,6 +56,15 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.9.3
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: branding/sharktune-app-icon-1024.png
+  adaptive_icon_background: '#06222A'
+  adaptive_icon_foreground: branding/sharktune-mark-1024.png
+  remove_alpha_ios: true
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -76,18 +85,26 @@ flutter:
     - assets/fonts/licenses/
 
   fonts:
-    - family: D2Coding
+    - family: IBM Plex Mono
       fonts:
-        - asset: assets/fonts/D2Coding-Regular.ttf
+        - asset: assets/fonts/IBMPlexMono-Regular.ttf
           weight: 400
-        - asset: assets/fonts/D2Coding-Bold.ttf
-          weight: 700
-    - family: Pretendard
-      fonts:
-        - asset: assets/fonts/Pretendard-Regular.otf
-          weight: 400
-        - asset: assets/fonts/Pretendard-SemiBold.otf
+        - asset: assets/fonts/IBMPlexMono-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexMono-SemiBold.ttf
           weight: 600
+        - asset: assets/fonts/IBMPlexMono-Bold.ttf
+          weight: 700
+    - family: IBM Plex Sans KR
+      fonts:
+        - asset: assets/fonts/IBMPlexSansKR-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexSansKR-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexSansKR-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/IBMPlexSansKR-Bold.ttf
+          weight: 700
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -2,20 +2,18 @@
 
 ## Bundled interface fonts
 
-toauner bundles four unmodified font files for its interface. The full license
-texts ship in `app/assets/fonts/licenses/` and are registered with Flutter's
+SharkTune bundles eight unmodified IBM Plex font files from the official
+[IBM Plex repository](https://github.com/IBM/plex) at commit
+`2f9ba1b25957d958db71a849e85d72e3ecfb845a`. The full SIL Open Font License
+1.1 text ships in `app/assets/fonts/licenses/` and is registered with Flutter's
 `LicenseRegistry` at startup.
 
-- D2Coding 1.3.2 Regular and Bold, copyright NAVER Corporation. Source:
-  [official release](https://github.com/naver/d2codingfont/releases/tag/VER1.3.2).
-  License: SIL Open Font License 1.1; reserved font names `D2Coding` and
-  `D2Coding-Bold`.
-- Pretendard 1.3.9 Regular and SemiBold, copyright Kil Hyung-jin. Source:
-  [official release](https://github.com/orioncactus/pretendard/releases/tag/v1.3.9).
-  License: SIL Open Font License 1.1; reserved font name `Pretendard`.
+- IBM Plex Mono: Regular, Medium, SemiBold, Bold.
+- IBM Plex Sans KR hinted TTF: Regular, Medium, SemiBold, Bold.
 
-The font files are not modified or renamed. D2Coding is used for numeric and
-instrument-data roles; Pretendard is used for Korean prose and controls.
+The font files are not modified or renamed. IBM Plex Mono is used for numeric
+and instrument-data roles; IBM Plex Sans KR is used for Korean prose and
+controls.
 
 ## Runtime audio playback
 

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:tuner_data/tuner_data.dart';
 import 'package:tuner_domain/tuner_domain.dart';
 
+import '../app/app_preferences.dart';
 import '../app/instrument_theme.dart';
 import '../device/tuner_device_control.dart';
 import '../instrument_setup/instrument_profile_store.dart';
@@ -18,6 +19,12 @@ import 'live_tuner_engine.dart';
 import 'reference_tone_player.dart';
 import 'stage_mode_screen.dart';
 import 'tuning_guidance.dart';
+
+part 'precision_tuner_controls.dart';
+part 'precision_tuner_setup.dart';
+part 'precision_tuner_panels.dart';
+
+enum TunerSkin { standard, clipping }
 
 class PrecisionTunerScreen extends StatefulWidget {
   const PrecisionTunerScreen({
@@ -161,7 +168,10 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     if (!mounted) {
       return;
     }
-    if (granted) {
+    final preferences = AppPreferencesScope.maybeOf(context);
+    final shouldShowFirstTunePrimer =
+        preferences != null && !preferences.value.hasSeenTunerPrimer;
+    if (granted && !shouldShowFirstTunePrimer) {
       setState(() => _checkingMicrophonePermission = false);
       await _startInput();
       return;
@@ -184,6 +194,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     if (_checkingMicrophonePermission) {
       return;
     }
+    AppPreferencesScope.maybeOf(context)?.markTunerPrimerSeen();
     setState(() => _needsMicrophonePrimer = false);
     await _startInput();
   }
@@ -294,7 +305,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     final profile = await showModalBottomSheet<InstrumentPegProfile>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: InstrumentColors.raised,
+      backgroundColor: context.terminal.raised,
       builder: (context) => _PegSetupSheet(
         stringCount: widget.tuning.strings.length,
         current: _activeInstrumentProfile,
@@ -411,10 +422,15 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   void _celebrateLock(int stringNumber) {
     _autoAdvanceTimer?.cancel();
     setState(() => _celebratingStringNumber = stringNumber);
-    unawaited(_lockHaptic());
+    if (AppPreferencesScope.maybeOf(context)?.value.hapticsEnabled ?? true) {
+      unawaited(_lockHaptic());
+    }
     final progress = _tuneUpTracker.state;
+    final advanceDelay = _reduceMotion
+        ? Duration.zero
+        : const Duration(milliseconds: 750);
     if (progress.isComplete) {
-      _autoAdvanceTimer = Timer(const Duration(milliseconds: 750), () {
+      _autoAdvanceTimer = Timer(advanceDelay, () {
         if (!mounted) {
           return;
         }
@@ -423,7 +439,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
       });
       return;
     }
-    _autoAdvanceTimer = Timer(const Duration(milliseconds: 750), () {
+    _autoAdvanceTimer = Timer(advanceDelay, () {
       if (!mounted) {
         return;
       }
@@ -449,6 +465,10 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     await HapticFeedback.mediumImpact();
   }
 
+  bool get _reduceMotion {
+    return shouldReduceMotion(context);
+  }
+
   void _showCompletion() {
     if (_completionShown || !mounted) {
       return;
@@ -459,7 +479,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
       context: context,
       isDismissible: false,
       enableDrag: false,
-      backgroundColor: InstrumentColors.raised,
+      backgroundColor: context.terminal.raised,
       builder: (sheetContext) => _TuneCompleteSheet(
         tuning: widget.tuning,
         elapsed: _tuneUpTracker.state.elapsed,
@@ -682,7 +702,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   void _showDiagnostics() {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: InstrumentColors.raised,
+      backgroundColor: context.terminal.raised,
       isScrollControlled: true,
       builder: (context) => _DiagnosticsSheet(
         state: _liveState,
@@ -696,6 +716,9 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   @override
   Widget build(BuildContext context) {
     final tuning = widget.tuning;
+    final tunerSkin = context.sharkTuneThemeId == SharkTuneThemeId.clipping
+        ? TunerSkin.clipping
+        : TunerSkin.standard;
     final progress = _tuneUpTracker.state;
     final lockedNow =
         !_referenceTonePlaying &&
@@ -748,8 +771,8 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
               ),
               child: Text(
                 '무대',
-                style: InstrumentTypeTheme.standard.caption.copyWith(
-                  color: InstrumentColors.information,
+                style: context.instrumentType.caption.copyWith(
+                  color: context.terminal.information,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -763,15 +786,15 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
           SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final content = Column(
+                final coreContent = Column(
                   children: [
                     Container(
                       height: 34,
                       alignment: Alignment.centerLeft,
                       padding: const EdgeInsets.symmetric(horizontal: 10),
                       decoration: BoxDecoration(
-                        color: InstrumentColors.header,
-                        border: Border.all(color: InstrumentColors.line),
+                        color: context.terminal.header,
+                        border: Border.all(color: context.terminal.line),
                       ),
                       child: Row(
                         children: [
@@ -780,11 +803,10 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                               '${widget.sessionLabel.toUpperCase()}  /  ${tuning.name.toUpperCase()}',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: InstrumentTypeTheme.standard.status
-                                  .copyWith(
-                                    color: InstrumentColors.muted,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                              style: context.instrumentType.status.copyWith(
+                                color: context.terminal.muted,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                           if (widget.includeUnverifiedSongs)
@@ -800,13 +822,65 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                               ),
                               child: Text(
                                 'DEV·진단',
-                                style: InstrumentTypeTheme.standard.status,
+                                style: context.instrumentType.status,
                               ),
                             ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
+                    Text(
+                      _formatMeasuredCents(presentedCents, coarse: _coarseMode),
+                      textAlign: TextAlign.center,
+                      style: context.instrumentType.centsHero.copyWith(
+                        color: lockedNow
+                            ? context.terminal.lockHold
+                            : _coarseMode
+                            ? context.terminal.amber
+                            : context.terminal.text,
+                      ),
+                    ),
+                    Text(
+                      _selected.label,
+                      textAlign: TextAlign.center,
+                      style: context.instrumentType.noteHero.copyWith(
+                        color: lockedNow
+                            ? context.terminal.lockHold
+                            : context.terminal.text,
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            '목표 ${_targetHz.toStringAsFixed(2)} Hz',
+                            maxLines: usesLargeText ? 2 : 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: context.instrumentType.caption.copyWith(
+                              color: context.terminal.textSecondary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: _ReferenceToneControl(
+                            frequencyHz: _targetHz,
+                            noteLabel: _selected.label,
+                            playing: _referenceTonePlaying,
+                            busy: _referenceToneBusy,
+                            onPressed: _toggleReferenceTone,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    PitchTape(
+                      cents: presentedCents,
+                      locked: lockedNow,
+                      status: _tapeStatus(_liveState),
+                    ),
+                    const SizedBox(height: 8),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
@@ -831,7 +905,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -856,73 +930,13 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                             ),
                             child: Text(
                               '자동 인식으로 전환',
-                              style: InstrumentTypeTheme.standard.status,
+                              style: context.instrumentType.status,
                             ),
                           ),
                         ],
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      _formatMeasuredCents(presentedCents, coarse: _coarseMode),
-                      textAlign: TextAlign.center,
-                      style: InstrumentTypeTheme.standard.centsHero.copyWith(
-                        color: lockedNow
-                            ? InstrumentColors.lockHold
-                            : _coarseMode
-                            ? InstrumentColors.amber
-                            : InstrumentColors.text,
-                      ),
-                    ),
-                    Text(
-                      guidance.headline,
-                      textAlign: TextAlign.center,
-                      style: InstrumentTypeTheme.standard.caption.copyWith(
-                        color: lockedNow
-                            ? InstrumentColors.lockHold
-                            : guidance.coarse
-                            ? InstrumentColors.amber
-                            : InstrumentColors.muted,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
                     const SizedBox(height: 8),
-                    PitchTape(
-                      cents: presentedCents,
-                      locked: lockedNow,
-                      status: _tapeStatus(_liveState),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            _referenceTonePlaying ||
-                                    _liveState.frequencyHz == null
-                                ? '— Hz'
-                                : '${_liveState.frequencyHz!.toStringAsFixed(2)} Hz',
-                            maxLines: usesLargeText ? 2 : 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: InstrumentTypeTheme.standard.subhead
-                                .copyWith(
-                                  color: InstrumentColors.text,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: _ReferenceToneControl(
-                            frequencyHz: _targetHz,
-                            noteLabel: _selected.label,
-                            playing: _referenceTonePlaying,
-                            busy: _referenceToneBusy,
-                            onPressed: _toggleReferenceTone,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
                     if (_liveState.status == LiveTunerStatus.permissionDenied ||
                         _liveState.status == LiveTunerStatus.unavailable) ...[
                       _InputErrorNotice(
@@ -956,15 +970,23 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                     const SizedBox(height: 8),
                     Text(
                       '튜닝 진행 ${progress.lockedStringCount}/${progress.expectedStringCount}',
-                      style: InstrumentTypeTheme.standard.status.copyWith(
+                      style: context.instrumentType.status.copyWith(
                         color: progress.isComplete
-                            ? InstrumentColors.accent
-                            : InstrumentColors.muted,
+                            ? context.terminal.accent
+                            : context.terminal.muted,
                       ),
                     ),
                   ],
                 );
+                final content = _TunerSkinFrame(
+                  skin: tunerSkin,
+                  child: coreContent,
+                );
                 final requiresExpandedGuidanceScroll =
+                    tunerSkin == TunerSkin.clipping ||
+                    _manualTarget ||
+                    _activeInstrumentProfile != null ||
+                    pegDirection.canVerify ||
                     guidance.kind == GuidanceSlotKind.wrongString ||
                     pegDirection.flipSuggested ||
                     _liveState.status == LiveTunerStatus.permissionDenied ||
@@ -982,7 +1004,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                   );
                 }
                 return Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
+                  padding: const EdgeInsets.fromLTRB(24, 9, 24, 9),
                   child: content,
                 );
               },
@@ -1063,924 +1085,4 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
       canVerify: _liveState.cents?.isFinite ?? false,
     );
   }
-}
-
-class _ReferenceToneControl extends StatelessWidget {
-  const _ReferenceToneControl({
-    required this.frequencyHz,
-    required this.noteLabel,
-    required this.playing,
-    required this.busy,
-    required this.onPressed,
-  });
-
-  final double frequencyHz;
-  final String noteLabel;
-  final bool playing;
-  final bool busy;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = playing
-        ? InstrumentColors.accent
-        : InstrumentColors.information;
-    final action = playing ? '정지' : '재생';
-    return Semantics(
-      label: '$noteLabel 레퍼런스 톤 $action',
-      button: true,
-      enabled: !busy,
-      toggled: playing,
-      excludeSemantics: true,
-      child: OutlinedButton(
-        key: const Key('reference-tone-toggle'),
-        onPressed: busy ? null : onPressed,
-        style: OutlinedButton.styleFrom(
-          minimumSize: const Size(0, 48),
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          foregroundColor: color,
-          disabledForegroundColor: InstrumentColors.muted,
-          side: BorderSide(
-            color: playing
-                ? InstrumentColors.phosphorEdge
-                : InstrumentColors.line,
-          ),
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(
-              Radius.circular(InstrumentMetrics.radius2),
-            ),
-          ),
-        ),
-        child: Text(
-          busy
-              ? 'REF 준비 중'
-              : playing
-              ? '█ REF $noteLabel 정지'
-              : 'REF ${frequencyHz.toStringAsFixed(2)} Hz',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: InstrumentTypeTheme.standard.status.copyWith(
-            color: busy ? InstrumentColors.muted : color,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MicrophonePrimer extends StatelessWidget {
-  const _MicrophonePrimer({required this.onEnable});
-
-  final Future<void> Function() onEnable;
-
-  @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: InstrumentColors.canvas.withValues(alpha: 0.98),
-      child: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
-              decoration: BoxDecoration(
-                color: InstrumentColors.panel,
-                border: Border.all(color: InstrumentColors.line),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const InstrumentSectionLabel(
-                    '마이크 사용 안내',
-                    color: InstrumentColors.accent,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    '줄 소리를 듣고 음정을 측정해요',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '소리는 기기에서만 분석되고 저장되지 않습니다. '
-                    '통화나 주변 대화를 녹음하지 않습니다.',
-                    style: InstrumentTypeTheme.standard.caption.copyWith(
-                      color: InstrumentColors.muted,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      key: const Key('enable-microphone'),
-                      onPressed: onEnable,
-                      icon: const Icon(Icons.mic_rounded, size: 18),
-                      label: const Text('마이크 사용하기'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-final class _PendingPegObservation {
-  const _PendingPegObservation({
-    required this.stringNumber,
-    required this.baselineCents,
-    required this.direction,
-    required this.classicalCalibration,
-  });
-
-  final int stringNumber;
-  final double baselineCents;
-  final PegRotationDirection direction;
-  final bool classicalCalibration;
-}
-
-final class _PegDirectionPresentation {
-  const _PegDirectionPresentation({
-    required this.label,
-    this.needsSetup = false,
-    this.canVerify = false,
-    this.pending = false,
-    this.flipSuggested = false,
-    this.classicalCalibration = false,
-  });
-
-  final String label;
-  final bool needsSetup;
-  final bool canVerify;
-  final bool pending;
-  final bool flipSuggested;
-  final bool classicalCalibration;
-}
-
-enum _PegSetupLayout { split, inline, classical }
-
-class _PegSetupSheet extends StatefulWidget {
-  const _PegSetupSheet({required this.stringCount, required this.current});
-
-  final int stringCount;
-  final InstrumentPegProfile? current;
-
-  @override
-  State<_PegSetupSheet> createState() => _PegSetupSheetState();
-}
-
-class _PegSetupSheetState extends State<_PegSetupSheet> {
-  late _PegSetupLayout _layout;
-  late InstrumentHandedness _handedness;
-  late bool _reversed;
-
-  @override
-  void initState() {
-    super.initState();
-    final current = widget.current;
-    _layout = switch (current?.layout) {
-      HeadstockLayout.inline => _PegSetupLayout.inline,
-      HeadstockLayout.classicalSplit => _PegSetupLayout.classical,
-      _ => _PegSetupLayout.split,
-    };
-    _handedness = current?.handedness ?? InstrumentHandedness.right;
-    _reversed = current?.orientation == HeadstockOrientation.reversed;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final splitLabel = widget.stringCount == 6
-        ? '3+3 헤드스톡'
-        : '${(widget.stringCount + 1) ~/ 2}+${widget.stringCount ~/ 2} 헤드스톡';
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const InstrumentSectionLabel(
-              '내 기타 페그 설정',
-              color: InstrumentColors.accent,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '헤드스톡을 정면에서 봤을 때의 모양을 고르세요. 설정 전에는 안전하게 조이기·풀기만 안내합니다.',
-              style: InstrumentTypeTheme.standard.caption.copyWith(
-                color: InstrumentColors.muted,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const InstrumentSectionLabel('페그 배치'),
-            const SizedBox(height: 6),
-            _SetupChoiceRow(
-              key: const Key('peg-layout-split'),
-              selected: _layout == _PegSetupLayout.split,
-              label: splitLabel,
-              detail: '낮은 줄과 높은 줄이 양쪽으로 나뉨',
-              onTap: () => setState(() => _layout = _PegSetupLayout.split),
-            ),
-            _SetupChoiceRow(
-              key: const Key('peg-layout-inline'),
-              selected: _layout == _PegSetupLayout.inline,
-              label: '${widget.stringCount}인라인',
-              detail: '모든 페그가 한쪽에 일렬로 배치됨',
-              onTap: () => setState(() => _layout = _PegSetupLayout.inline),
-            ),
-            _SetupChoiceRow(
-              key: const Key('peg-layout-classical'),
-              selected: _layout == _PegSetupLayout.classical,
-              label: '클래식 슬롯형',
-              detail: '방향을 추측하지 않고 각 페그를 한 번 확인',
-              onTap: () => setState(() => _layout = _PegSetupLayout.classical),
-            ),
-            const SizedBox(height: 14),
-            const InstrumentSectionLabel('연주 방향'),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Expanded(
-                  child: _SetupChoiceRow(
-                    key: const Key('peg-handed-right'),
-                    selected: _handedness == InstrumentHandedness.right,
-                    label: '오른손 기타',
-                    onTap: () => setState(
-                      () => _handedness = InstrumentHandedness.right,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _SetupChoiceRow(
-                    key: const Key('peg-handed-left'),
-                    selected: _handedness == InstrumentHandedness.left,
-                    label: '왼손 기타',
-                    onTap: () =>
-                        setState(() => _handedness = InstrumentHandedness.left),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            SwitchListTile(
-              key: const Key('peg-reverse-headstock'),
-              value: _reversed,
-              onChanged: (value) => setState(() => _reversed = value),
-              contentPadding: EdgeInsets.zero,
-              title: Text(
-                '리버스 헤드스톡',
-                style: InstrumentTypeTheme.standard.caption.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              subtitle: Text(
-                '일반 헤드스톡과 반대 방향으로 기울어진 경우만 켜세요',
-                style: InstrumentTypeTheme.standard.status.copyWith(
-                  color: InstrumentColors.muted,
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                key: const Key('save-peg-profile'),
-                onPressed: () => Navigator.of(context).pop(_buildProfile()),
-                child: const Text('이 기타로 저장'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  InstrumentPegProfile _buildProfile() {
-    final orientation = _reversed
-        ? HeadstockOrientation.reversed
-        : HeadstockOrientation.standard;
-    final layout = switch (_layout) {
-      _PegSetupLayout.split => HeadstockLayout.split,
-      _PegSetupLayout.inline => HeadstockLayout.inline,
-      _PegSetupLayout.classical => HeadstockLayout.classicalSplit,
-    };
-    final current = widget.current;
-    final keepOverrides =
-        current?.layout == layout &&
-        current?.handedness == _handedness &&
-        current?.orientation == orientation;
-    final windingOverrides = keepOverrides
-        ? current!.windingOverrides
-        : const <int, StringWinding>{};
-    final directionOverrides = keepOverrides
-        ? current!.directionOverrides
-        : const <int, PegRotationDirection>{};
-    final splitCount = (widget.stringCount + 1) ~/ 2;
-    return switch (_layout) {
-      _PegSetupLayout.split => InstrumentPegProfile.split(
-        stringCount: widget.stringCount,
-        bassSideStringCount: splitCount,
-        handedness: _handedness,
-        orientation: orientation,
-        windingOverrides: windingOverrides,
-        directionOverrides: directionOverrides,
-      ),
-      _PegSetupLayout.inline => InstrumentPegProfile.inline(
-        stringCount: widget.stringCount,
-        handedness: _handedness,
-        orientation: orientation,
-        windingOverrides: windingOverrides,
-        directionOverrides: directionOverrides,
-      ),
-      _PegSetupLayout.classical => InstrumentPegProfile.classicalSplit(
-        stringCount: widget.stringCount,
-        bassSideStringCount: splitCount,
-        handedness: _handedness,
-        orientation: orientation,
-        windingOverrides: windingOverrides,
-        directionOverrides: directionOverrides,
-      ),
-    };
-  }
-}
-
-class _SetupChoiceRow extends StatelessWidget {
-  const _SetupChoiceRow({
-    super.key,
-    required this.selected,
-    required this.label,
-    required this.onTap,
-    this.detail,
-  });
-
-  final bool selected;
-  final String label;
-  final String? detail;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      selected: selected,
-      button: true,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 52),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: selected ? InstrumentColors.panel : Colors.transparent,
-            border: Border.all(
-              color: selected ? InstrumentColors.accent : InstrumentColors.line,
-            ),
-          ),
-          child: Row(
-            children: [
-              Text(
-                selected ? '[×]' : '[ ]',
-                style: InstrumentTypeTheme.standard.caption.copyWith(
-                  color: selected
-                      ? InstrumentColors.accent
-                      : InstrumentColors.muted,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: InstrumentTypeTheme.standard.caption.copyWith(
-                        color: InstrumentColors.text,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    if (detail != null)
-                      Text(
-                        detail!,
-                        style: InstrumentTypeTheme.standard.status.copyWith(
-                          color: InstrumentColors.muted,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GuidancePanel extends StatelessWidget {
-  const _GuidancePanel({
-    required this.guidance,
-    required this.semanticsLabel,
-    required this.lockProgress,
-    required this.pegDirection,
-    required this.onConfigurePegGuidance,
-    required this.onVerifyPegDirection,
-    required this.onAcceptPegDirectionFlip,
-    required this.onDismissPegDirectionFlip,
-    this.offsetLabel,
-  });
-
-  final TuningGuidance guidance;
-  final String semanticsLabel;
-  final double lockProgress;
-  final String? offsetLabel;
-  final _PegDirectionPresentation pegDirection;
-  final VoidCallback onConfigurePegGuidance;
-  final VoidCallback onVerifyPegDirection;
-  final VoidCallback onAcceptPegDirectionFlip;
-  final VoidCallback onDismissPegDirectionFlip;
-
-  @override
-  Widget build(BuildContext context) {
-    final completed =
-        guidance.direction == TuningDirection.hold &&
-        guidance.headline.contains('완료');
-    final color = completed
-        ? InstrumentColors.accent
-        : guidance.coarse
-        ? InstrumentColors.amber
-        : InstrumentColors.text;
-    final VoidCallback? pegAction = pegDirection.pending
-        ? null
-        : pegDirection.needsSetup
-        ? onConfigurePegGuidance
-        : pegDirection.canVerify
-        ? onVerifyPegDirection
-        : onConfigurePegGuidance;
-    final pegActionKey = pegDirection.pending
-        ? null
-        : pegDirection.needsSetup
-        ? const Key('configure-peg-guidance')
-        : pegDirection.canVerify
-        ? const Key('verify-peg-direction')
-        : const Key('configure-peg-guidance');
-    final pegActionLabel = pegDirection.needsSetup
-        ? '설정'
-        : pegDirection.canVerify
-        ? pegDirection.classicalCalibration
-              ? '확인 시작'
-              : '방향 확인'
-        : '기타 설정';
-    return ThrottledLiveRegion(
-      label: semanticsLabel,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 9),
-        decoration: BoxDecoration(
-          color: completed
-              ? InstrumentColors.lockHold.withValues(alpha: 0.08)
-              : InstrumentColors.panel,
-          border: Border.all(
-            color: completed
-                ? InstrumentColors.lockHold
-                : InstrumentColors.line,
-          ),
-        ),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                SizedBox(
-                  width: 32,
-                  child: Text(
-                    guidance.leadingSymbol,
-                    textAlign: TextAlign.center,
-                    style: InstrumentTypeTheme.standard.subhead.copyWith(
-                      color: color,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        guidance.instruction,
-                        style: InstrumentTypeTheme.standard.caption.copyWith(
-                          color: color,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (!pegDirection.flipSuggested) ...[
-                        const SizedBox(height: 2),
-                        Semantics(
-                          button: pegAction != null,
-                          label: '$pegActionLabel. ${pegDirection.label}',
-                          child: InkWell(
-                            key: pegActionKey,
-                            onTap: pegAction,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 3),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      pegDirection.label,
-                                      style: InstrumentTypeTheme.standard.status
-                                          .copyWith(
-                                            color: pegDirection.pending
-                                                ? InstrumentColors.amber
-                                                : InstrumentColors.muted,
-                                            fontWeight: pegDirection.pending
-                                                ? FontWeight.w700
-                                                : FontWeight.w500,
-                                          ),
-                                    ),
-                                  ),
-                                  if (pegAction != null) ...[
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      '$pegActionLabel ›',
-                                      style: InstrumentTypeTheme.standard.status
-                                          .copyWith(
-                                            color: InstrumentColors.accent,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            if (lockProgress > 0 && lockProgress < 1) ...[
-              const SizedBox(height: 8),
-              LinearProgressIndicator(
-                value: lockProgress,
-                minHeight: 3,
-                color: InstrumentColors.accent,
-                backgroundColor: InstrumentColors.line,
-              ),
-            ],
-            if (offsetLabel != null) ...[
-              const SizedBox(height: 6),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  offsetLabel!,
-                  style: InstrumentTypeTheme.standard.status.copyWith(
-                    color: InstrumentColors.accent,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-            if (pegDirection.flipSuggested) ...[
-              const SizedBox(height: 8),
-              Container(height: 1, color: InstrumentColors.line),
-              const SizedBox(height: 6),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  '방향 안내를 멈췄어요',
-                  style: InstrumentTypeTheme.standard.caption.copyWith(
-                    color: InstrumentColors.amber,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 3),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  '안내와 반대로 두 번 움직였습니다. 이 페그만 방향을 바꿀까요?',
-                  style: InstrumentTypeTheme.standard.caption.copyWith(
-                    color: InstrumentColors.muted,
-                  ),
-                ),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: onDismissPegDirectionFlip,
-                    child: const Text('그대로 유지'),
-                  ),
-                  TextButton(
-                    key: const Key('accept-peg-direction-flip'),
-                    onPressed: onAcceptPegDirectionFlip,
-                    child: const Text('이 페그만 반대로'),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TuneCompleteSheet extends StatelessWidget {
-  const _TuneCompleteSheet({
-    required this.tuning,
-    required this.elapsed,
-    required this.compatibleSongs,
-    required this.onStabilityCheck,
-  });
-
-  final TuningDefinition tuning;
-  final Duration elapsed;
-  final Future<List<SongTuningMatch>> compatibleSongs;
-  final VoidCallback onStabilityCheck;
-
-  @override
-  Widget build(BuildContext context) {
-    final seconds = elapsed.inSeconds;
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '✓',
-              key: Key('tune-complete-glyph'),
-              style: InstrumentTypeTheme.standard.title.copyWith(
-                color: InstrumentColors.lockFlood,
-                fontFamily: 'D2Coding',
-                height: 1,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              '${tuning.strings.length}현 모두 완료!',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${tuning.name} · $seconds초',
-              style: const TextStyle(color: InstrumentColors.muted),
-            ),
-            const SizedBox(height: 8),
-            FutureBuilder<List<SongTuningMatch>>(
-              future: compatibleSongs,
-              builder: (context, snapshot) {
-                final count = snapshot.data?.length;
-                return Text(
-                  count == null ? '연주 가능한 곡 확인 중' : '이 튜닝으로 연주 가능한 곡 $count개',
-                  style: InstrumentTypeTheme.standard.caption.copyWith(
-                    color: InstrumentColors.accent,
-                    fontWeight: FontWeight.w600,
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 22),
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('완료'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: FilledButton(
-                    key: const Key('open-stability-check'),
-                    onPressed: onStabilityCheck,
-                    child: const Text('30초 안정성 검사'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DiagnosticsSheet extends StatelessWidget {
-  const _DiagnosticsSheet({
-    required this.state,
-    required this.tuning,
-    required this.song,
-    required this.progress,
-  });
-
-  final LiveTunerState state;
-  final TuningDefinition tuning;
-  final SongTuningRecord? song;
-  final TuneUpProgressState progress;
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const InstrumentSectionLabel(
-              'DEV·실기기 진단',
-              color: InstrumentColors.amber,
-            ),
-            const SizedBox(height: 10),
-            DefinitionRow(label: 'DEV·입력', value: _inputDescription(state)),
-            DefinitionRow(
-              label: 'DEV·분석',
-              value:
-                  '${state.actualSampleRate ?? 48000} Hz · '
-                  '${state.windowSamples ?? 4096} samples',
-            ),
-            DefinitionRow(
-              label: 'DEV·DSP',
-              value: state.processingDuration == null
-                  ? 'isolate 준비'
-                  : '${(state.processingDuration!.inMicroseconds / 1000).toStringAsFixed(2)} ms · isolate',
-            ),
-            DefinitionRow(
-              label: 'DEV·첫 응답',
-              value: state.pluckToFirstValidLatency == null
-                  ? '픽 어택 대기'
-                  : '${(state.pluckToFirstValidLatency!.inMicroseconds / 1000).toStringAsFixed(1)} ms · PCM 기준',
-            ),
-            DefinitionRow(
-              label: 'DEV·응답 p95',
-              value: state.pluckToDisplayP95Latency == null
-                  ? '표본 대기 · 매번 현을 뮤트한 뒤 피킹'
-                  : '${(state.pluckToDisplayP95Latency!.inMicroseconds / 1000).toStringAsFixed(1)} ms · n=${state.pluckLatencySampleCount}',
-              valueColor: state.pluckToDisplayP95Latency == null
-                  ? InstrumentColors.text
-                  : state.pluckToDisplayP95Latency!.inMilliseconds <= 150
-                  ? InstrumentColors.accent
-                  : InstrumentColors.danger,
-            ),
-            DefinitionRow(
-              label: 'DEV·튜닝 진행',
-              value: _tuneUpProgressLabel(progress),
-            ),
-            DefinitionRow(
-              label: 'DEV·곡 설정',
-              value:
-                  '${tuning.id}@${tuning.version} · ${_offsetLabel(tuning.centsOffset)} · capo ${song?.capoFret ?? 0}',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _InputErrorNotice extends StatelessWidget {
-  const _InputErrorNotice({
-    required this.permissionDenied,
-    required this.onRetry,
-    required this.onOpenSettings,
-  });
-
-  final bool permissionDenied;
-  final Future<void> Function() onRetry;
-  final AppSettingsLauncher onOpenSettings;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
-      decoration: BoxDecoration(
-        color: InstrumentColors.panel,
-        border: Border.all(color: InstrumentColors.danger),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            permissionDenied
-                ? '설정에서 마이크를 허용해 주세요.'
-                : '사용 가능한 마이크 입력을 찾지 못했습니다.',
-            style: InstrumentTypeTheme.standard.status.copyWith(
-              color: InstrumentColors.danger,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton(onPressed: onRetry, child: const Text('다시 시도')),
-              if (permissionDenied)
-                TextButton(
-                  key: const Key('open-app-settings'),
-                  onPressed: onOpenSettings,
-                  child: const Text('설정 열기'),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-String _formatMeasuredCents(double? cents, {required bool coarse}) {
-  if (cents == null) {
-    return '—';
-  }
-  if (coarse) {
-    return cents > 0 ? '▼ 50¢+' : '▲ 50¢+';
-  }
-  final sign = cents > 0 ? '+' : '';
-  return '$sign${cents.toStringAsFixed(1)}¢';
-}
-
-String _tapeStatus(LiveTunerState state) {
-  return switch (state.status) {
-    LiveTunerStatus.probingInput => '현을 한 번 튕기세요',
-    LiveTunerStatus.permissionDenied => '마이크 권한 필요',
-    LiveTunerStatus.unavailable => '입력 확인 필요',
-    LiveTunerStatus.listening when state.locked => 'IN TUNE',
-    LiveTunerStatus.listening when state.frequencyHz != null => '측정 중',
-    _ => '신호 대기',
-  };
-}
-
-String _inputDescription(LiveTunerState state) {
-  return switch (state.status) {
-    LiveTunerStatus.idle => '대기',
-    LiveTunerStatus.probingInput => 'UNPROCESSED 확인 중 · 지금 튕기세요',
-    LiveTunerStatus.permissionDenied => '권한 거부됨',
-    LiveTunerStatus.unavailable => '입력 없음',
-    LiveTunerStatus.listening => switch (state.selectedSource?.name) {
-      'unprocessed' => 'UNPROCESSED · 처리 없음',
-      'voiceRecognition' => 'VOICE_RECOGNITION · 폴백',
-      _ => '마이크 · 소스 확인 중',
-    },
-  };
-}
-
-String _statusBarState(LiveTunerState state) {
-  return switch (state.status) {
-    LiveTunerStatus.idle => '준비 중',
-    LiveTunerStatus.probingInput => '입력 확인 중',
-    LiveTunerStatus.permissionDenied => '마이크 권한 필요',
-    LiveTunerStatus.unavailable => '마이크 확인 필요',
-    LiveTunerStatus.listening when state.locked => '인튠',
-    LiveTunerStatus.listening => '듣는 중',
-  };
-}
-
-String _offsetLabel(double cents) {
-  if (cents == 0) {
-    return '0 cents';
-  }
-  final sign = cents > 0 ? '+' : '';
-  return '$sign${cents.toStringAsFixed(cents == cents.roundToDouble() ? 0 : 1)} cents';
-}
-
-String _tuneUpProgressLabel(TuneUpProgressState state) {
-  final elapsed = state.elapsed;
-  final minutes = elapsed.inMinutes;
-  final seconds = elapsed.inSeconds.remainder(60).toString().padLeft(2, '0');
-  final progress = '${state.lockedStringCount}/${state.expectedStringCount}';
-  return state.isComplete
-      ? '$progress · 완료 ${minutes.toString().padLeft(2, '0')}:$seconds'
-      : '$progress · ${minutes.toString().padLeft(2, '0')}:$seconds';
-}
-
-String _rotationDirectionLabel(PegRotationDirection direction) {
-  return switch (direction) {
-    PegRotationDirection.clockwise => '↻ 시계방향',
-    PegRotationDirection.counterClockwise => '↺ 반시계방향',
-  };
-}
-
-String _pegProfileLabel(InstrumentPegProfile profile) {
-  final layout = switch (profile.layout) {
-    HeadstockLayout.split =>
-      profile.stringCount == 6
-          ? '3+3'
-          : '${profile.bassSideStringCount}+${profile.stringCount - profile.bassSideStringCount}',
-    HeadstockLayout.inline => '${profile.stringCount}인라인',
-    HeadstockLayout.classicalSplit => '클래식 슬롯형',
-  };
-  final hand = profile.handedness == InstrumentHandedness.right ? '오른손' : '왼손';
-  final reverse = profile.orientation == HeadstockOrientation.reversed
-      ? ' · 리버스'
-      : '';
-  return '$layout · $hand$reverse';
 }

@@ -40,7 +40,7 @@ class SongDetailScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
           children: [
-            const InstrumentSectionLabel('곡 찾기  /  선택한 곡'),
+            InstrumentSectionLabel('곡 찾기  /  선택한 곡'),
             const SizedBox(height: 16),
             Text(song.title, style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 5),
@@ -49,8 +49,8 @@ class SongDetailScreen extends StatelessWidget {
                 Expanded(
                   child: Text(
                     song.artist,
-                    style: InstrumentTypeTheme.standard.body.copyWith(
-                      color: InstrumentColors.muted,
+                    style: context.instrumentType.body.copyWith(
+                      color: context.terminal.muted,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -62,11 +62,11 @@ class SongDetailScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 24),
-            const Divider(height: 1),
+            Divider(height: 1),
             const SizedBox(height: 20),
-            const InstrumentSectionLabel(
+            InstrumentSectionLabel(
               'Song setup',
-              color: InstrumentColors.accent,
+              color: context.terminal.accent,
             ),
             const SizedBox(height: 10),
             DefinitionRow(label: '튜닝', value: tuning.name),
@@ -82,8 +82,8 @@ class SongDetailScreen extends StatelessWidget {
               label: '녹음 오프셋',
               value: cents,
               valueColor: song.centsOffset == 0
-                  ? InstrumentColors.text
-                  : InstrumentColors.accent,
+                  ? context.terminal.text
+                  : context.terminal.accent,
             ),
             if (includeUnverifiedSongs)
               DefinitionRow(
@@ -91,7 +91,7 @@ class SongDetailScreen extends StatelessWidget {
                 value: '${tuning.id}@${tuning.version}',
               ),
             const SizedBox(height: 22),
-            const InstrumentSectionLabel('Open strings  ·  low → high'),
+            InstrumentSectionLabel('Open strings  ·  low → high'),
             const SizedBox(height: 10),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -184,11 +184,11 @@ class _MetronomeEntry extends StatelessWidget {
             ),
             child: Container(
               padding: const EdgeInsets.fromLTRB(12, 11, 10, 11),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
-                  top: BorderSide(color: InstrumentColors.line),
-                  bottom: BorderSide(color: InstrumentColors.line),
-                  left: BorderSide(color: InstrumentColors.accent, width: 3),
+                  top: BorderSide(color: context.terminal.line),
+                  bottom: BorderSide(color: context.terminal.line),
+                  left: BorderSide(color: context.terminal.accent, width: 3),
                 ),
               ),
               child: Row(
@@ -199,7 +199,7 @@ class _MetronomeEntry extends StatelessWidget {
                       children: [
                         Text(
                           '메트로놈',
-                          style: InstrumentTypeTheme.standard.caption.copyWith(
+                          style: context.instrumentType.caption.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -208,8 +208,8 @@ class _MetronomeEntry extends StatelessWidget {
                           bpm == null
                               ? '탭 템포로 이 곡 속도를 맞춰보세요'
                               : '이 곡 속도에 맞춰 연습하세요',
-                          style: InstrumentTypeTheme.standard.status.copyWith(
-                            color: InstrumentColors.muted,
+                          style: context.instrumentType.status.copyWith(
+                            color: context.terminal.muted,
                           ),
                         ),
                       ],
@@ -217,9 +217,9 @@ class _MetronomeEntry extends StatelessWidget {
                   ),
                   Text(
                     bpm == null ? '♩ 열기 ›' : '♩ = $bpm ›',
-                    style: InstrumentTypeTheme.standard.status.copyWith(
-                      fontFamily: 'D2Coding',
-                      color: InstrumentColors.accent,
+                    style: context.instrumentType.status.copyWith(
+                      fontFamily: 'IBM Plex Mono',
+                      color: context.terminal.accent,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -252,11 +252,11 @@ class _TensionRecommendationEntry extends StatelessWidget {
         onTap: onPressed,
         child: Container(
           padding: const EdgeInsets.fromLTRB(12, 11, 10, 11),
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             border: Border(
-              top: BorderSide(color: InstrumentColors.line),
-              bottom: BorderSide(color: InstrumentColors.line),
-              left: BorderSide(color: InstrumentColors.accent, width: 3),
+              top: BorderSide(color: context.terminal.line),
+              bottom: BorderSide(color: context.terminal.line),
+              left: BorderSide(color: context.terminal.accent, width: 3),
             ),
           ),
           child: Row(
@@ -267,15 +267,15 @@ class _TensionRecommendationEntry extends StatelessWidget {
                   children: [
                     Text(
                       '이 튜닝에서 장력 확인',
-                      style: InstrumentTypeTheme.standard.caption.copyWith(
+                      style: context.instrumentType.caption.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       '스케일과 현재 게이지를 기준으로 상위 3개 조합 계산',
-                      style: InstrumentTypeTheme.standard.status.copyWith(
-                        color: InstrumentColors.muted,
+                      style: context.instrumentType.status.copyWith(
+                        color: context.terminal.muted,
                       ),
                     ),
                   ],
@@ -283,8 +283,8 @@ class _TensionRecommendationEntry extends StatelessWidget {
               ),
               Text(
                 '계산 ›',
-                style: InstrumentTypeTheme.standard.status.copyWith(
-                  color: InstrumentColors.accent,
+                style: context.instrumentType.status.copyWith(
+                  color: context.terminal.accent,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -307,9 +307,9 @@ class _StickyTuneBar extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 10, 24, 10),
-      decoration: const BoxDecoration(
-        color: InstrumentColors.header,
-        border: Border(top: BorderSide(color: InstrumentColors.line)),
+      decoration: BoxDecoration(
+        color: context.terminal.header,
+        border: Border(top: BorderSide(color: context.terminal.line)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -327,8 +327,8 @@ class _StickyTuneBar extends StatelessWidget {
             instruction,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: InstrumentTypeTheme.standard.status.copyWith(
-              color: InstrumentColors.muted,
+            style: context.instrumentType.status.copyWith(
+              color: context.terminal.muted,
             ),
           ),
         ],
@@ -352,15 +352,15 @@ class _VerificationNotice extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 13, 14, 13),
       decoration: BoxDecoration(
-        color: InstrumentColors.panel,
+        color: context.terminal.panel,
         border: Border(
           left: BorderSide(
-            color: verified ? InstrumentColors.accent : InstrumentColors.amber,
+            color: verified ? context.terminal.accent : context.terminal.amber,
             width: 3,
           ),
-          top: const BorderSide(color: InstrumentColors.line),
-          right: const BorderSide(color: InstrumentColors.line),
-          bottom: const BorderSide(color: InstrumentColors.line),
+          top: BorderSide(color: context.terminal.line),
+          right: BorderSide(color: context.terminal.line),
+          bottom: BorderSide(color: context.terminal.line),
         ),
       ),
       child: Column(
@@ -372,10 +372,10 @@ class _VerificationNotice extends StatelessWidget {
                 : showDevelopmentStatus
                 ? 'DEV·출처 확인 전 후보 데이터'
                 : '튜닝 확인 중',
-            style: InstrumentTypeTheme.standard.caption.copyWith(
+            style: context.instrumentType.caption.copyWith(
               color: verified
-                  ? InstrumentColors.accent
-                  : InstrumentColors.amber,
+                  ? context.terminal.accent
+                  : context.terminal.amber,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -386,8 +386,8 @@ class _VerificationNotice extends StatelessWidget {
                 : showDevelopmentStatus
                 ? 'DEV·독립 출처와 사람 검증 전에는 출시 곡에 포함되지 않습니다.'
                 : '확인이 끝난 곡만 검색 결과에 표시됩니다.',
-            style: InstrumentTypeTheme.standard.status.copyWith(
-              color: InstrumentColors.muted,
+            style: context.instrumentType.status.copyWith(
+              color: context.terminal.muted,
             ),
           ),
         ],

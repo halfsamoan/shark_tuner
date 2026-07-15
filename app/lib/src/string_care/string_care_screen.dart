@@ -111,9 +111,9 @@ class _StringCareScreenState extends State<StringCareScreen> {
             : ListView(
                 padding: const EdgeInsets.fromLTRB(24, 18, 24, 28),
                 children: [
-                  const InstrumentSectionLabel(
+                  InstrumentSectionLabel(
                     'String life log',
-                    color: InstrumentColors.accent,
+                    color: context.terminal.accent,
                   ),
                   const SizedBox(height: 10),
                   Text(
@@ -123,14 +123,14 @@ class _StringCareScreenState extends State<StringCareScreen> {
                   const SizedBox(height: 8),
                   Text(
                     '줄 수명은 연주 시간·땀·보관 환경에 따라 달라집니다. 아래 주기는 사용자가 정한 점검 알림이며 제조사 수명 판정이 아닙니다.',
-                    style: InstrumentTypeTheme.standard.caption.copyWith(
-                      color: InstrumentColors.muted,
+                    style: context.instrumentType.caption.copyWith(
+                      color: context.terminal.muted,
                     ),
                   ),
                   const SizedBox(height: 20),
                   _CurrentStringStatus(status: status),
                   const SizedBox(height: 24),
-                  const InstrumentSectionLabel('01  /  점검 알림 주기'),
+                  InstrumentSectionLabel('01  /  점검 알림 주기'),
                   const SizedBox(height: 8),
                   _ReminderIntervalSelector(
                     selectedDays: _ledger.reminderIntervalDays,
@@ -141,7 +141,7 @@ class _StringCareScreenState extends State<StringCareScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const InstrumentSectionLabel('02  /  새 줄 설치 기록'),
+                  InstrumentSectionLabel('02  /  새 줄 설치 기록'),
                   const SizedBox(height: 8),
                   _DateRow(
                     date: _installedOn,
@@ -172,17 +172,15 @@ class _StringCareScreenState extends State<StringCareScreen> {
                     const SizedBox(height: 10),
                     Text(
                       '저장하지 못했습니다. 기기 저장 공간을 확인하고 다시 시도해 주세요.',
-                      style: InstrumentTypeTheme.standard.caption.copyWith(
-                        color: InstrumentColors.amber,
+                      style: context.instrumentType.caption.copyWith(
+                        color: context.terminal.amber,
                       ),
                     ),
                   ],
                   const SizedBox(height: 24),
                   Row(
                     children: [
-                      const Expanded(
-                        child: InstrumentSectionLabel('03  /  교체 기록'),
-                      ),
+                      Expanded(child: InstrumentSectionLabel('03  /  교체 기록')),
                       if (_ledger.installations.isNotEmpty)
                         TextButton(
                           key: const Key('clear-string-care-history'),
@@ -195,8 +193,8 @@ class _StringCareScreenState extends State<StringCareScreen> {
                   if (_ledger.installations.isEmpty)
                     Text(
                       '아직 저장된 교체 기록이 없습니다.',
-                      style: InstrumentTypeTheme.standard.caption.copyWith(
-                        color: InstrumentColors.muted,
+                      style: context.instrumentType.caption.copyWith(
+                        color: context.terminal.muted,
                       ),
                     )
                   else
@@ -284,9 +282,9 @@ class _CurrentStringStatus extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: InstrumentColors.panel,
+          color: context.terminal.panel,
           border: Border.all(
-            color: warning ? InstrumentColors.amber : InstrumentColors.line,
+            color: warning ? context.terminal.amber : context.terminal.line,
           ),
         ),
         child: Row(
@@ -298,11 +296,11 @@ class _CurrentStringStatus extends StatelessWidget {
                   : status.kind == StringCareStatusKind.noRecord
                   ? '○'
                   : '●',
-              style: InstrumentTypeTheme.standard.subhead.copyWith(
+              style: context.instrumentType.subhead.copyWith(
                 color: warning
-                    ? InstrumentColors.amber
-                    : InstrumentColors.accent,
-                fontFamily: 'D2Coding',
+                    ? context.terminal.amber
+                    : context.terminal.accent,
+                fontFamily: 'IBM Plex Mono',
               ),
             ),
             const SizedBox(width: 12),
@@ -312,10 +310,10 @@ class _CurrentStringStatus extends StatelessWidget {
                 children: [
                   Text(
                     _statusText(status),
-                    style: InstrumentTypeTheme.standard.body.copyWith(
+                    style: context.instrumentType.body.copyWith(
                       color: warning
-                          ? InstrumentColors.amber
-                          : InstrumentColors.text,
+                          ? context.terminal.amber
+                          : context.terminal.text,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -323,8 +321,8 @@ class _CurrentStringStatus extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       status.gaugeLabel!,
-                      style: InstrumentTypeTheme.standard.status.copyWith(
-                        color: InstrumentColors.muted,
+                      style: context.instrumentType.status.copyWith(
+                        color: context.terminal.muted,
                       ),
                     ),
                   ],
@@ -369,20 +367,20 @@ class _ReminderIntervalSelector extends StatelessWidget {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: selectedDays == days
-                          ? InstrumentColors.accent
-                          : InstrumentColors.panel,
+                          ? context.terminal.accent
+                          : context.terminal.panel,
                       border: Border.all(
                         color: selectedDays == days
-                            ? InstrumentColors.accent
-                            : InstrumentColors.line,
+                            ? context.terminal.accent
+                            : context.terminal.line,
                       ),
                     ),
                     child: Text(
                       '$days일',
-                      style: InstrumentTypeTheme.standard.status.copyWith(
+                      style: context.instrumentType.status.copyWith(
                         color: selectedDays == days
-                            ? InstrumentColors.accentInk
-                            : InstrumentColors.text,
+                            ? context.terminal.accentInk
+                            : context.terminal.text,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -416,21 +414,21 @@ class _DateRow extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 48),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: InstrumentColors.panel,
-          border: Border.all(color: InstrumentColors.line),
+          color: context.terminal.panel,
+          border: Border.all(color: context.terminal.line),
         ),
         child: Row(
           children: [
             Expanded(
               child: Text(
                 '설치일  ${_formatDate(date)}',
-                style: InstrumentTypeTheme.standard.body,
+                style: context.instrumentType.body,
               ),
             ),
             Text(
               '변경',
-              style: InstrumentTypeTheme.standard.status.copyWith(
-                color: InstrumentColors.information,
+              style: context.instrumentType.status.copyWith(
+                color: context.terminal.information,
               ),
             ),
           ],
@@ -450,8 +448,8 @@ class _HistoryRow extends StatelessWidget {
     return Container(
       constraints: const BoxConstraints(minHeight: 48),
       padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: InstrumentColors.line)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: context.terminal.line)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -460,15 +458,15 @@ class _HistoryRow extends StatelessWidget {
             width: 100,
             child: Text(
               _formatDate(record.installedOn),
-              style: InstrumentTypeTheme.standard.status.copyWith(
-                color: InstrumentColors.muted,
+              style: context.instrumentType.status.copyWith(
+                color: context.terminal.muted,
               ),
             ),
           ),
           Expanded(
             child: Text(
               record.gaugeLabel ?? '게이지 기록 없음',
-              style: InstrumentTypeTheme.standard.caption,
+              style: context.instrumentType.caption,
             ),
           ),
         ],

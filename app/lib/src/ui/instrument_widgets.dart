@@ -1,7 +1,66 @@
 import 'package:flutter/material.dart';
 import 'package:tuner_data/tuner_data.dart';
 
+import '../app/app_preferences.dart';
 import '../app/instrument_theme.dart';
+
+class BrandMark extends StatelessWidget {
+  const BrandMark({super.key, this.width = 28, this.height = 22, this.color});
+
+  final double width;
+  final double height;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'SharkTune',
+      image: true,
+      child: CustomPaint(
+        size: Size(width, height),
+        painter: _BrandMarkPainter(color ?? context.terminal.accent),
+      ),
+    );
+  }
+}
+
+class _BrandMarkPainter extends CustomPainter {
+  const _BrandMarkPainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.scale(size.width / 1024, size.height / 1024);
+    final paint = Paint()..color = color;
+    final fin = Path()
+      ..moveTo(204, 653)
+      ..cubicTo(337, 635, 411, 504, 463, 276)
+      ..cubicTo(467, 257, 490, 250, 505, 262)
+      ..cubicTo(625, 354, 690, 481, 724, 625)
+      ..cubicTo(625, 611, 551, 638, 488, 680)
+      ..cubicTo(400, 738, 302, 721, 204, 653)
+      ..close();
+    final wave = Path()
+      ..moveTo(112, 697)
+      ..cubicTo(220, 628, 313, 630, 411, 696)
+      ..cubicTo(506, 760, 598, 760, 696, 696)
+      ..cubicTo(784, 637, 860, 636, 912, 666)
+      ..lineTo(912, 760)
+      ..cubicTo(845, 716, 783, 720, 715, 766)
+      ..cubicTo(594, 848, 475, 848, 354, 766)
+      ..cubicTo(278, 715, 209, 716, 112, 780)
+      ..close();
+    canvas.drawPath(fin, paint);
+    canvas.drawPath(wave, paint);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_BrandMarkPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
 
 class InstrumentHeaderBar extends StatelessWidget
     implements PreferredSizeWidget {
@@ -24,9 +83,9 @@ class InstrumentHeaderBar extends StatelessWidget
     return AppBar(
       automaticallyImplyLeading: false,
       toolbarHeight: preferredSize.height,
-      backgroundColor: InstrumentColors.header,
+      backgroundColor: context.terminal.header,
       surfaceTintColor: Colors.transparent,
-      shape: const Border(bottom: BorderSide(color: InstrumentColors.line)),
+      shape: Border(bottom: BorderSide(color: context.terminal.line)),
       titleSpacing: showBack ? 4 : 16,
       leading: showBack
           ? IconButton(
@@ -37,23 +96,14 @@ class InstrumentHeaderBar extends StatelessWidget
           : null,
       title: Row(
         children: [
-          const SizedBox(
-            width: 10,
-            height: 18,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: InstrumentColors.accent,
-                borderRadius: BorderRadius.all(Radius.circular(2)),
-              ),
-            ),
-          ),
+          const BrandMark(),
           const SizedBox(width: 10),
           Flexible(
             child: Text(
-              'toauner',
+              'SharkTune',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: InstrumentTypeTheme.standard.body.copyWith(
+              style: context.instrumentType.body.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -68,8 +118,8 @@ class InstrumentHeaderBar extends StatelessWidget
               section,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: InstrumentTypeTheme.standard.caption.copyWith(
-                color: InstrumentColors.muted,
+              style: context.instrumentType.caption.copyWith(
+                color: context.terminal.muted,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -104,9 +154,9 @@ class InstrumentStatusBar extends StatelessWidget {
       child: Container(
         constraints: const BoxConstraints(minHeight: 32),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-        decoration: const BoxDecoration(
-          color: InstrumentColors.header,
-          border: Border(top: BorderSide(color: InstrumentColors.line)),
+        decoration: BoxDecoration(
+          color: context.terminal.header,
+          border: Border(top: BorderSide(color: context.terminal.line)),
         ),
         child: Row(
           children: [
@@ -115,8 +165,8 @@ class InstrumentStatusBar extends StatelessWidget {
               height: 7,
               decoration: BoxDecoration(
                 color: active
-                    ? InstrumentColors.accent
-                    : InstrumentColors.amber,
+                    ? context.terminal.accent
+                    : context.terminal.amber,
                 shape: BoxShape.circle,
               ),
             ),
@@ -124,10 +174,10 @@ class InstrumentStatusBar extends StatelessWidget {
             Expanded(
               child: Text(
                 state.toUpperCase(),
-                style: InstrumentTypeTheme.standard.status.copyWith(
+                style: context.instrumentType.status.copyWith(
                   color: active
-                      ? InstrumentColors.accent
-                      : InstrumentColors.amber,
+                      ? context.terminal.accent
+                      : context.terminal.amber,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -139,8 +189,8 @@ class InstrumentStatusBar extends StatelessWidget {
                 maxLines: textScale > 1.3 ? 2 : 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.end,
-                style: InstrumentTypeTheme.standard.status.copyWith(
-                  color: InstrumentColors.muted,
+                style: context.instrumentType.status.copyWith(
+                  color: context.terminal.muted,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -184,8 +234,8 @@ class DefinitionRow extends StatelessWidget {
     return Container(
       constraints: const BoxConstraints(minHeight: 44),
       padding: const EdgeInsets.symmetric(vertical: 11),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: InstrumentColors.line)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: context.terminal.line)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,8 +244,8 @@ class DefinitionRow extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: InstrumentTypeTheme.standard.body.copyWith(
-                color: valueColor ?? InstrumentColors.text,
+              style: context.instrumentType.body.copyWith(
+                color: valueColor ?? context.terminal.text,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -219,7 +269,7 @@ class VerificationBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final verified = status == SongVerificationStatus.verified;
-    final color = verified ? InstrumentColors.accent : InstrumentColors.amber;
+    final color = verified ? context.terminal.accent : context.terminal.amber;
     final label = verified
         ? '검증된 튜닝 ✓'
         : showDevelopmentStatus
@@ -236,7 +286,7 @@ class VerificationBadge extends StatelessWidget {
         const SizedBox(width: 7),
         Text(
           label,
-          style: InstrumentTypeTheme.standard.status.copyWith(
+          style: context.instrumentType.status.copyWith(
             color: color,
             fontWeight: FontWeight.w500,
           ),
@@ -270,8 +320,8 @@ class TuningNoteCell extends StatelessWidget {
     final width = 48 + 12 * (textScale - 1);
     final height = 52 + 32 * (textScale - 1);
     final foreground = active
-        ? InstrumentColors.accentInk
-        : InstrumentColors.text;
+        ? context.terminal.accentInk
+        : context.terminal.text;
     return Semantics(
       button: onTap != null,
       selected: active,
@@ -280,13 +330,15 @@ class TuningNoteCell extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(3),
         child: AnimatedContainer(
-          duration: InstrumentMotion.instrument,
+          duration: shouldReduceMotion(context)
+              ? Duration.zero
+              : InstrumentMotion.instrument,
           width: width,
           height: height,
           decoration: BoxDecoration(
-            color: active ? InstrumentColors.accent : InstrumentColors.panel,
+            color: active ? context.terminal.accent : context.terminal.panel,
             border: Border.all(
-              color: active ? InstrumentColors.accent : InstrumentColors.line,
+              color: active ? context.terminal.accent : context.terminal.line,
             ),
             borderRadius: BorderRadius.circular(3),
           ),
@@ -298,9 +350,9 @@ class TuningNoteCell extends StatelessWidget {
                   children: [
                     Text(
                       label,
-                      style: InstrumentTypeTheme.standard.caption.copyWith(
+                      style: context.instrumentType.caption.copyWith(
                         color: foreground,
-                        fontFamily: 'D2Coding',
+                        fontFamily: 'IBM Plex Mono',
                         height: 1,
                         fontWeight: FontWeight.w700,
                       ),
@@ -308,10 +360,10 @@ class TuningNoteCell extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       '$stringNumber',
-                      style: InstrumentTypeTheme.standard.status.copyWith(
+                      style: context.instrumentType.status.copyWith(
                         color: active
-                            ? InstrumentColors.accentInk
-                            : InstrumentColors.muted,
+                            ? context.terminal.accentInk
+                            : context.terminal.muted,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -324,10 +376,10 @@ class TuningNoteCell extends StatelessWidget {
                   right: 3,
                   child: Text(
                     '✓',
-                    style: InstrumentTypeTheme.standard.status.copyWith(
+                    style: context.instrumentType.status.copyWith(
                       color: active
-                          ? InstrumentColors.accentInk
-                          : InstrumentColors.lockHold,
+                          ? context.terminal.accentInk
+                          : context.terminal.lockHold,
                       height: 1,
                       fontWeight: FontWeight.w700,
                     ),
@@ -369,17 +421,22 @@ class PitchTape extends StatelessWidget {
       value: cents == null ? '측정값 없음' : '${cents!.toStringAsFixed(1)} 센트',
       child: RepaintBoundary(
         child: Container(
-          height: 104,
+          height: 88,
           decoration: BoxDecoration(
             color: locked
-                ? InstrumentColors.accent.withValues(alpha: 0.08)
-                : InstrumentColors.sunken,
+                ? context.terminal.accent.withValues(alpha: 0.08)
+                : context.terminal.sunken,
             border: Border.all(
-              color: locked ? InstrumentColors.lockHold : InstrumentColors.line,
+              color: locked ? context.terminal.lockHold : context.terminal.line,
             ),
           ),
           child: CustomPaint(
-            painter: _PitchTapePainter(cents: cents, locked: locked),
+            painter: _PitchTapePainter(
+              cents: cents,
+              locked: locked,
+              terminal: context.terminal,
+              type: context.instrumentType,
+            ),
           ),
         ),
       ),
@@ -388,10 +445,17 @@ class PitchTape extends StatelessWidget {
 }
 
 class _PitchTapePainter extends CustomPainter {
-  const _PitchTapePainter({required this.cents, required this.locked});
+  const _PitchTapePainter({
+    required this.cents,
+    required this.locked,
+    required this.terminal,
+    required this.type,
+  });
 
   final double? cents;
   final bool locked;
+  final TerminalTheme terminal;
+  final InstrumentTypeTheme type;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -399,17 +463,16 @@ class _PitchTapePainter extends CustomPainter {
     final tapeWidth = size.width - horizontalPadding * 2;
     double xForCents(double cents) =>
         horizontalPadding + tapeWidth * (cents.clamp(-50, 50) + 50) / 100;
-    final greenZone = Paint()
-      ..color = InstrumentColors.accent.withValues(alpha: 0.09);
+    final greenZone = Paint()..color = terminal.accent.withValues(alpha: 0.09);
     canvas.drawRect(
       Rect.fromLTRB(xForCents(-5), 8, xForCents(5), size.height - 22),
       greenZone,
     );
     final minor = Paint()
-      ..color = InstrumentColors.line
+      ..color = terminal.line
       ..strokeWidth = 1;
     final center = Paint()
-      ..color = InstrumentColors.muted
+      ..color = terminal.muted
       ..strokeWidth = 2;
     for (var index = 0; index <= 20; index++) {
       final x = horizontalPadding + tapeWidth * index / 20;
@@ -440,12 +503,12 @@ class _PitchTapePainter extends CustomPainter {
       final absoluteCents = measuredCents.abs();
       final marker = Paint()
         ..color = locked
-            ? InstrumentColors.lockHold
+            ? terminal.lockHold
             : absoluteCents <= 5
-            ? InstrumentColors.accent
+            ? terminal.accent
             : absoluteCents <= 15
-            ? InstrumentColors.text
-            : InstrumentColors.amber
+            ? terminal.text
+            : terminal.amber
         ..strokeWidth = 3;
       canvas.drawLine(Offset(x, 8), Offset(x, 69), marker);
       final triangle = Path()
@@ -471,7 +534,7 @@ class _PitchTapePainter extends CustomPainter {
         canvas.drawPath(
           chevron,
           Paint()
-            ..color = InstrumentColors.amber
+            ..color = terminal.amber
             ..style = PaintingStyle.stroke
             ..strokeWidth = 3
             ..strokeCap = StrokeCap.round,
@@ -489,8 +552,8 @@ class _PitchTapePainter extends CustomPainter {
     final painter = TextPainter(
       text: TextSpan(
         text: label,
-        style: InstrumentTypeTheme.standard.status.copyWith(
-          color: InstrumentColors.muted,
+        style: type.status.copyWith(
+          color: terminal.muted,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -507,6 +570,9 @@ class _PitchTapePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _PitchTapePainter oldDelegate) {
-    return oldDelegate.cents != cents || oldDelegate.locked != locked;
+    return oldDelegate.cents != cents ||
+        oldDelegate.locked != locked ||
+        oldDelegate.terminal != terminal ||
+        oldDelegate.type != type;
   }
 }
