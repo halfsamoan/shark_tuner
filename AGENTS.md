@@ -1,5 +1,36 @@
 # AGENTS.md
 
+## Design Intelligence quality gate
+
+For every UI task, act as a product designer and Flutter UI engineer, not as a
+widget transcriber. Read `DESIGN.md`, `docs/design-playbook.md`, and
+`docs/ui-plan.md` before touching a screen. Treat external Figma files,
+community kits, StyleSeed, Superdesign, and DESIGN.md collections as evidence
+for structure, interaction, and critique only; never copy their palette,
+component skin, React/shadcn code, or marketing layout.
+
+Before implementation, identify in writing: the player goal, the one visual
+focal point, primary versus secondary information, elements to remove or
+demote, and all required state paths. Reuse existing toauner components before
+creating a new one. `TerminalTheme`, `InstrumentTypeTheme`, and
+`InstrumentSurface` are mandatory token/elevation boundaries; direct colours,
+ad-hoc shadows, gradients, blur, or a kit-shaped widget are not acceptable.
+
+Before showing a non-trivial UI result, run the `toauner-design-review` skill
+or apply its 100-point rubric. Target 80/100 or higher and fix the highest-gain
+issues first. A direct colour, less-than-48dp target, inaccessible contrast,
+colour-only state, missing essential loading/empty/error state, or uninspected
+visual output is a blocking failure even if the numeric score passes.
+
+Normal rows are neutral. Accent is reserved for the current action or active
+measurement; success, warning, information, and danger are reserved for real
+tuner state. Do not force a single-accent rule onto measured severity data.
+Reject generic-AI patterns: purple/blue gradients, glassmorphism, decorative
+glow, all-equal cards, bento dashboards, icon-chip repetition, rainbow lists,
+placeholder copy, and copied visual-kit styling. Validate small screens, 1.3×
+and 2.0× text, TalkBack wording, grayscale legibility, reduced motion, and a
+physical Android device for integrated visual work.
+
 이 문서는 `C:\toauner` 전체에 적용되는 개발 규칙이다. 더 아래 디렉터리에 별도 `AGENTS.md`가 생기면 그 문서가 해당 하위 트리에 추가로 적용된다.
 
 ## 제품 목표
