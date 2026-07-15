@@ -19,6 +19,7 @@ import '../tuning_history/tuning_history_model.dart';
 import '../tuning_history/tuning_history_screen.dart';
 import '../tuning_history/tuning_history_store.dart';
 import '../ui/instrument_bottom_sheet.dart';
+import '../ui/instrument_surface.dart';
 import '../ui/instrument_widgets.dart';
 import '../ui/tool_menu_sheet.dart';
 import 'song_detail_screen.dart';
@@ -533,11 +534,11 @@ class _QuickTunePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return InstrumentSurface(
+      level: InstrumentSurfaceLevel.raised,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
-      decoration: BoxDecoration(
-        color: context.terminal.panel,
-        border: Border.all(color: context.terminal.line),
+      borderRadius: const BorderRadius.all(
+        Radius.circular(InstrumentMetrics.radius16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -548,9 +549,8 @@ class _QuickTunePanel extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             'E2   A2   D3   G3   B3   E4',
-            style: context.instrumentType.status.copyWith(
+            style: context.instrumentType.measurement.copyWith(
               color: context.terminal.textSecondary,
-              letterSpacing: .7,
             ),
           ),
           const SizedBox(height: 16),
@@ -565,28 +565,34 @@ class _QuickTunePanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+          Row(
             children: [
-              ActionChip(
-                key: const Key('quick-tune-eb'),
-                onPressed: enabled
-                    ? () => onSelected(BuiltInTunings.eFlatStandard)
-                    : null,
-                label: const Text('E♭ Standard'),
+              Expanded(
+                child: _QuickTunePresetButton(
+                  key: const Key('quick-tune-eb'),
+                  onPressed: enabled
+                      ? () => onSelected(BuiltInTunings.eFlatStandard)
+                      : null,
+                  label: 'E♭',
+                ),
               ),
-              ActionChip(
-                key: const Key('quick-tune-drop-d'),
-                onPressed: enabled
-                    ? () => onSelected(BuiltInTunings.dropD)
-                    : null,
-                label: const Text('Drop D'),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _QuickTunePresetButton(
+                  key: const Key('quick-tune-drop-d'),
+                  onPressed: enabled
+                      ? () => onSelected(BuiltInTunings.dropD)
+                      : null,
+                  label: 'Drop D',
+                ),
               ),
-              ActionChip(
-                key: const Key('quick-tune-more'),
-                onPressed: enabled ? () => _showPresetPicker(context) : null,
-                label: const Text('다른 튜닝'),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _QuickTunePresetButton(
+                  key: const Key('quick-tune-more'),
+                  onPressed: enabled ? () => _showPresetPicker(context) : null,
+                  label: '더보기',
+                ),
               ),
             ],
           ),
@@ -613,6 +619,37 @@ class _QuickTunePanel extends StatelessWidget {
           Navigator.of(sheetContext).pop();
           onSelected(tuning);
         },
+      ),
+    );
+  }
+}
+
+class _QuickTunePresetButton extends StatelessWidget {
+  const _QuickTunePresetButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 48,
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          minimumSize: const Size(0, 48),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(
+              Radius.circular(InstrumentMetrics.radius8),
+            ),
+          ),
+        ),
+        child: Text(label),
       ),
     );
   }

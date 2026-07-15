@@ -45,6 +45,17 @@ void main() {
       expect(find.text('곡별 튜닝이 필요하신가요?'), findsNothing);
       expect(find.text('곡명이나 아티스트를 검색하면 저장된 튜닝과 카포 정보를 불러옵니다.'), findsNothing);
 
+      for (final key in const [
+        Key('quick-tune-eb'),
+        Key('quick-tune-drop-d'),
+        Key('quick-tune-more'),
+      ]) {
+        expect(
+          tester.getSize(find.byKey(key)).height,
+          greaterThanOrEqualTo(48),
+        );
+      }
+
       await _openSongSearch(tester);
 
       expect(find.byKey(const Key('song-search-field')), findsOneWidget);

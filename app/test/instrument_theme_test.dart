@@ -123,6 +123,7 @@ void main() {
     expect(InstrumentMetrics.radius2, 2);
     expect(InstrumentMetrics.radius3, 3);
     expect(InstrumentMetrics.radius4, 4);
+    expect(InstrumentMetrics.radius8, 8);
     expect(InstrumentMetrics.radius16, 16);
     expect(InstrumentMetrics.strokeHairline, 1);
     expect(InstrumentMetrics.strokeEmphasis, 2);
@@ -131,30 +132,52 @@ void main() {
     expect(InstrumentMotion.lockFlash, const Duration(milliseconds: 350));
   });
 
-  test('interactive controls keep the compact instrument corner language', () {
-    for (final id in SharkTuneThemeId.values) {
-      final theme = buildInstrumentTheme(id);
-      final outlinedShape = theme.outlinedButtonTheme.style!.shape!.resolve({});
-      final textShape = theme.textButtonTheme.style!.shape!.resolve({});
-      final chipShape = theme.chipTheme.shape;
+  test(
+    'general controls use calm tactile surfaces without changing tuner geometry',
+    () {
+      for (final id in SharkTuneThemeId.values) {
+        final theme = buildInstrumentTheme(id);
+        final terminal = theme.extension<TerminalTheme>()!;
+        final filledShape = theme.filledButtonTheme.style!.shape!.resolve({});
+        final outlinedShape = theme.outlinedButtonTheme.style!.shape!.resolve(
+          {},
+        );
+        final textShape = theme.textButtonTheme.style!.shape!.resolve({});
+        final chipShape = theme.chipTheme.shape;
 
-      expect(
-        (outlinedShape! as RoundedRectangleBorder).borderRadius,
-        const BorderRadius.all(Radius.circular(2)),
-        reason: '${id.name}: outlined button',
-      );
-      expect(
-        (textShape! as RoundedRectangleBorder).borderRadius,
-        const BorderRadius.all(Radius.circular(2)),
-        reason: '${id.name}: text button',
-      );
-      expect(
-        (chipShape! as RoundedRectangleBorder).borderRadius,
-        const BorderRadius.all(Radius.circular(2)),
-        reason: '${id.name}: chip',
-      );
-    }
-  });
+        expect(
+          (filledShape! as RoundedRectangleBorder).borderRadius,
+          const BorderRadius.all(Radius.circular(8)),
+          reason: '${id.name}: filled button',
+        );
+        expect(
+          (outlinedShape! as RoundedRectangleBorder).borderRadius,
+          const BorderRadius.all(Radius.circular(8)),
+          reason: '${id.name}: outlined button',
+        );
+        expect(
+          (textShape! as RoundedRectangleBorder).borderRadius,
+          const BorderRadius.all(Radius.circular(8)),
+          reason: '${id.name}: text button',
+        );
+        expect(
+          (chipShape! as RoundedRectangleBorder).borderRadius,
+          const BorderRadius.all(Radius.circular(8)),
+          reason: '${id.name}: chip',
+        );
+        expect(
+          theme.outlinedButtonTheme.style!.backgroundColor!.resolve({}),
+          terminal.panel,
+          reason: '${id.name}: outlined surface',
+        );
+        expect(
+          theme.filledButtonTheme.style!.side!.resolve({})!.color,
+          terminal.accentEdge,
+          reason: '${id.name}: filled edge',
+        );
+      }
+    },
+  );
 }
 
 double _contrast(Color first, Color second) {
