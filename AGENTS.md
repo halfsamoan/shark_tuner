@@ -97,6 +97,22 @@ UI를 구현하기 전에 다음을 검토한다.
 - 계층 없는 빽빽한 dashboard, 모든 카드가 같은 중요도로 보이는 구성, 기본 키트/Figma 선택물의 직접 복제를 금지한다.
 - 튜너를 crypto dashboard처럼 만들지 않는다.
 
+### Design Contract와 품질 게이트
+
+- UI 작업 전 루트 `DESIGN.md`, `docs/design-playbook.md`, `docs/ui-plan.md`를 읽는다.
+  `DESIGN.md`는 화면 위계·간격·버튼 상태·금지 패턴의 프로젝트 계약이고, 정확한
+  색·타입 값은 `instrument_theme.dart`의 토큰이 단일 진실의 원천이다.
+- Figma/커뮤니티 키트는 구조, 상호작용, 간격, 상태를 분석하기 위한 참고일 뿐이다.
+  원본의 palette, 폰트, 컴포넌트 외형, 마케팅 레이아웃을 직접 복제하지 않는다.
+- 구현 전에는 사용자 목표, 첫 시선의 정보, 제거할 요소를 판단한다. 구현 뒤에는
+  기본/pressed/focused/disabled/loading/empty/error/success 상태와 48dp·대비·텍스트
+  확대·TalkBack·그레이스케일을 확인한다.
+- gradient, gradient text, glass/backdrop blur, 장식용 glow, 균일한 큰 radius와
+  shadow의 카드 반복, 의미 없는 dashboard/bento, 기본 키트 외형, 모호한 CTA를
+  새 UI에 넣지 않는다. 그림자는 `InstrumentSurface`에서 실제 elevation에만 쓴다.
+- 시각적 완료는 렌더·골든 또는 실기기 캡처를 직접 확인한 뒤에만 주장한다. 각 디자인
+  변경은 AI 티 감사(P0/P1), 테스트, 필요 시 실기기 대조를 거친다.
+
 ### toauner 기본 시각 토큰
 
 다른 작업이 명시적으로 바꾸지 않는 한 다음은 기본 설계 방향이다. 실제 hex 선언은 `app/lib/src/app/instrument_theme.dart`의 테마 계약에서만 관리하며, 유명 테마 색을 그대로 사용하지 않는다.

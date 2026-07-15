@@ -46,6 +46,8 @@ void main() {
         'LinearGradient(': 'generic gradient',
         'RadialGradient(': 'generic gradient',
         'SweepGradient(': 'generic gradient',
+        'BackdropFilter(': 'glassmorphism',
+        'ImageFilter.blur(': 'decorative blur',
       }.entries) {
         if (source.contents.contains(forbidden.key)) {
           violations.add('${source.path}: ${forbidden.value}');
