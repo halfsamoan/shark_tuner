@@ -786,7 +786,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                 final coreContent = Column(
                   children: [
                     Container(
-                      height: 34,
+                      height: widget.includeUnverifiedSongs ? 48 : 34,
                       alignment: Alignment.centerLeft,
                       padding: const EdgeInsets.symmetric(horizontal: 10),
                       decoration: BoxDecoration(
@@ -811,11 +811,10 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                               key: const Key('dev-diagnostics'),
                               onPressed: _showDiagnostics,
                               style: TextButton.styleFrom(
-                                minimumSize: const Size(0, 30),
+                                minimumSize: const Size(48, 48),
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 6,
                                 ),
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
                               child: Text(
                                 'DEV·진단',
@@ -919,11 +918,10 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                             key: const Key('resume-auto-detection'),
                             onPressed: _resumeAutoDetection,
                             style: TextButton.styleFrom(
-                              minimumSize: const Size(0, 28),
+                              minimumSize: const Size(48, 48),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 7,
                               ),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                             child: Text(
                               '자동 인식으로 전환',
@@ -1040,7 +1038,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     final profile = _activeInstrumentProfile;
     if (profile == null) {
       return const _PegDirectionPresentation(
-        label: '내 기타를 설정하면 시계·반시계 방향도 알려드려요',
+        label: '페그 방향을 설정할 수 있어요',
         needsSetup: true,
       );
     }

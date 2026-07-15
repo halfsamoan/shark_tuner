@@ -40,6 +40,7 @@ void main() {
     }
     expect(find.bySemanticsLabel('곡 튜닝 찾기, 곡명 · 아티스트'), findsOneWidget);
     expect(find.bySemanticsLabel('햅틱, 잠금을 진동으로 알림, 꺼짐'), findsOneWidget);
+    expect(find.text('열기'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('action-row')));
     await tester.tap(find.byKey(const Key('toggle-row')));

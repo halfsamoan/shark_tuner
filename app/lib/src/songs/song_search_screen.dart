@@ -223,10 +223,7 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
       key: const Key('free-tuning-home'),
       padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
       children: [
-        InstrumentSectionLabel(
-          'READY / FREE TUNING',
-          color: context.terminal.accent,
-        ),
+        InstrumentSectionLabel('자유 튜닝', color: context.terminal.accent),
         const SizedBox(height: 10),
         Text('튜닝 시작', style: context.instrumentType.title),
         const SizedBox(height: 8),
@@ -554,7 +551,7 @@ class _QuickTunePanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const InstrumentSectionLabel('6현 기타 / 기본'),
+          const InstrumentSectionLabel('6현 기타 · 기본'),
           const SizedBox(height: 8),
           Text('E Standard', style: context.instrumentType.subhead),
           const SizedBox(height: 4),

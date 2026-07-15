@@ -37,6 +37,8 @@ void main() {
       expect(find.byType(EditableText), findsNothing);
       expect(find.text('Eruption'), findsNothing);
       expect(find.text('튜닝 시작'), findsOneWidget);
+      expect(find.text('자유 튜닝'), findsOneWidget);
+      expect(find.text('READY / FREE TUNING'), findsNothing);
       expect(find.text('기본 · 프리셋 · 내 튜닝'), findsOneWidget);
       expect(find.text('곡 검색'), findsOneWidget);
       expect(find.text('곡 튜닝 찾기'), findsOneWidget);
@@ -338,6 +340,11 @@ void main() {
     expect(find.text('E-flat Standard'), findsOneWidget);
     expect(find.text('+20 cents'), findsOneWidget);
     expect(find.text('DEV·사람 검증 필요'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('song-tools-group')),
+      240,
+    );
+    expect(find.byKey(const Key('song-tools-group')), findsOneWidget);
 
     final stickyCta = find.byKey(const Key('song-tune-cta'));
     expect(stickyCta, findsOneWidget);
@@ -473,6 +480,7 @@ void main() {
     await tester.tap(find.byKey(const Key('settings-entry')));
     await _pumpFrames(tester);
 
+    expect(find.byKey(const Key('theme-selection-group')), findsOneWidget);
     await tester.ensureVisible(find.byKey(const Key('theme-paper')));
     await tester.tap(find.byKey(const Key('theme-paper')));
     await _pumpFrames(tester);

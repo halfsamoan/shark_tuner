@@ -237,7 +237,7 @@ class _GuidancePanel extends StatelessWidget {
                                   if (pegAction != null) ...[
                                     const SizedBox(width: 8),
                                     Text(
-                                      '$pegActionLabel ›',
+                                      pegActionLabel,
                                       style: context.instrumentType.status
                                           .copyWith(
                                             color: context.terminal.accent,

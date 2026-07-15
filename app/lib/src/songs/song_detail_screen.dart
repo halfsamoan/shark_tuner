@@ -9,6 +9,7 @@ import '../tension/tension_recommendation_screen.dart';
 import '../tuner/live_tuner_engine.dart';
 import '../tuner/precision_tuner_screen.dart';
 import '../tuning_history/tuning_history_store.dart';
+import '../ui/instrument_surface.dart';
 import '../ui/instrument_widgets.dart';
 
 class SongDetailScreen extends StatelessWidget {
@@ -107,17 +108,30 @@ class SongDetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 22),
-            _MetronomeEntry(songId: song.id), // (Claude)
-            const SizedBox(height: 22),
-            _TensionRecommendationEntry(
-              tuning: tuning,
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => TensionRecommendationScreen(tuning: tuning),
+            const InstrumentSectionLabel('도구'),
+            const SizedBox(height: 8),
+            InstrumentSurface(
+              key: const Key('song-tools-group'),
+              level: InstrumentSurfaceLevel.raised,
+              borderRadius: const BorderRadius.all(
+                Radius.circular(InstrumentMetrics.radius12),
+              ),
+              child: Column(
+                children: [
+                  _MetronomeEntry(songId: song.id),
+                  _TensionRecommendationEntry(
+                    tuning: tuning,
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              TensionRecommendationScreen(tuning: tuning),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
+                ],
+              ),
             ),
             const SizedBox(height: 22),
             _VerificationNotice(
@@ -171,57 +185,13 @@ class _MetronomeEntry extends StatelessWidget {
       future: loadSongBpmIndex(),
       builder: (context, snapshot) {
         final bpm = snapshot.data?[songId];
-        return Semantics(
-          button: true,
-          label: bpm == null ? '메트로놈 열기' : '$bpm BPM 메트로놈 열기',
-          child: InkWell(
-            key: const Key('song-metronome-cta'),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => MetronomeScreen(initialBpm: bpm ?? 120),
-              ),
-            ),
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(12, 11, 10, 11),
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: context.terminal.line),
-                  bottom: BorderSide(color: context.terminal.line),
-                  left: BorderSide(color: context.terminal.accent, width: 3),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '메트로놈',
-                          style: context.instrumentType.caption.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          bpm == null ? '탭으로 속도 맞추기' : '연습 템포',
-                          style: context.instrumentType.status.copyWith(
-                            color: context.terminal.muted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    bpm == null ? '♩ 열기 ›' : '♩ = $bpm ›',
-                    style: context.instrumentType.status.copyWith(
-                      fontFamily: 'IBM Plex Mono',
-                      color: context.terminal.accent,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
+        return InstrumentActionRow(
+          rowKey: const Key('song-metronome-cta'),
+          label: '메트로놈',
+          detail: bpm == null ? '탭으로 속도 설정' : '$bpm BPM',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => MetronomeScreen(initialBpm: bpm ?? 120),
             ),
           ),
         );
@@ -241,54 +211,11 @@ class _TensionRecommendationEntry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: '${tuning.name} 장력과 게이지 추천 열기',
-      child: InkWell(
-        key: const Key('gauge-recommendation-cta'),
-        onTap: onPressed,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(12, 11, 10, 11),
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(color: context.terminal.line),
-              bottom: BorderSide(color: context.terminal.line),
-              left: BorderSide(color: context.terminal.accent, width: 3),
-            ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '장력 · 게이지',
-                      style: context.instrumentType.caption.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      '상위 3개 조합',
-                      style: context.instrumentType.status.copyWith(
-                        color: context.terminal.muted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                '계산 ›',
-                style: context.instrumentType.status.copyWith(
-                  color: context.terminal.accent,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return InstrumentActionRow(
+      rowKey: const Key('gauge-recommendation-cta'),
+      label: '장력 · 게이지',
+      detail: '${tuning.name} · 상위 3개 조합',
+      onTap: onPressed,
     );
   }
 }
@@ -346,48 +273,42 @@ class _VerificationNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final verified = song.verificationStatus == SongVerificationStatus.verified;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 13, 14, 13),
-      decoration: BoxDecoration(
-        color: context.terminal.panel,
-        border: Border(
-          left: BorderSide(
-            color: verified ? context.terminal.accent : context.terminal.amber,
-            width: 3,
-          ),
-          top: BorderSide(color: context.terminal.line),
-          right: BorderSide(color: context.terminal.line),
-          bottom: BorderSide(color: context.terminal.line),
-        ),
+    return InstrumentSurface(
+      level: InstrumentSurfaceLevel.panel,
+      borderRadius: const BorderRadius.all(
+        Radius.circular(InstrumentMetrics.radius12),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            verified
-                ? '검증됨 ✓'
-                : showDevelopmentStatus
-                ? 'DEV·출처 확인 전 후보 데이터'
-                : '튜닝 확인 중',
-            style: context.instrumentType.caption.copyWith(
-              color: verified
-                  ? context.terminal.accent
-                  : context.terminal.amber,
-              fontWeight: FontWeight.w600,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 13, 14, 13),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              verified
+                  ? '검증됨 ✓'
+                  : showDevelopmentStatus
+                  ? 'DEV·출처 확인 전 후보 데이터'
+                  : '튜닝 확인 중',
+              style: context.instrumentType.caption.copyWith(
+                color: verified
+                    ? context.terminal.accent
+                    : context.terminal.amber,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            verified
-                ? '출처 ${song.sources.length}개 확인'
-                : showDevelopmentStatus
-                ? 'DEV·독립 출처와 사람 검증 전에는 출시 곡에 포함되지 않습니다.'
-                : '확인이 끝난 곡만 검색 결과에 표시됩니다.',
-            style: context.instrumentType.status.copyWith(
-              color: context.terminal.muted,
+            const SizedBox(height: 5),
+            Text(
+              verified
+                  ? '출처 ${song.sources.length}개 확인'
+                  : showDevelopmentStatus
+                  ? 'DEV·독립 출처와 사람 검증 전에는 출시 곡에 포함되지 않습니다.'
+                  : '확인이 끝난 곡만 검색 결과에 표시됩니다.',
+              style: context.instrumentType.status.copyWith(
+                color: context.terminal.muted,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

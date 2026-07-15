@@ -372,9 +372,10 @@ class InstrumentActionRow extends StatelessWidget {
                 const SizedBox(width: 12),
                 trailing ??
                     Text(
-                      '›',
-                      style: context.instrumentType.subhead.copyWith(
+                      '열기',
+                      style: context.instrumentType.status.copyWith(
                         color: context.terminal.accent,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
               ],

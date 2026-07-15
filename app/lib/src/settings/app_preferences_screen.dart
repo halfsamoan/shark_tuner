@@ -29,14 +29,30 @@ class AppPreferencesScreen extends StatelessWidget {
             const SizedBox(height: 24),
             const InstrumentSectionLabel('테마'),
             const SizedBox(height: 10),
-            for (final themeId in SharkTuneThemeId.values) ...[
-              ThemeTile(
-                themeId: themeId,
-                selected: preferences.themeId == themeId,
-                onTap: () => controller.setTheme(themeId),
+            InstrumentSurface(
+              key: const Key('theme-selection-group'),
+              level: InstrumentSurfaceLevel.raised,
+              borderRadius: const BorderRadius.all(
+                Radius.circular(InstrumentMetrics.radius12),
               ),
-              const SizedBox(height: 8),
-            ],
+              child: Column(
+                children: [
+                  for (
+                    var index = 0;
+                    index < SharkTuneThemeId.values.length;
+                    index++
+                  )
+                    ThemeTile(
+                      themeId: SharkTuneThemeId.values[index],
+                      selected:
+                          preferences.themeId == SharkTuneThemeId.values[index],
+                      showDivider: index < SharkTuneThemeId.values.length - 1,
+                      onTap: () =>
+                          controller.setTheme(SharkTuneThemeId.values[index]),
+                    ),
+                ],
+              ),
+            ),
             const SizedBox(height: 18),
             const InstrumentSectionLabel('튜너 허용치'),
             const SizedBox(height: 10),
@@ -113,11 +129,13 @@ class ThemeTile extends StatelessWidget {
     super.key,
     required this.themeId,
     required this.selected,
+    required this.showDivider,
     required this.onTap,
   });
 
   final SharkTuneThemeId themeId;
   final bool selected;
+  final bool showDivider;
   final VoidCallback onTap;
 
   @override
@@ -127,51 +145,55 @@ class ThemeTile extends StatelessWidget {
       button: true,
       selected: selected,
       label: '${themeId.label} 테마${selected ? ', 선택됨' : ''}',
-      child: InkWell(
-        key: Key('theme-${themeId.name}'),
-        onTap: onTap,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 76),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: selected ? context.terminal.raised : context.terminal.panel,
-            border: Border.all(
-              width: selected ? 2 : 1,
-              color: selected ? context.terminal.accent : context.terminal.line,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: Key('theme-${themeId.name}'),
+          onTap: onTap,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 72),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: selected ? context.terminal.header : Colors.transparent,
+              border: selected
+                  ? Border.all(color: context.terminal.accent, width: 1)
+                  : showDivider
+                  ? Border(bottom: BorderSide(color: context.terminal.line))
+                  : null,
             ),
-          ),
-          child: Row(
-            children: [
-              _ThemePreview(theme: preview),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      themeId.label,
-                      style: context.instrumentType.body.copyWith(
-                        fontWeight: FontWeight.w600,
+            child: Row(
+              children: [
+                _ThemePreview(theme: preview),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        themeId.label,
+                        style: context.instrumentType.body.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    Text(
-                      themeId.description,
-                      style: context.instrumentType.caption.copyWith(
-                        color: context.terminal.textSecondary,
+                      Text(
+                        themeId.description,
+                        style: context.instrumentType.caption.copyWith(
+                          color: context.terminal.textSecondary,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              Text(
-                selected ? '선택됨' : '선택',
-                style: context.instrumentType.status.copyWith(
-                  color: selected
-                      ? context.terminal.accent
-                      : context.terminal.textSecondary,
+                Text(
+                  selected ? '사용 중' : '적용',
+                  style: context.instrumentType.status.copyWith(
+                    color: selected
+                        ? context.terminal.accent
+                        : context.terminal.textSecondary,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

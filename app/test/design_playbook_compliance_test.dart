@@ -140,6 +140,38 @@ void main() {
 
     expect(violations, isEmpty);
   });
+
+  test(
+    'song detail uses content hierarchy instead of decorative accent stripes',
+    () {
+      final source = _productionDartSources().singleWhere(
+        (source) => source.path.endsWith('songs\\song_detail_screen.dart'),
+      );
+
+      expect(source.contents, isNot(contains('left: BorderSide(')));
+    },
+  );
+
+  test('production action labels do not glue raw arrow glyphs to copy', () {
+    final violations = _productionDartSources()
+        .where((source) => source.contents.contains('›'))
+        .map((source) => source.path)
+        .toList();
+
+    expect(violations, isEmpty);
+  });
+
+  test('touch controls do not opt out of the 48dp target contract', () {
+    final violations = _productionDartSources()
+        .where(
+          (source) =>
+              source.contents.contains('MaterialTapTargetSize.shrinkWrap'),
+        )
+        .map((source) => source.path)
+        .toList();
+
+    expect(violations, isEmpty);
+  });
 }
 
 const _legacyThemeAllowlist = <String>{};
