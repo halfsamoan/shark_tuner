@@ -212,8 +212,12 @@ class InstrumentSectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      label.toUpperCase(),
-      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color),
+      label,
+      style: context.instrumentType.status.copyWith(
+        color: color ?? context.terminal.textSecondary,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.25,
+      ),
     );
   }
 }

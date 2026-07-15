@@ -34,13 +34,13 @@ void main() {
       expect(find.byKey(const Key('free-tuning-home')), findsOneWidget);
       expect(find.byKey(const Key('quick-tune-standard')), findsOneWidget);
       expect(find.byKey(const Key('custom-tuning-entry')), findsOneWidget);
+      expect(find.text('E Standard로 튜닝'), findsOneWidget);
       expect(find.byType(EditableText), findsNothing);
       expect(find.text('Eruption'), findsNothing);
-      expect(find.text('튜닝 시작'), findsOneWidget);
-      expect(find.text('자유 튜닝'), findsOneWidget);
+      expect(find.text('바로 튜닝'), findsOneWidget);
       expect(find.text('READY / FREE TUNING'), findsNothing);
-      expect(find.text('기본 · 프리셋 · 내 튜닝'), findsOneWidget);
-      expect(find.text('곡 검색'), findsOneWidget);
+      expect(find.text('기본 설정에서 시작하거나 프리셋을 고르세요.'), findsOneWidget);
+      expect(find.text('곡으로 찾기'), findsOneWidget);
       expect(find.text('곡 튜닝 찾기'), findsOneWidget);
       expect(find.text('곡명 · 아티스트'), findsOneWidget);
       expect(find.text('곡에 맞춰 튜닝'), findsNothing);
@@ -51,6 +51,7 @@ void main() {
         Key('quick-tune-eb'),
         Key('quick-tune-drop-d'),
         Key('quick-tune-more'),
+        Key('custom-tuning-entry'),
       ]) {
         expect(
           tester.getSize(find.byKey(key)).height,

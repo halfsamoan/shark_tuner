@@ -223,12 +223,10 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
       key: const Key('free-tuning-home'),
       padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
       children: [
-        InstrumentSectionLabel('자유 튜닝', color: context.terminal.accent),
-        const SizedBox(height: 10),
-        Text('튜닝 시작', style: context.instrumentType.title),
+        Text('바로 튜닝', style: context.instrumentType.title),
         const SizedBox(height: 8),
         Text(
-          '기본 · 프리셋 · 내 튜닝',
+          '기본 설정에서 시작하거나 프리셋을 고르세요.',
           style: context.instrumentType.caption.copyWith(
             color: context.terminal.textSecondary,
           ),
@@ -240,7 +238,7 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
           onCustom: _openCustomTuning,
         ),
         const SizedBox(height: 28),
-        const InstrumentSectionLabel('곡 검색'),
+        const InstrumentSectionLabel('곡으로 찾기'),
         const SizedBox(height: 10),
         InstrumentActionRow(
           rowKey: const Key('song-search-entry'),
@@ -569,50 +567,51 @@ class _QuickTunePanel extends StatelessWidget {
               onPressed: enabled
                   ? () => onSelected(BuiltInTunings.standardGuitar)
                   : null,
-              child: const Text('E Standard로 시작'),
+              child: const Text('E Standard로 튜닝'),
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _QuickTunePresetButton(
-                  key: const Key('quick-tune-eb'),
-                  onPressed: enabled
-                      ? () => onSelected(BuiltInTunings.eFlatStandard)
-                      : null,
-                  label: 'E♭',
+          InstrumentSurface(
+            level: InstrumentSurfaceLevel.sunken,
+            borderRadius: const BorderRadius.all(
+              Radius.circular(InstrumentMetrics.radius8),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _QuickTunePresetButton(
+                    key: const Key('quick-tune-eb'),
+                    onPressed: enabled
+                        ? () => onSelected(BuiltInTunings.eFlatStandard)
+                        : null,
+                    label: 'E♭',
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _QuickTunePresetButton(
-                  key: const Key('quick-tune-drop-d'),
-                  onPressed: enabled
-                      ? () => onSelected(BuiltInTunings.dropD)
-                      : null,
-                  label: 'Drop D',
+                Expanded(
+                  child: _QuickTunePresetButton(
+                    key: const Key('quick-tune-drop-d'),
+                    onPressed: enabled
+                        ? () => onSelected(BuiltInTunings.dropD)
+                        : null,
+                    label: 'Drop D',
+                    showLeadingDivider: true,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _QuickTunePresetButton(
-                  key: const Key('quick-tune-more'),
-                  onPressed: enabled ? () => _showPresetPicker(context) : null,
-                  label: '더보기',
+                Expanded(
+                  child: _QuickTunePresetButton(
+                    key: const Key('quick-tune-more'),
+                    onPressed: enabled
+                        ? () => _showPresetPicker(context)
+                        : null,
+                    label: '더보기',
+                    showLeadingDivider: true,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              key: const Key('custom-tuning-entry'),
-              onPressed: enabled ? onCustom : null,
-              child: const Text('내 튜닝 만들기'),
+              ],
             ),
           ),
+          const SizedBox(height: 8),
+          _QuickTuneCustomEntry(enabled: enabled, onTap: onCustom),
         ],
       ),
     );
@@ -637,27 +636,98 @@ class _QuickTunePresetButton extends StatelessWidget {
     super.key,
     required this.label,
     required this.onPressed,
+    this.showLeadingDivider = false,
   });
 
   final String label;
   final VoidCallback? onPressed;
+  final bool showLeadingDivider;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 48,
-      child: OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          minimumSize: const Size(0, 48),
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(
-              Radius.circular(InstrumentMetrics.radius8),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: showLeadingDivider
+            ? Border(left: BorderSide(color: context.terminal.line))
+            : null,
+      ),
+      child: SizedBox(
+        height: 48,
+        child: TextButton(
+          onPressed: onPressed,
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            minimumSize: const Size(0, 48),
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.zero,
+            ),
+          ),
+          child: Text(label),
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickTuneCustomEntry extends StatelessWidget {
+  const _QuickTuneCustomEntry({required this.enabled, required this.onTap});
+
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: const Key('custom-tuning-entry'),
+        onTap: enabled ? onTap : null,
+        borderRadius: const BorderRadius.all(
+          Radius.circular(InstrumentMetrics.radius8),
+        ),
+        child: SizedBox(
+          height: 56,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '내 튜닝',
+                        style: context.instrumentType.body.copyWith(
+                          color: enabled
+                              ? context.terminal.text
+                              : context.terminal.muted,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '현과 음을 직접 설정',
+                        style: context.instrumentType.status.copyWith(
+                          color: context.terminal.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  '설정',
+                  style: context.instrumentType.status.copyWith(
+                    color: enabled
+                        ? context.terminal.accent
+                        : context.terminal.muted,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-        child: Text(label),
       ),
     );
   }
