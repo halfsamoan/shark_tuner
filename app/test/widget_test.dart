@@ -59,6 +59,7 @@ void main() {
       await _openSongSearch(tester);
 
       expect(find.byKey(const Key('song-search-field')), findsOneWidget);
+      expect(find.byKey(const Key('song-result-group')), findsOneWidget);
       expect(find.text('Eruption'), findsOneWidget);
     },
   );

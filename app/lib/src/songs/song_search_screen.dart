@@ -320,9 +320,20 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
             onShowAll: _showAllSongs,
             onSongSelected: _openSong,
           ),
-        if (_error == null)
-          for (final match in _results)
-            _SongResultRow(match: match, onTap: () => _openSong(match)),
+        if (_error == null && _results.isNotEmpty)
+          InstrumentSurface(
+            key: const Key('song-result-group'),
+            level: InstrumentSurfaceLevel.raised,
+            borderRadius: const BorderRadius.all(
+              Radius.circular(InstrumentMetrics.radius12),
+            ),
+            child: Column(
+              children: [
+                for (final match in _results)
+                  _SongResultRow(match: match, onTap: () => _openSong(match)),
+              ],
+            ),
+          ),
         if (widget.includeUnverifiedSongs) ...[
           const SizedBox(height: 16),
           Text(
@@ -767,57 +778,60 @@ class _SongResultRow extends StatelessWidget {
       (_, != 0) => _formatCents(song.centsOffset),
       _ => '${match.tuning.referenceA4Hz.toStringAsFixed(0)} Hz',
     };
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 72),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
-        decoration: BoxDecoration(
-          color: context.terminal.panel,
-          border: Border(bottom: BorderSide(color: context.terminal.line)),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 72),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: context.terminal.line)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      song.title,
+                      style: context.instrumentType.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      song.artist,
+                      style: context.instrumentType.caption.copyWith(
+                        color: context.terminal.muted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    song.title,
-                    style: context.instrumentType.body.copyWith(
+                    match.tuning.name.toUpperCase(),
+                    style: context.instrumentType.status.copyWith(
+                      color: context.terminal.accent,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    song.artist,
-                    style: context.instrumentType.caption.copyWith(
+                    secondary,
+                    style: context.instrumentType.status.copyWith(
                       color: context.terminal.muted,
                     ),
                   ),
                 ],
               ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  match.tuning.name.toUpperCase(),
-                  style: context.instrumentType.status.copyWith(
-                    color: context.terminal.accent,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  secondary,
-                  style: context.instrumentType.status.copyWith(
-                    color: context.terminal.muted,
-                  ),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

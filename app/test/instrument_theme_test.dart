@@ -124,6 +124,7 @@ void main() {
     expect(InstrumentMetrics.radius3, 3);
     expect(InstrumentMetrics.radius4, 4);
     expect(InstrumentMetrics.radius8, 8);
+    expect(InstrumentMetrics.radius12, 12);
     expect(InstrumentMetrics.radius16, 16);
     expect(InstrumentMetrics.strokeHairline, 1);
     expect(InstrumentMetrics.strokeEmphasis, 2);
