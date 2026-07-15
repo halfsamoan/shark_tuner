@@ -154,14 +154,14 @@ Figma 호출 제한이나 외부 장애가 있을 때 Flutter 계약을 임의�
 
 ## 9. 완료 체크리스트
 
-- [ ] 6테마 선택, 재시작 복원, 손상 파일·백업 복구
-- [ ] 본문 4.5:1, 큰 텍스트·정보성 비텍스트 3:1 계산 통과
-- [ ] 직접 색상, 레거시 정적 색·타입 참조, 화면별 BoxShadow 0건
-- [ ] warning과 danger 의미·값 분리
-- [ ] 검색 debounce, clear, 최근 검색, 빈 결과 복구
-- [ ] 도구 메뉴와 설정의 라벨 기반 탐색
-- [ ] 첫 튜너 안내 1회 표시
-- [ ] TalkBack, 48dp, 1.3x·2.0x, 모션 축소, 그레이스케일
-- [ ] 360×780 튜너 골든: Abyss, Paper, Clipping
-- [ ] 전체 `tool/check.ps1`와 Android debug 빌드
-- [ ] 삼성 실기기에서 Abyss, Paper, Clipping 촬영 후 Figma 승인 이미지와 대조
+- [x] 6테마 선택, 재시작 복원, 손상 파일·백업 복구
+- [x] 본문 4.5:1, 큰 텍스트·정보성 비텍스트 3:1 계산 통과
+- [x] 직접 색상, 레거시 정적 색·타입 참조, 화면별 BoxShadow 0건
+- [x] warning과 danger 의미·값 분리
+- [x] 검색 debounce, clear, 최근 검색, 빈 결과 복구
+- [x] 도구 메뉴와 설정의 라벨 기반 탐색
+- [x] 첫 튜너 안내 1회 표시
+- [x] TalkBack, 48dp, 1.3x·2.0x, 모션 축소, 그레이스케일
+- [x] 360×780 튜너 골든: Abyss, Paper, Clipping
+- [x] 전체 `tool/check.ps1`와 Android debug 빌드
+- [ ] 삼성 실기기에서 Abyss, Paper, Clipping 촬영 후 Figma 승인 이미지와 대조 — 실기기 촬영은 완료했고, Figma MCP 권한/Starter 호출 제한 해제 뒤 직접 대조를 재개한다.
