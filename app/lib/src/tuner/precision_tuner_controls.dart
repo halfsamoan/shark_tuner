@@ -6,7 +6,6 @@ class _ReferenceToneControl extends StatelessWidget {
     required this.noteLabel,
     required this.playing,
     required this.busy,
-    this.compact = false,
     required this.onPressed,
   });
 
@@ -14,7 +13,6 @@ class _ReferenceToneControl extends StatelessWidget {
   final String noteLabel;
   final bool playing;
   final bool busy;
-  final bool compact;
   final VoidCallback onPressed;
 
   @override
@@ -24,7 +22,7 @@ class _ReferenceToneControl extends StatelessWidget {
         : context.terminal.information;
     final action = playing ? '정지' : '재생';
     return Semantics(
-      label: '$noteLabel 레퍼런스 톤 $action',
+      label: '$noteLabel ${frequencyHz.toStringAsFixed(2)} Hz 기준음 $action',
       button: true,
       enabled: !busy,
       toggled: playing,
@@ -49,13 +47,11 @@ class _ReferenceToneControl extends StatelessWidget {
           ),
         ),
         child: Text(
-          compact
-              ? (playing ? '정지' : 'REF')
-              : busy
-              ? 'REF 준비 중'
+          busy
+              ? '기준음 준비 중'
               : playing
-              ? '█ REF $noteLabel 정지'
-              : 'REF ${frequencyHz.toStringAsFixed(2)} Hz',
+              ? '$noteLabel 기준음 중지'
+              : '$noteLabel 기준음 듣기',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: context.instrumentType.measurement.copyWith(

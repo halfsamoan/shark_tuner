@@ -1,14 +1,14 @@
 ---
-release_status: draft
-developer_name: TBD
-privacy_contact: TBD
-public_url: TBD
-effective_date: TBD
+release_status: final
+developer_name: SharkTune
+privacy_contact: arego1106@gmail.com
+public_url: https://sharktune-support.kimkyungmun.chatgpt.site
+effective_date: 2026-07-19
 ---
 
-# toauner 개인정보처리방침
+# SharkTune 개인정보처리방침 / Privacy Policy
 
-toauner는 곡별 튜닝 검색과 기타 튜닝을 제공하는 모바일 앱입니다. 이 문서는 앱이 마이크와 기기 내 데이터를 어떻게 처리하는지 설명합니다.
+SharkTune는 곡별 튜닝 검색과 기타 튜닝을 제공하는 모바일 앱입니다. 이 문서는 앱이 마이크와 기기 내 데이터를 어떻게 처리하는지 설명합니다.
 
 ## 마이크 오디오
 
@@ -27,7 +27,7 @@ toauner는 사용자가 튜너 또는 튜닝 안정성 진단을 시작하고 �
 
 ## 공유 및 판매
 
-toauner는 사용자 데이터를 수집하여 제3자에게 공유하거나 판매하지 않습니다. 현재 앱은 핵심 기능을 위해 인터넷 연결을 요구하지 않습니다.
+SharkTune는 사용자 데이터를 수집하여 제3자에게 공유하거나 판매하지 않습니다. 현재 앱은 핵심 기능을 위해 인터넷 연결을 요구하지 않습니다.
 
 ## 보관 및 삭제
 
@@ -43,14 +43,56 @@ toauner는 사용자 데이터를 수집하여 제3자에게 공유하거나 판
 
 ## 문의
 
-개인정보 관련 문의처는 출시 전 확정하여 이 항목과 상단 메타데이터에 기재합니다.
+개인정보 관련 문의처: `arego1106@gmail.com`.
 
 ## 출시 전 완료 항목
 
-- Play 스토어 개발자 표시 이름과 `developer_name`을 일치시킵니다.
-- 실제 문의가 가능한 `privacy_contact`를 입력합니다.
-- 시행일을 `effective_date`에 입력합니다.
-- 공개 접근 가능하고 지역 제한이 없으며 PDF가 아닌 HTTPS 페이지에 게시한 뒤 `public_url`을 입력합니다.
+- `public_url`이 공개 접근 가능하고 지역 제한이 없으며 PDF가 아닌 HTTPS 페이지인지 확인합니다.
 - 최종 업로드 빌드와 문서 내용이 일치하는지 검토한 뒤 `release_status: final`로 변경합니다.
 
 정책 근거: [Google Play User Data policy](https://support.google.com/googleplay/android-developer/answer/10144311), [Google Play Data safety guidance](https://support.google.com/googleplay/android-developer/answer/10787469).
+
+---
+
+# Privacy Policy (English)
+
+**Effective date:** 19 July 2026
+**Developer:** SharkTune
+**Privacy contact:** arego1106@gmail.com
+
+SharkTune is an offline guitar-tuning app. This policy explains how the app
+handles microphone input and information stored on the device.
+
+## Microphone audio
+
+SharkTune accesses the microphone only while the user starts tuning or a tuning
+stability check and grants the operating-system permission. Audio is processed
+in real time in device memory to calculate pitch, cent deviation, and stability
+observations.
+
+- We do not save microphone audio as recordings.
+- We do not send microphone audio, raw samples, or pitch frames to SharkTune or
+  any third party.
+- We do not use microphone audio for advertising, tracking, profiling, or model
+  training.
+- The real-time audio buffer is not retained after processing ends.
+
+## Information stored on your device
+
+The app may store an instrument's peg layout and direction calibration, string
+care entries, and up to 100 tuning-completion history items in its private local
+storage. Song, artist, tuning, and capo data are bundled in the app for local
+search. We do not create accounts and do not collect names, email addresses,
+phone numbers, precise location, contacts, payment information, or analytics.
+
+## Sharing, deletion, and contact
+
+SharkTune collects, sells, and shares no user data. There is no account or
+server-held user data, so a separate deletion request is not required. You can
+delete string-care and tuning-history records inside the app; deleting app data
+or uninstalling the app removes remaining local settings. For questions, email
+arego1106@gmail.com.
+
+If a future release adds cloud sync, analytics, ads, audio storage, or data
+transfer, we will update this policy and provide any required notice before that
+release.

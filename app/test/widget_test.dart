@@ -17,6 +17,65 @@ import 'package:tuner_data/tuner_data.dart';
 import 'package:tuner_domain/tuner_domain.dart';
 
 void main() {
+  testWidgets('launcher opens the standard live tuner before song discovery', (
+    tester,
+  ) async {
+    final engine = _ScriptedTunerEngine();
+
+    await tester.pumpWidget(
+      ToaunerApp(
+        catalogLoader: () async => _FakeSongCatalog(),
+        tunerEngineFactory: () => engine,
+        includeUnverifiedSongs: false,
+        startWithStandardTuning: true,
+      ),
+    );
+    await _pumpFrames(tester);
+
+    expect(find.byType(PrecisionTunerScreen), findsOneWidget);
+    expect(find.byKey(const Key('sharktune-tuning-core')), findsOneWidget);
+    expect(find.byType(PitchTape), findsOneWidget);
+    expect(find.bySemanticsLabel('튜닝 현 선택 레일'), findsOneWidget);
+    expect(find.byKey(const Key('song-search-entry')), findsNothing);
+    expect(engine.startedTunings, ['guitar-6-standard']);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+  });
+
+  testWidgets('standard tuner keeps a reviewed visual baseline', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2340);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildInstrumentTheme(),
+        home: PrecisionTunerScreen(
+          match: _FakeSongCatalog.verifiedMatch,
+          catalog: _FakeSongCatalog(
+            currentMatch: _FakeSongCatalog.verifiedMatch,
+          ),
+          tunerEngineFactory: _FakeTunerEngine.new,
+          referenceTonePlayerFactory: _FakeReferenceTonePlayer.new,
+          includeUnverifiedSongs: false,
+        ),
+      ),
+    );
+    await _pumpFrames(tester);
+
+    await expectLater(
+      find.byType(Scaffold),
+      matchesGoldenFile('goldens/standard_tuner_visual.png'),
+    );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await _pumpFrames(tester);
+  });
+
   testWidgets(
     'home makes tuning primary and keeps the song catalog secondary',
     (tester) async {
@@ -339,11 +398,12 @@ void main() {
     await _pumpFrames(tester);
 
     expect(find.text('E-flat Standard'), findsOneWidget);
-    expect(find.text('+20 cents'), findsOneWidget);
-    expect(find.text('DEV·사람 검증 필요'), findsOneWidget);
+    expect(find.text('A4 440.00 Hz'), findsOneWidget);
+    expect(find.text('출처 검토 중'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.byKey(const Key('song-tools-group')),
       240,
+      scrollable: find.byType(Scrollable).first,
     );
     expect(find.byKey(const Key('song-tools-group')), findsOneWidget);
 
@@ -353,14 +413,21 @@ void main() {
     await tester.tap(stickyCta);
     await _pumpFrames(tester);
 
-    expect(find.textContaining('ERUPTION'), findsOneWidget);
+    expect(find.byKey(const Key('sharktune-wordmark')), findsOneWidget);
     expect(find.text('E♭2'), findsWidgets);
-    expect(find.text('0.0¢'), findsOneWidget);
+    expect(find.byKey(const Key('sharktune-tuning-core')), findsOneWidget);
+    expect(find.text('78.69 Hz'), findsOneWidget);
+    final targetReadout = find.text('TARGET 78.69 Hz');
+    expect(targetReadout, findsOneWidget);
     expect(
-      find.bySemanticsLabel('측정 주파수 78.69 Hz, 목표 78.69 Hz'),
+      tester.widget<Text>(targetReadout).style?.color,
+      tester.element(targetReadout).terminal.information,
+    );
+    expect(
+      find.bySemanticsLabel(RegExp(r'6번 줄 E♭2, 현재 78\.69 헤르츠, 목표 78\.69 헤르츠')),
       findsOneWidget,
     );
-    expect(find.text('곡 기준 +20 cents 적용'), findsOneWidget);
+    expect(find.textContaining('A4 440 Hz'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await _pumpFrames(tester);
@@ -603,6 +670,7 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const Key('gauge-recommendation-cta')),
       240,
+      scrollable: find.byType(Scrollable).first,
     );
     await tester.tap(find.byKey(const Key('gauge-recommendation-cta')));
     await _pumpFrames(tester);
@@ -633,7 +701,7 @@ void main() {
     await tester.tap(find.byKey(const Key('quick-tune-standard')));
     await _pumpFrames(tester);
 
-    expect(find.textContaining('바로 튜닝'.toUpperCase()), findsOneWidget);
+    expect(find.byKey(const Key('sharktune-wordmark')), findsOneWidget);
     expect(find.textContaining('STANDARD'), findsWidgets);
     expect(find.text('E2'), findsWidgets);
     expect(find.text('곡을 선택하지 않아도 튜닝할 수 있습니다.'), findsNothing);
@@ -740,16 +808,7 @@ void main() {
     expect(statusBar.state, '인튠');
     expect(find.byKey(const Key('dev-diagnostics')), findsNothing);
 
-    final scrollables = tester.widgetList<Scrollable>(find.byType(Scrollable));
-    expect(scrollables, isNotEmpty);
-    expect(
-      scrollables.every(
-        (scrollable) =>
-            scrollable.axisDirection == AxisDirection.left ||
-            scrollable.axisDirection == AxisDirection.right,
-      ),
-      isTrue,
-    );
+    expect(find.byType(Scrollable), findsNothing);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await _pumpFrames(tester);
@@ -820,8 +879,8 @@ void main() {
     await _pumpFrames(tester);
 
     expect(find.byType(PitchTape), findsOneWidget);
-    expect(find.text('0.0¢'), findsOneWidget);
-    expect(find.byType(TuningNoteCell), findsNWidgets(6));
+    expect(find.byKey(const Key('sharktune-tuning-core')), findsOneWidget);
+    expect(find.byType(TuningStringRail), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await _pumpFrames(tester);
@@ -903,84 +962,78 @@ void main() {
     await _pumpFrames(tester);
   });
 
-  testWidgets('guides peg action, marks locks, and advances all six strings', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(1080, 2340);
-    tester.view.devicePixelRatio = 3;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final catalog = _FakeSongCatalog(
-      currentMatch: _FakeSongCatalog.verifiedMatch,
-    );
-    final engine = _ScriptedTunerEngine();
-    final historyEntries = <TuningHistoryEntry>[];
+  testWidgets(
+    'uses visual feedback for normal tuning and advances all six strings',
+    (tester) async {
+      tester.view.physicalSize = const Size(1080, 2340);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final catalog = _FakeSongCatalog(
+        currentMatch: _FakeSongCatalog.verifiedMatch,
+      );
+      final engine = _ScriptedTunerEngine();
+      final historyEntries = <TuningHistoryEntry>[];
 
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: buildInstrumentTheme(),
-        home: PrecisionTunerScreen(
-          match: _FakeSongCatalog.verifiedMatch,
-          catalog: catalog,
-          tunerEngineFactory: () => engine,
-          includeUnverifiedSongs: false,
-          recordTuningHistory: (entry) async => historyEntries.add(entry),
-          tuningHistoryNow: () => DateTime.utc(2026, 7, 14, 10, 30),
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildInstrumentTheme(),
+          home: PrecisionTunerScreen(
+            match: _FakeSongCatalog.verifiedMatch,
+            catalog: catalog,
+            tunerEngineFactory: () => engine,
+            includeUnverifiedSongs: false,
+            recordTuningHistory: (entry) async => historyEntries.add(entry),
+            tuningHistoryNow: () => DateTime.utc(2026, 7, 14, 10, 30),
+          ),
         ),
-      ),
-    );
-    await _pumpFrames(tester);
+      );
+      await _pumpFrames(tester);
 
-    engine.emit(_stateForString(6, cents: 24));
-    await tester.pump();
-    expect(
-      find.text('음이 높아요'),
-      findsOneWidget,
-      reason: tester
-          .widgetList<Text>(find.byType(Text))
-          .map((text) => text.data)
-          .whereType<String>()
-          .join(' | '),
-    );
-    expect(find.textContaining('6번 줄 페그를 풀어 낮추세요'), findsOneWidget);
-    expect(find.text('−50  ♭'), findsNothing);
-    expect(find.byType(PitchTape), findsOneWidget);
-
-    for (final stringNumber in [6, 5, 4, 3, 2, 1]) {
-      engine.emit(_stateForString(stringNumber, cents: 0, locked: true));
+      engine.emit(_stateForString(6, cents: 24));
       await tester.pump();
-      expect(find.text('$stringNumber번 줄 완료'), findsOneWidget);
-      await tester.pump(const Duration(milliseconds: 800));
-    }
-    await tester.pumpAndSettle();
+      expect(find.byKey(const Key('visual-tuning-feedback')), findsOneWidget);
+      expect(find.text('음이 높아요'), findsOneWidget);
+      expect(find.textContaining('6번 줄을 조금 풀어 낮추세요'), findsOneWidget);
+      expect(find.text('−50  ♭'), findsNothing);
+      expect(find.byType(PitchTape), findsOneWidget);
 
-    expect(find.text('6현 모두 완료!'), findsOneWidget);
-    expect(find.text('이 튜닝으로 연주 가능한 곡 1개'), findsOneWidget);
-    expect(engine.manualTargets, isEmpty);
-    expect(find.byKey(const Key('tune-complete-glyph')), findsOneWidget);
-    expect(find.byKey(const Key('open-stability-check')), findsOneWidget);
-    expect(historyEntries, hasLength(1));
-    expect(historyEntries.single.tuningId, 'eb-standard');
-    expect(historyEntries.single.songTitle, 'Eruption');
-    expect(historyEntries.single.artist, 'Van Halen');
-    expect(historyEntries.single.stringCount, 6);
+      for (final stringNumber in [6, 5, 4, 3, 2, 1]) {
+        engine.emit(_stateForString(stringNumber, cents: 0, locked: true));
+        await tester.pump();
+        expect(find.byKey(const Key('visual-tuning-feedback')), findsOneWidget);
+        await tester.pump(const Duration(milliseconds: 800));
+      }
+      await tester.pumpAndSettle();
 
-    engine.emit(_stateForString(1, cents: 0, locked: true));
-    await tester.pump();
-    expect(historyEntries, hasLength(1));
+      expect(find.text('6현 모두 완료!'), findsOneWidget);
+      expect(find.text('이 튜닝으로 연주 가능한 곡 1개'), findsOneWidget);
+      expect(engine.manualTargets, isEmpty);
+      expect(find.byKey(const Key('tune-complete-glyph')), findsOneWidget);
+      expect(find.byKey(const Key('open-stability-check')), findsOneWidget);
+      expect(historyEntries, hasLength(1));
+      expect(historyEntries.single.tuningId, 'eb-standard');
+      expect(historyEntries.single.songTitle, 'Eruption');
+      expect(historyEntries.single.artist, 'Van Halen');
+      expect(historyEntries.single.stringCount, 6);
 
-    await tester.tap(find.byKey(const Key('open-stability-check')));
-    await tester.pumpAndSettle();
-    expect(find.text('줄이 맞은 뒤에도 흔들리는지 확인합니다.'), findsOneWidget);
-    expect(engine.manualTargets, [6]);
+      engine.emit(_stateForString(1, cents: 0, locked: true));
+      await tester.pump();
+      expect(historyEntries, hasLength(1));
 
-    await tester.tap(find.byTooltip('뒤로'));
-    await tester.pumpAndSettle();
-    expect(engine.manualTargets, [6, null]);
+      await tester.tap(find.byKey(const Key('open-stability-check')));
+      await tester.pumpAndSettle();
+      expect(find.text('줄이 맞은 뒤에도 흔들리는지 확인합니다.'), findsOneWidget);
+      expect(engine.manualTargets, [6]);
 
-    await tester.pumpWidget(const SizedBox.shrink());
-    await _pumpFrames(tester);
-  });
+      await tester.tap(find.byTooltip('뒤로'));
+      await tester.pumpAndSettle();
+      expect(engine.manualTargets, [6, null]);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await _pumpFrames(tester);
+    },
+  );
 
   testWidgets('manual string focus exposes a clear return to auto detection', (
     tester,
@@ -1007,7 +1060,7 @@ void main() {
     await _pumpFrames(tester);
 
     final sixthStringChip = find.byWidgetPredicate(
-      (widget) => widget is TuningNoteCell && widget.stringNumber == 6,
+      (widget) => widget.key == const Key('tuning-string-6'),
     );
     await tester.tap(sixthStringChip);
     await tester.pump();
@@ -1017,14 +1070,14 @@ void main() {
 
     engine.emit(_stateForString(3, cents: -12));
     await tester.pump();
-    expect(find.textContaining('E♭2 · 6번 줄 · 직접 선택'), findsOneWidget);
+    expect(find.text('직접 선택'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('resume-auto-detection')));
     await tester.pump();
     expect(engine.manualTargets, [6, null]);
     engine.emit(_stateForString(3, cents: -12));
     await tester.pump();
-    expect(find.textContaining('G♭3 · 3번 줄 · 자동 인식'), findsOneWidget);
+    expect(find.byKey(const Key('sharktune-tuning-core')), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await _pumpFrames(tester);
@@ -1060,7 +1113,7 @@ void main() {
     );
     await tester.tap(
       find.byWidgetPredicate(
-        (widget) => widget is TuningNoteCell && widget.stringNumber == 6,
+        (widget) => widget.key == const Key('tuning-string-6'),
       ),
     );
     await tester.pump();
@@ -1236,7 +1289,7 @@ void main() {
     expect(savedProfile!.layout, HeadstockLayout.split);
     engine.emit(_stateForString(6, cents: -24));
     await tester.pump();
-    expect(find.textContaining('↺ 반시계방향'), findsOneWidget);
+    expect(find.byKey(const Key('visual-tuning-feedback')), findsOneWidget);
     expect(find.textContaining('헤드스톡 정면에서'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
@@ -1292,7 +1345,7 @@ void main() {
     await tester.pump();
     expect(saves, hasLength(1));
     expect(saves.single.directionOverrides[6], PegRotationDirection.clockwise);
-    expect(find.textContaining('↻ 시계방향'), findsOneWidget);
+    expect(find.byKey(const Key('visual-tuning-feedback')), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await _pumpFrames(tester);
@@ -1331,7 +1384,7 @@ void main() {
 
     engine.emit(_stateForString(6, cents: -20));
     await tester.pump();
-    expect(find.textContaining('클래식 페그 방향 확인'), findsOneWidget);
+    expect(find.byKey(const Key('visual-tuning-feedback')), findsOneWidget);
     expect(find.textContaining('반시계방향'), findsNothing);
 
     await tester.tap(find.byKey(const Key('verify-peg-direction')));
@@ -1340,7 +1393,7 @@ void main() {
     await tester.pump();
     expect(saves, hasLength(1));
     expect(saves.single.directionOverrides[6], PegRotationDirection.clockwise);
-    expect(find.textContaining('↻ 시계방향'), findsOneWidget);
+    expect(find.byKey(const Key('visual-tuning-feedback')), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await _pumpFrames(tester);
@@ -1405,6 +1458,40 @@ void main() {
     await _pumpFrames(tester);
   });
 
+  testWidgets(
+    'pauses capture and restarts one tuner session after lifecycle recovery',
+    (tester) async {
+      final engine = _ScriptedTunerEngine();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: buildInstrumentTheme(),
+          home: PrecisionTunerScreen(
+            match: _FakeSongCatalog.verifiedMatch,
+            catalog: _FakeSongCatalog(
+              currentMatch: _FakeSongCatalog.verifiedMatch,
+            ),
+            tunerEngineFactory: () => engine,
+            includeUnverifiedSongs: false,
+          ),
+        ),
+      );
+      await _pumpFrames(tester);
+      expect(engine.startedTunings, ['eb-standard']);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump();
+      expect(engine.stopCount, 1);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      expect(engine.startedTunings, ['eb-standard', 'eb-standard']);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await _pumpFrames(tester);
+    },
+  );
+
   testWidgets('reference tone pauses capture and follows the selected string', (
     tester,
   ) async {
@@ -1436,7 +1523,7 @@ void main() {
     expect(engine.stopCount, 1);
     expect(player.playedFrequencies, hasLength(1));
     expect(player.playedFrequencies.single, closeTo(78.69, 0.01));
-    expect(find.bySemanticsLabel('E♭2 레퍼런스 톤 정지'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp(r'E♭2 .* Hz 기준음 정지')), findsOneWidget);
 
     await tester.tap(find.text('E♭4').first);
     await _pumpFrames(tester);

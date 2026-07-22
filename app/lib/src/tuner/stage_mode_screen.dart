@@ -104,7 +104,7 @@ class _StageModeScreenState extends State<StageModeScreen> {
                         ),
                         const SizedBox(height: InstrumentMetrics.space8),
                         Text(
-                          presentation.centsLabel,
+                          presentation.frequencyLabel,
                           style: context.instrumentType.title.copyWith(
                             color: presentation.color,
                             fontFamily: 'IBM Plex Mono',
@@ -149,7 +149,7 @@ class _StageModeScreenState extends State<StageModeScreen> {
 
 final class _StagePresentation {
   const _StagePresentation({
-    required this.centsLabel,
+    required this.frequencyLabel,
     required this.actionLabel,
     required this.spokenLabel,
     required this.color,
@@ -163,17 +163,18 @@ final class _StagePresentation {
     final cents = state.cents;
     if (cents == null || !cents.isFinite) {
       return _StagePresentation(
-        centsLabel: '—¢',
+        frequencyLabel: '— Hz',
         actionLabel: '줄을 한 번 튕겨 주세요',
         spokenLabel: '${target.stringNumber}번 줄 ${target.label}, 줄을 한 번 튕겨 주세요',
         color: terminal.text,
       );
     }
-    final rounded = cents.round();
-    final centsLabel = '${rounded > 0 ? '+' : ''}$rounded¢';
+    final frequencyLabel = state.frequencyHz == null
+        ? '— Hz'
+        : '${state.frequencyHz!.toStringAsFixed(2)} Hz';
     if (state.locked) {
       return _StagePresentation(
-        centsLabel: centsLabel,
+        frequencyLabel: frequencyLabel,
         actionLabel: '✓ 인튠',
         spokenLabel: '${target.stringNumber}번 줄 ${target.label}, 인튠',
         color: terminal.lockHold,
@@ -181,32 +182,29 @@ final class _StagePresentation {
     }
     if (cents > 2) {
       return _StagePresentation(
-        centsLabel: centsLabel,
+        frequencyLabel: frequencyLabel,
         actionLabel: '▼ 낮추세요',
-        spokenLabel:
-            '${target.stringNumber}번 줄 ${target.label}, ${cents.abs().round()}센트 높음, 낮추세요',
+        spokenLabel: '${target.stringNumber}번 줄 ${target.label}, 음이 높음, 낮추세요',
         color: terminal.amber,
       );
     }
     if (cents < -2) {
       return _StagePresentation(
-        centsLabel: centsLabel,
+        frequencyLabel: frequencyLabel,
         actionLabel: '▲ 올리세요',
-        spokenLabel:
-            '${target.stringNumber}번 줄 ${target.label}, ${cents.abs().round()}센트 낮음, 올리세요',
+        spokenLabel: '${target.stringNumber}번 줄 ${target.label}, 음이 낮음, 올리세요',
         color: terminal.amber,
       );
     }
     return _StagePresentation(
-      centsLabel: centsLabel,
+      frequencyLabel: frequencyLabel,
       actionLabel: '… 거의 맞았어요',
-      spokenLabel:
-          '${target.stringNumber}번 줄 ${target.label}, ${cents.abs().round()}센트, 거의 맞았어요',
+      spokenLabel: '${target.stringNumber}번 줄 ${target.label}, 목표에 가까움, 유지하세요',
       color: terminal.accent,
     );
   }
 
-  final String centsLabel;
+  final String frequencyLabel;
   final String actionLabel;
   final String spokenLabel;
   final Color color;

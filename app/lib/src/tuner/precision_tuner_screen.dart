@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tuner_data/tuner_data.dart';
@@ -70,7 +69,8 @@ class PrecisionTunerScreen extends StatefulWidget {
   State<PrecisionTunerScreen> createState() => _PrecisionTunerScreenState();
 }
 
-class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
+class _PrecisionTunerScreenState extends State<PrecisionTunerScreen>
+    with WidgetsBindingObserver {
   var _selectedIndex = 0;
   var _manualTarget = false;
   var _coarseMode = false;
@@ -82,6 +82,8 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   var _referenceTonePlaying = false;
   var _referenceToneBusy = false;
   var _resumeInputAfterReferenceTone = false;
+  var _resumeInputAfterLifecycle = false;
+  var _lifecycleTransitionInFlight = false;
   var _inputSessionStarted = false;
   double? _displayCents;
   int? _celebratingStringNumber;
@@ -101,6 +103,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _engine = widget.tunerEngineFactory();
     _referenceTonePlayer = widget.referenceTonePlayerFactory();
     _liveState = _engine.current;
@@ -119,6 +122,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _autoAdvanceTimer?.cancel();
     _tuneUpStopwatch.stop();
     unawaited(_engineSubscription.cancel());
@@ -126,6 +130,61 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     unawaited(_engine.dispose());
     unawaited(widget.setScreenAwake(false));
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_resumeInputAfterLifecyclePause());
+      return;
+    }
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      unawaited(_pauseInputForLifecycle());
+    }
+  }
+
+  Future<void> _pauseInputForLifecycle() async {
+    if (_lifecycleTransitionInFlight ||
+        _checkingMicrophonePermission ||
+        _needsMicrophonePrimer) {
+      return;
+    }
+    final wasCapturing = _inputSessionStarted;
+    final wasReferenceTone = _referenceTonePlaying;
+    if (!wasCapturing && !wasReferenceTone) {
+      return;
+    }
+    _lifecycleTransitionInFlight = true;
+    _resumeInputAfterLifecycle = wasCapturing || _resumeInputAfterReferenceTone;
+    try {
+      if (wasReferenceTone) {
+        await _stopReferenceTone(resumeInput: false);
+      } else if (wasCapturing) {
+        await _engine.stop();
+        _inputSessionStarted = false;
+      }
+    } finally {
+      _lifecycleTransitionInFlight = false;
+    }
+  }
+
+  Future<void> _resumeInputAfterLifecyclePause() async {
+    if (_lifecycleTransitionInFlight || !_resumeInputAfterLifecycle) {
+      return;
+    }
+    _resumeInputAfterLifecycle = false;
+    if (_needsMicrophonePrimer || _referenceTonePlaying || !mounted) {
+      return;
+    }
+    _lifecycleTransitionInFlight = true;
+    try {
+      await _startInput();
+    } on Object {
+      // The normal input error state is emitted by the engine on recovery.
+    } finally {
+      _lifecycleTransitionInFlight = false;
+    }
   }
 
   TuningString get _selected => widget.tuning.strings[_selectedIndex];
@@ -603,7 +662,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
       setState(() => _referenceToneBusy = false);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('레퍼런스 톤을 재생하지 못했습니다.')));
+      ).showSnackBar(const SnackBar(content: Text('기준음을 재생하지 못했습니다.')));
     }
   }
 
@@ -698,18 +757,6 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     );
   }
 
-  void _showDiagnostics() {
-    showInstrumentBottomSheet<void>(
-      context: context,
-      builder: (context) => _DiagnosticsSheet(
-        state: _liveState,
-        tuning: widget.tuning,
-        song: widget.song,
-        progress: _tuneUpTracker.state,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final tuning = widget.tuning;
@@ -719,12 +766,14 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     final progress = _tuneUpTracker.state;
     final lockedNow =
         !_referenceTonePlaying &&
-        _celebratingStringNumber == _selected.stringNumber;
+        (_celebratingStringNumber == _selected.stringNumber ||
+            (_liveState.locked &&
+                _liveState.target?.stringNumber == _selected.stringNumber));
     final presentedCents = _referenceTonePlaying ? null : _displayCents;
     final guidance = _referenceTonePlaying
         ? TuningGuidance(
             direction: TuningDirection.hold,
-            headline: '${_selected.label} 레퍼런스 톤 재생 중',
+            headline: '${_selected.label} 기준음 재생 중',
             instruction: '스피커 음을 듣고 줄의 목표 높이를 익혀보세요',
             coarse: false,
             kind: GuidanceSlotKind.settling,
@@ -749,11 +798,49 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
     final pegDirection = _referenceTonePlaying
         ? const _PegDirectionPresentation(label: '스피커 재생 중 · 마이크 일시 중지')
         : _pegDirectionPresentation(guidance);
+    final guidanceNeedsText =
+        guidance.kind == GuidanceSlotKind.pluckPrompt ||
+        guidance.kind == GuidanceSlotKind.wrongString ||
+        guidance.kind == GuidanceSlotKind.tooQuiet ||
+        guidance.kind == GuidanceSlotKind.noisy ||
+        pegDirection.pending ||
+        pegDirection.flipSuggested;
+    final calibrationState = _referenceTonePlaying
+        ? CalibrationSpineState.referenceTone
+        : lockedNow
+        ? CalibrationSpineState.locked
+        : presentedCents == null
+        ? CalibrationSpineState.waiting
+        : _coarseMode
+        ? CalibrationSpineState.coarse
+        : guidance.direction == TuningDirection.hold
+        ? CalibrationSpineState.near
+        : CalibrationSpineState.adjusting;
+    final contextualPegAction =
+        _referenceTonePlaying || !_instrumentProfileLoaded
+        ? null
+        : pegDirection.needsSetup
+        ? _showPegSetup
+        : pegDirection.canVerify
+        ? () => _beginPegDirectionCheck(guidance)
+        : null;
+    final contextualPegActionKey = pegDirection.needsSetup
+        ? const Key('configure-peg-guidance')
+        : pegDirection.canVerify
+        ? const Key('verify-peg-direction')
+        : null;
+    final contextualPegActionLabel = pegDirection.needsSetup
+        ? '페그 설정'
+        : pegDirection.canVerify
+        ? '방향 확인'
+        : null;
     final usesLargeText = MediaQuery.textScalerOf(context).scale(1) > 1.3;
     return Scaffold(
       appBar: InstrumentHeaderBar(
         section: '정밀 튜너',
-        showBack: true,
+        showBack: Navigator.of(context).canPop(),
+        showBrand: false,
+        hidden: true,
         actions: [
           Semantics(
             label: '무대 모드 열기',
@@ -785,134 +872,61 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
               builder: (context, constraints) {
                 final coreContent = Column(
                   children: [
-                    Container(
-                      height: widget.includeUnverifiedSongs ? 48 : 34,
-                      alignment: Alignment.centerLeft,
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      decoration: BoxDecoration(
-                        color: context.terminal.header,
-                        border: Border.all(color: context.terminal.line),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '${widget.sessionLabel.toUpperCase()}  /  ${tuning.name.toUpperCase()}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: context.instrumentType.status.copyWith(
-                                color: context.terminal.muted,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          if (widget.includeUnverifiedSongs)
-                            TextButton(
-                              key: const Key('dev-diagnostics'),
-                              onPressed: _showDiagnostics,
-                              style: TextButton.styleFrom(
-                                minimumSize: const Size(48, 48),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                ),
-                              ),
-                              child: Text(
-                                'DEV·진단',
-                                style: context.instrumentType.status,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _formatMeasuredCents(presentedCents, coarse: _coarseMode),
-                      textAlign: TextAlign.center,
-                      style: context.instrumentType.centsHero.copyWith(
-                        color: lockedNow
-                            ? context.terminal.lockHold
-                            : _coarseMode
-                            ? context.terminal.amber
-                            : context.terminal.text,
-                      ),
-                    ),
-                    Text(
-                      _selected.label,
-                      textAlign: TextAlign.center,
-                      style: context.instrumentType.noteHero.copyWith(
-                        color: lockedNow
-                            ? context.terminal.lockHold
-                            : context.terminal.text,
-                      ),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Flexible(
-                          child: FrequencyReadout(
-                            measuredHz: _referenceTonePlaying
-                                ? null
-                                : _liveState.frequencyHz,
-                            targetHz: _targetHz,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        SizedBox(
-                          width: 64,
-                          child: _ReferenceToneControl(
-                            frequencyHz: _targetHz,
-                            noteLabel: _selected.label,
-                            playing: _referenceTonePlaying,
-                            busy: _referenceToneBusy,
-                            compact: true,
-                            onPressed: _toggleReferenceTone,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    PitchTape(
+                    SharkTuneTuningCore(
+                      tuningLabel:
+                          '${tuning.name.toUpperCase()}  ·  A4 ${tuning.referenceA4Hz.toStringAsFixed(0)} Hz',
                       cents: presentedCents,
-                      locked: lockedNow,
-                      status: _tapeStatus(_liveState),
+                      noteLabel: _selected.label,
+                      stringNumber: _selected.stringNumber,
+                      measuredHz: _referenceTonePlaying
+                          ? null
+                          : _liveState.frequencyHz,
+                      targetHz: _targetHz,
+                      state: calibrationState,
+                      status: guidance.instruction,
+                      showBack: Navigator.of(context).canPop(),
+                      onBack: Navigator.of(context).canPop()
+                          ? () => Navigator.of(context).pop()
+                          : null,
+                      onStage: _checkingMicrophonePermission
+                          ? null
+                          : _openStageMode,
                     ),
-                    const SizedBox(height: 8),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          for (
-                            var index = 0;
-                            index < tuning.strings.length;
-                            index++
-                          ) ...[
-                            TuningNoteCell(
-                              label: tuning.strings[index].label,
-                              stringNumber: tuning.strings[index].stringNumber,
-                              active: _selectedIndex == index,
-                              completed: progress.lockedStringNumbers.contains(
-                                tuning.strings[index].stringNumber,
-                              ),
-                              onTap: () => _toggleTarget(index),
-                            ),
-                            if (index != tuning.strings.length - 1)
-                              const SizedBox(width: 8),
-                          ],
-                        ],
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.center,
+                      child: _ReferenceToneControl(
+                        frequencyHz: _targetHz,
+                        noteLabel: _selected.label,
+                        playing: _referenceTonePlaying,
+                        busy: _referenceToneBusy,
+                        onPressed: _toggleReferenceTone,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            '${_selected.label} · ${_selected.stringNumber}번 줄 · ${_targetModeLabel()}',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.labelSmall,
+                    const SizedBox(height: 8),
+                    TuningStringRail(
+                      labels: [
+                        for (final string in tuning.strings) string.label,
+                      ],
+                      stringNumbers: [
+                        for (final string in tuning.strings)
+                          string.stringNumber,
+                      ],
+                      selectedIndex: _selectedIndex,
+                      completedStringNumbers: progress.lockedStringNumbers,
+                      onSelect: _toggleTarget,
+                    ),
+                    if (_manualTarget) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            _targetModeLabel(),
+                            style: context.instrumentType.status.copyWith(
+                              color: context.terminal.textSecondary,
+                            ),
                           ),
-                        ),
-                        if (_manualTarget) ...[
                           const SizedBox(width: 6),
                           TextButton(
                             key: const Key('resume-auto-detection'),
@@ -929,8 +943,8 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                             ),
                           ),
                         ],
-                      ],
-                    ),
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     if (_liveState.status == LiveTunerStatus.permissionDenied ||
                         _liveState.status == LiveTunerStatus.unavailable) ...[
@@ -943,25 +957,32 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                       ),
                       const SizedBox(height: 8),
                     ],
-                    _GuidancePanel(
-                      guidance: guidance,
-                      semanticsLabel: spokenTunerStatus(
-                        stringNumber: _selected.stringNumber,
-                        noteLabel: _selected.label,
-                        cents: presentedCents,
+                    if (guidanceNeedsText)
+                      _GuidancePanel(
                         guidance: guidance,
+                        semanticsLabel: guidance.instruction,
+                        lockProgress: _liveState.lockProgress,
+                        pegDirection: pegDirection,
+                        onConfigurePegGuidance: _showPegSetup,
+                        onVerifyPegDirection: () =>
+                            _beginPegDirectionCheck(guidance),
+                        onAcceptPegDirectionFlip: _acceptPegDirectionFlip,
+                        onDismissPegDirectionFlip: _dismissPegDirectionFlip,
+                      )
+                    else
+                      _VisualTuningFeedback(
+                        guidance: guidance,
+                        locked: lockedNow,
+                        pegRotation: _referenceTonePlaying
+                            ? null
+                            : _presentedRotationDirection(guidance),
+                        pegNeedsSetup: pegDirection.needsSetup,
+                        pegDetail: pegDirection.label,
+                        pegAction: contextualPegAction,
+                        pegActionKey: contextualPegActionKey,
+                        pegActionLabel: contextualPegActionLabel,
+                        semanticsLabel: guidance.instruction,
                       ),
-                      lockProgress: _liveState.lockProgress,
-                      offsetLabel: tuning.centsOffset == 0
-                          ? null
-                          : '곡 기준 ${_offsetLabel(tuning.centsOffset)} 적용',
-                      pegDirection: pegDirection,
-                      onConfigurePegGuidance: _showPegSetup,
-                      onVerifyPegDirection: () =>
-                          _beginPegDirectionCheck(guidance),
-                      onAcceptPegDirectionFlip: _acceptPegDirectionFlip,
-                      onDismissPegDirectionFlip: _dismissPegDirectionFlip,
-                    ),
                     const SizedBox(height: 8),
                     Text(
                       '튜닝 진행 ${progress.lockedStringCount}/${progress.expectedStringCount}',
@@ -980,10 +1001,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
                 final requiresExpandedGuidanceScroll =
                     tunerSkin == TunerSkin.clipping ||
                     _manualTarget ||
-                    _activeInstrumentProfile != null ||
-                    pegDirection.canVerify ||
-                    guidance.kind == GuidanceSlotKind.wrongString ||
-                    pegDirection.flipSuggested ||
+                    guidanceNeedsText ||
                     _liveState.status == LiveTunerStatus.permissionDenied ||
                     _liveState.status == LiveTunerStatus.unavailable;
                 if (usesLargeText ||
@@ -1013,7 +1031,7 @@ class _PrecisionTunerScreenState extends State<PrecisionTunerScreen> {
       ),
       bottomNavigationBar: InstrumentStatusBar(
         state: _referenceTonePlaying
-            ? 'REF ${_selected.label} 재생 중'
+            ? '${_selected.label} 기준음 재생 중'
             : _statusBarState(_liveState),
         detail:
             '${tuning.name.toUpperCase()} │ A4 ${tuning.referenceA4Hz.toStringAsFixed(0)}',

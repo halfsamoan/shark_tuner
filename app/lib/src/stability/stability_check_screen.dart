@@ -167,8 +167,9 @@ class _StabilityCheckScreenState extends State<StabilityCheckScreen> {
             else ...[
               DefinitionRow(
                 label: '어택 오버슈트',
-                value:
-                    '${evidence.medianAttackOvershootCents!.toStringAsFixed(1)} cents',
+                value: _stabilityMagnitude(
+                  evidence.medianAttackOvershootCents!,
+                ),
               ),
               DefinitionRow(
                 label: '정착 시간',
@@ -176,13 +177,14 @@ class _StabilityCheckScreenState extends State<StabilityCheckScreen> {
               ),
               DefinitionRow(
                 label: '울림 중 드리프트',
-                value:
-                    '${evidence.medianSteadyStateDriftCentsPerSecond!.toStringAsFixed(2)} cents/s',
+                value: _stabilityMagnitude(
+                  evidence.medianSteadyStateDriftCentsPerSecond!,
+                ),
               ),
               if (evidence.medianInterPluckDriftCents case final drift?)
                 DefinitionRow(
                   label: '피킹 간 이동',
-                  value: '${drift.toStringAsFixed(1)} cents',
+                  value: _stabilityMagnitude(drift),
                 ),
               if (evidence.normalizedOvershootCoefficientOfVariation
                   case final repeatability?)
@@ -362,6 +364,17 @@ class _HypothesisResult extends StatelessWidget {
       ),
     );
   }
+}
+
+String _stabilityMagnitude(double value) {
+  final magnitude = value.abs();
+  if (magnitude <= 2) {
+    return '낮음';
+  }
+  if (magnitude <= 8) {
+    return '보통';
+  }
+  return '큼';
 }
 
 String _hypothesisCopy(StabilityHypothesisKind kind) {

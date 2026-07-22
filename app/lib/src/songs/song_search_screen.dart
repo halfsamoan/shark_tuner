@@ -37,6 +37,7 @@ class SongSearchScreen extends StatefulWidget {
     required this.tuningHistorySaver,
     required this.tuningHistoryRecorder,
     required this.tuningHistoryNow,
+    this.startWithStandardTuning = false,
   });
 
   final SongCatalogLoader catalogLoader;
@@ -49,6 +50,7 @@ class SongSearchScreen extends StatefulWidget {
   final TuningHistorySaver tuningHistorySaver;
   final TuningHistoryRecorder tuningHistoryRecorder;
   final DateTime Function() tuningHistoryNow;
+  final bool startWithStandardTuning;
 
   @override
   State<SongSearchScreen> createState() => _SongSearchScreenState();
@@ -65,6 +67,7 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
   Timer? _searchDebounce;
   var _tuningHistoryLedger = TuningHistoryLedger.empty();
   var _showSongSearch = false;
+  var _openedLaunchTuner = false;
 
   @override
   void initState() {
@@ -93,6 +96,10 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
       }
       _catalog = catalog;
       await _search('');
+      if (widget.startWithStandardTuning && mounted && !_openedLaunchTuner) {
+        _openedLaunchTuner = true;
+        await _openDirectTuner(BuiltInTunings.standardGuitar);
+      }
     } catch (error) {
       if (mounted) {
         setState(() {
@@ -329,16 +336,6 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
               ],
             ),
           ),
-        if (widget.includeUnverifiedSongs) ...[
-          const SizedBox(height: 16),
-          Text(
-            'DEV·검토 전 후보까지 표시',
-            style: context.instrumentType.status.copyWith(
-              color: context.terminal.amber,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
       ],
     );
   }
@@ -840,11 +837,9 @@ class _SongResultRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final song = match.song;
-    final secondary = switch ((song.capoFret, song.centsOffset)) {
-      (> 0, _) => 'CAPO ${song.capoFret}',
-      (_, != 0) => _formatCents(song.centsOffset),
-      _ => '${match.tuning.referenceA4Hz.toStringAsFixed(0)} Hz',
-    };
+    final secondary = song.capoFret > 0
+        ? 'CAPO ${song.capoFret}'
+        : '${match.tuning.referenceA4Hz.toStringAsFixed(0)} Hz';
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -960,9 +955,4 @@ class _CatalogError extends StatelessWidget {
       ),
     );
   }
-}
-
-String _formatCents(double value) {
-  final sign = value > 0 ? '+' : '';
-  return '$sign${value.toStringAsFixed(value == value.roundToDouble() ? 0 : 1)} cents';
 }

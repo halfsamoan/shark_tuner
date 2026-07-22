@@ -28,6 +28,7 @@ class ToaunerApp extends StatefulWidget {
     this.tuningHistorySaver = saveTuningHistoryLedger,
     this.tuningHistoryRecorder = recordTuningHistoryEntry,
     this.tuningHistoryNow = DateTime.now,
+    this.startWithStandardTuning = false,
   });
 
   final SongCatalogLoader catalogLoader;
@@ -42,6 +43,7 @@ class ToaunerApp extends StatefulWidget {
   final TuningHistorySaver tuningHistorySaver;
   final TuningHistoryRecorder tuningHistoryRecorder;
   final DateTime Function() tuningHistoryNow;
+  final bool startWithStandardTuning;
 
   @override
   State<ToaunerApp> createState() => _ToaunerAppState();
@@ -122,6 +124,7 @@ class _ToaunerAppState extends State<ToaunerApp> with WidgetsBindingObserver {
               tuningHistorySaver: widget.tuningHistorySaver,
               tuningHistoryRecorder: widget.tuningHistoryRecorder,
               tuningHistoryNow: widget.tuningHistoryNow,
+              startWithStandardTuning: widget.startWithStandardTuning,
             ),
           ),
         );

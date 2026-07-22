@@ -95,8 +95,8 @@ TuningGuidance guidanceForCents({
     direction: direction,
     headline: lowerPitch ? '음이 높아요' : '음이 낮아요',
     instruction: lowerPitch
-        ? '$stringNumber번 줄 페그를 풀어 낮추세요 ($turnEstimate)'
-        : '$stringNumber번 줄 페그를 조여 올리세요 ($turnEstimate)',
+        ? '$stringNumber번 줄을 조금 풀어 낮추세요'
+        : '$stringNumber번 줄을 조금 조여 올리세요',
     coarse: false,
     turnEstimate: turnEstimate,
   );
@@ -192,14 +192,13 @@ String spokenTunerStatus({
       !cents.isFinite) {
     return '$prefix, ${guidance.spokenLabel}';
   }
-  final absoluteCents = cents.abs().round();
   if (guidance.direction == TuningDirection.lower) {
-    return '$prefix, $absoluteCents센트 높음, 낮추세요';
+    return '$prefix, 음이 높음, 낮추세요';
   }
   if (guidance.direction == TuningDirection.raise) {
-    return '$prefix, $absoluteCents센트 낮음, 올리세요';
+    return '$prefix, 음이 낮음, 올리세요';
   }
-  return '$prefix, $absoluteCents센트 이내, 유지하세요';
+  return '$prefix, 목표에 가까움, 유지하세요';
 }
 
 int _greatestCommonDivisor(int left, int right) {

@@ -15,5 +15,10 @@ Future<void> main() async {
     initialValue: initialPreferences,
     saver: store.save,
   );
-  runApp(ToaunerApp(preferencesController: controller));
+  runApp(
+    ToaunerApp(
+      preferencesController: controller,
+      startWithStandardTuning: true,
+    ),
+  );
 }

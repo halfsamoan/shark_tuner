@@ -193,6 +193,7 @@ final class IsolateTunerEngine implements TunerEngine {
   var _disposed = false;
   int _lastPluckLatencySequence = 0;
   int _lastOnsetSequence = 0;
+  static const _latencySampleWindow = 256;
   final List<int> _pluckToDisplayLatencyMicros = [];
   int? _heardOtherStringNumber;
   int _heardOtherFrameCount = 0;
@@ -351,6 +352,12 @@ final class IsolateTunerEngine implements TunerEngine {
     if (freshLatencySample) {
       _lastPluckLatencySequence = pluckLatencySequence;
       _pluckToDisplayLatencyMicros.add(pluckLatencyMicros + processingMicros);
+      if (_pluckToDisplayLatencyMicros.length > _latencySampleWindow) {
+        _pluckToDisplayLatencyMicros.removeRange(
+          0,
+          _pluckToDisplayLatencyMicros.length - _latencySampleWindow,
+        );
+      }
     }
     final pluckToDisplayP95 = _durationP95(_pluckToDisplayLatencyMicros);
     final tuning = _tuning!;

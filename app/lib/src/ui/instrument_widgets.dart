@@ -69,18 +69,25 @@ class InstrumentHeaderBar extends StatelessWidget
     super.key,
     required this.section,
     this.showBack = false,
+    this.showBrand = true,
+    this.hidden = false,
     this.actions = const [],
   });
 
   final String section;
   final bool showBack;
+  final bool showBrand;
+  final bool hidden;
   final List<Widget> actions;
 
   @override
-  Size get preferredSize => const Size.fromHeight(56);
+  Size get preferredSize => hidden ? Size.zero : const Size.fromHeight(56);
 
   @override
   Widget build(BuildContext context) {
+    if (hidden) {
+      return const SizedBox.shrink();
+    }
     return AppBar(
       automaticallyImplyLeading: false,
       toolbarHeight: preferredSize.height,
@@ -95,37 +102,47 @@ class InstrumentHeaderBar extends StatelessWidget
               icon: const Icon(Icons.chevron_left_rounded),
             )
           : null,
-      title: Row(
-        children: [
-          const BrandMark(),
-          const SizedBox(width: 10),
-          Flexible(
-            child: Text(
-              'SharkTune',
+      title: showBrand
+          ? Row(
+              children: [
+                const BrandMark(),
+                const SizedBox(width: 10),
+                Flexible(
+                  child: Text(
+                    'SharkTune',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.instrumentType.body.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : Text(
+              section,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: context.instrumentType.body.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
-          ),
-        ],
-      ),
       actions: [
-        Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 116),
-            child: Text(
-              section,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: context.instrumentType.caption.copyWith(
-                color: context.terminal.muted,
-                fontWeight: FontWeight.w500,
+        if (showBrand)
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 116),
+              child: Text(
+                section,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.instrumentType.caption.copyWith(
+                  color: context.terminal.muted,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ),
-        ),
         ...actions,
         const SizedBox(width: 14),
       ],
@@ -296,26 +313,330 @@ class FrequencyReadout extends StatelessWidget {
     return Semantics(
       label: semanticsLabel,
       excludeSemantics: true,
-      child: Text.rich(
-        TextSpan(
-          children: [
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text.rich(
             TextSpan(
-              text: measured == null ? '측정 대기' : '측정 ',
-              style: labelStyle,
+              children: [
+                TextSpan(
+                  text: measured == null ? '측정 대기' : '측정 ',
+                  style: labelStyle,
+                ),
+                if (measured != null)
+                  TextSpan(
+                    text: '${measured.toStringAsFixed(2)} Hz',
+                    style: valueStyle,
+                  ),
+              ],
             ),
-            if (measured != null)
-              TextSpan(
-                text: '${measured.toStringAsFixed(2)} Hz',
-                style: valueStyle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 2),
+          Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(text: '목표 ', style: labelStyle),
+                TextSpan(text: '$target Hz', style: valueStyle),
+              ],
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Explicit presentation states for the live measurement focal point.
+///
+/// These states are intentionally UI-only: pitch detection and tuning-domain
+/// contracts continue to expose their existing result types.
+enum CalibrationSpineState {
+  waiting,
+  coarse,
+  adjusting,
+  near,
+  locked,
+  referenceTone,
+}
+
+/// The main live-tuner reading. It joins the cent value, target note, measured
+/// frequency and calibrated pitch tape into one instrument-like composition so
+/// the player does not have to scan competing cards.
+class CalibrationSpine extends StatelessWidget {
+  const CalibrationSpine({
+    super.key,
+    required this.cents,
+    required this.noteLabel,
+    required this.stringNumber,
+    required this.measuredHz,
+    required this.targetHz,
+    required this.state,
+    required this.status,
+  });
+
+  final double? cents;
+  final String noteLabel;
+  final int stringNumber;
+  final double? measuredHz;
+  final double targetHz;
+  final CalibrationSpineState state;
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final isLocked = state == CalibrationSpineState.locked;
+    final isReference = state == CalibrationSpineState.referenceTone;
+    final isCoarse = state == CalibrationSpineState.coarse;
+    final foreground = isLocked
+        ? context.terminal.lockHold
+        : isCoarse
+        ? context.terminal.amber
+        : context.terminal.text;
+    final visibleFrequency = measuredHz == null
+        ? '— Hz'
+        : '${measuredHz!.toStringAsFixed(2)} Hz';
+    final noteDetail = '$noteLabel · $stringNumber번 줄';
+    final measuredSemantics = measuredHz == null
+        ? '측정 대기'
+        : '측정 ${measuredHz!.toStringAsFixed(2)} 헤르츠';
+    final semanticsLabel =
+        '$stringNumber번 줄 $noteLabel, $measuredSemantics, 목표 ${targetHz.toStringAsFixed(2)} 헤르츠, $status.';
+
+    return Semantics(
+      key: const Key('calibration-spine'),
+      label: semanticsLabel,
+      excludeSemantics: true,
+      child: Column(
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              visibleFrequency,
+              textAlign: TextAlign.center,
+              style: context.instrumentType.centsHero.copyWith(
+                color: isReference ? context.terminal.information : foreground,
+                fontWeight: FontWeight.w500,
               ),
-            TextSpan(text: '  ·  목표 ', style: labelStyle),
-            TextSpan(text: '$target Hz', style: valueStyle),
+            ),
+          ),
+          Text(
+            noteDetail,
+            textAlign: TextAlign.center,
+            style: context.instrumentType.subhead.copyWith(
+              color: foreground,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 10),
+          FrequencyReadout(measuredHz: measuredHz, targetHz: targetHz),
+          const SizedBox(height: 14),
+          PitchTape(cents: cents, locked: isLocked, status: status),
+        ],
+      ),
+    );
+  }
+}
+
+/// The production, Hz-first tuner face.  The cent value remains an internal
+/// position input for the calibrated rail; it is never rendered or announced.
+class SharkTuneTuningCore extends StatelessWidget {
+  const SharkTuneTuningCore({
+    super.key,
+    required this.tuningLabel,
+    required this.cents,
+    required this.noteLabel,
+    required this.stringNumber,
+    required this.measuredHz,
+    required this.targetHz,
+    required this.state,
+    required this.status,
+    this.showBack = false,
+    this.onBack,
+    this.onStage,
+  });
+
+  final String tuningLabel;
+  final double? cents;
+  final String noteLabel;
+  final int stringNumber;
+  final double? measuredHz;
+  final double targetHz;
+  final CalibrationSpineState state;
+  final String status;
+  final bool showBack;
+  final VoidCallback? onBack;
+  final VoidCallback? onStage;
+
+  @override
+  Widget build(BuildContext context) {
+    final locked = state == CalibrationSpineState.locked;
+    final referenceTone = state == CalibrationSpineState.referenceTone;
+    final foreground = locked
+        ? context.terminal.lockHold
+        : state == CalibrationSpineState.coarse
+        ? context.terminal.amber
+        : context.terminal.text;
+    final frequency = measuredHz?.toStringAsFixed(2) ?? '— —.— —';
+    final measurementDescription = measuredHz == null
+        ? '측정 대기'
+        : '현재 ${measuredHz!.toStringAsFixed(2)} 헤르츠';
+    return Semantics(
+      key: const Key('sharktune-tuning-core'),
+      label:
+          '$stringNumber번 줄 $noteLabel, $measurementDescription, 목표 ${targetHz.toStringAsFixed(2)} 헤르츠. $status',
+      excludeSemantics: true,
+      child: Column(
+        children: [
+          _SharkTuneMasthead(
+            tuningLabel: tuningLabel,
+            showBack: showBack,
+            onBack: onBack,
+            onStage: onStage,
+          ),
+          const SizedBox(height: 12),
+          PitchTape(cents: cents, locked: locked, status: status),
+          const SizedBox(height: 9),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              '$frequency Hz',
+              textAlign: TextAlign.center,
+              style: context.instrumentType.centsHero.copyWith(
+                color: referenceTone
+                    ? context.terminal.information
+                    : foreground,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '$noteLabel  ·  STRING $stringNumber',
+            textAlign: TextAlign.center,
+            style: context.instrumentType.subhead.copyWith(
+              color: foreground,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            'TARGET ${targetHz.toStringAsFixed(2)} Hz',
+            textAlign: TextAlign.center,
+            style: context.instrumentType.status.copyWith(
+              color: context.terminal.information,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SharkTuneMasthead extends StatelessWidget {
+  const _SharkTuneMasthead({
+    required this.tuningLabel,
+    required this.showBack,
+    this.onBack,
+    this.onStage,
+  });
+
+  final String tuningLabel;
+  final bool showBack;
+  final VoidCallback? onBack;
+  final VoidCallback? onStage;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 48,
+          child: Row(
+            children: [
+              SizedBox(
+                width: 48,
+                child: showBack
+                    ? IconButton(
+                        tooltip: '뒤로',
+                        onPressed: onBack,
+                        icon: const Icon(Icons.chevron_left_rounded),
+                      )
+                    : null,
+              ),
+              const Spacer(),
+              TextButton(
+                key: const Key('open-stage-mode'),
+                onPressed: onStage,
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(48, 48),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                child: Text(
+                  'STAGE',
+                  style: context.instrumentType.status.copyWith(
+                    color: context.terminal.information,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            BrandMark(width: 52, height: 42, color: context.terminal.accent),
+            const SizedBox(width: 8),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  'SharkTune',
+                  key: const Key('sharktune-wordmark'),
+                  style: context.instrumentType.centsHero.copyWith(
+                    color: context.terminal.text,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -2,
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.center,
-      ),
+        const SizedBox(height: 2),
+        Text(
+          'OFFLINE PRECISION GUITAR TUNER',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: context.instrumentType.status.copyWith(
+            color: context.terminal.textSecondary,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 1.15,
+          ),
+        ),
+        const SizedBox(height: 7),
+        Text(
+          tuningLabel,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: context.instrumentType.status.copyWith(
+            color: context.terminal.muted,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.6,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -553,7 +874,7 @@ class VerificationBadge extends StatelessWidget {
     final label = verified
         ? '검증된 튜닝 ✓'
         : showDevelopmentStatus
-        ? 'DEV·사람 검증 필요'
+        ? '출처 검토 중'
         : '확인 중';
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -583,6 +904,7 @@ class TuningNoteCell extends StatelessWidget {
     required this.stringNumber,
     this.active = false,
     this.completed = false,
+    this.compact = false,
     this.onTap,
   });
 
@@ -590,6 +912,7 @@ class TuningNoteCell extends StatelessWidget {
   final int stringNumber;
   final bool active;
   final bool completed;
+  final bool compact;
   final VoidCallback? onTap;
 
   @override
@@ -597,8 +920,8 @@ class TuningNoteCell extends StatelessWidget {
     final textScale = MediaQuery.textScalerOf(
       context,
     ).scale(1).clamp(1, 2).toDouble();
-    final width = 48 + 12 * (textScale - 1);
-    final height = 52 + 32 * (textScale - 1);
+    final width = compact ? 48.0 : 48 + 12 * (textScale - 1);
+    final height = compact ? 52.0 : 52 + 32 * (textScale - 1);
     final foreground = active
         ? context.terminal.accentInk
         : context.terminal.text;
@@ -625,29 +948,32 @@ class TuningNoteCell extends StatelessWidget {
           child: Stack(
             children: [
               Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      label,
-                      style: context.instrumentType.caption.copyWith(
-                        color: foreground,
-                        fontFamily: 'IBM Plex Mono',
-                        height: 1,
-                        fontWeight: FontWeight.w700,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        label,
+                        style: context.instrumentType.caption.copyWith(
+                          color: foreground,
+                          fontFamily: 'IBM Plex Mono',
+                          height: 1,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$stringNumber',
-                      style: context.instrumentType.status.copyWith(
-                        color: active
-                            ? context.terminal.accentInk
-                            : context.terminal.muted,
-                        fontWeight: FontWeight.w500,
+                      const SizedBox(height: 2),
+                      Text(
+                        '$stringNumber',
+                        style: context.instrumentType.status.copyWith(
+                          color: active
+                              ? context.terminal.accentInk
+                              : context.terminal.muted,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               if (completed)
@@ -670,6 +996,161 @@ class TuningNoteCell extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// A continuous guitar-string selector inspired by a physical bridge rather
+/// than a row of unrelated application buttons.
+class TuningStringRail extends StatelessWidget {
+  const TuningStringRail({
+    super.key,
+    required this.labels,
+    required this.stringNumbers,
+    required this.selectedIndex,
+    required this.completedStringNumbers,
+    required this.onSelect,
+  }) : assert(labels.length == stringNumbers.length);
+
+  final List<String> labels;
+  final List<int> stringNumbers;
+  final int selectedIndex;
+  final Set<int> completedStringNumbers;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: '튜닝 현 선택 레일',
+      child: SizedBox(
+        key: const Key('tuning-string-rail'),
+        height: 82,
+        width: double.infinity,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            RepaintBoundary(
+              child: CustomPaint(
+                painter: _TuningStringRailPainter(
+                  stringCount: labels.length,
+                  selectedIndex: selectedIndex,
+                  terminal: context.terminal,
+                ),
+              ),
+            ),
+            Material(
+              type: MaterialType.transparency,
+              child: Row(
+                children: [
+                  for (var index = 0; index < labels.length; index++)
+                    Expanded(
+                      child: Semantics(
+                        button: true,
+                        selected: selectedIndex == index,
+                        label:
+                            '${stringNumbers[index]}번 줄 ${labels[index]}${completedStringNumbers.contains(stringNumbers[index]) ? ', 완료' : ''}',
+                        child: InkWell(
+                          key: Key('tuning-string-${stringNumbers[index]}'),
+                          onTap: () => onSelect(index),
+                          child: Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 7),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      labels[index],
+                                      style: context.instrumentType.caption
+                                          .copyWith(
+                                            color: selectedIndex == index
+                                                ? context.terminal.accent
+                                                : context.terminal.text,
+                                            fontFamily: 'IBM Plex Mono',
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                    ),
+                                    Text(
+                                      '${stringNumbers[index]}th',
+                                      style: context.instrumentType.status
+                                          .copyWith(
+                                            color: selectedIndex == index
+                                                ? context.terminal.accent
+                                                : context.terminal.muted,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TuningStringRailPainter extends CustomPainter {
+  const _TuningStringRailPainter({
+    required this.stringCount,
+    required this.selectedIndex,
+    required this.terminal,
+  });
+
+  final int stringCount;
+  final int selectedIndex;
+  final TerminalTheme terminal;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final boundary = Paint()
+      ..color = terminal.line
+      ..strokeWidth = 1;
+    final post = Paint()
+      ..color = terminal.surfaceHighlight
+      ..strokeWidth = 2;
+    final string = Paint()
+      ..color = terminal.textSecondary
+      ..strokeWidth = 2;
+    final active = Paint()
+      ..color = terminal.accent
+      ..strokeWidth = 3;
+    canvas.drawLine(Offset.zero, Offset(size.width, 0), boundary);
+    canvas.drawLine(
+      Offset(0, size.height - 1),
+      Offset(size.width, size.height - 1),
+      boundary,
+    );
+    final cellWidth = size.width / stringCount;
+    const stringY = 27.0;
+    canvas.drawLine(
+      Offset(12, stringY),
+      Offset(size.width - 12, stringY),
+      string,
+    );
+    for (var index = 0; index <= stringCount; index++) {
+      final x = cellWidth * index;
+      canvas.drawLine(Offset(x, 8), Offset(x, 54), post);
+    }
+    final selectedX = cellWidth * (selectedIndex + .5);
+    canvas.drawLine(Offset(selectedX, 10), Offset(selectedX, 48), active);
+    canvas.drawCircle(Offset(selectedX, stringY), 5, active);
+  }
+
+  @override
+  bool shouldRepaint(covariant _TuningStringRailPainter oldDelegate) {
+    return oldDelegate.stringCount != stringCount ||
+        oldDelegate.selectedIndex != selectedIndex ||
+        oldDelegate.terminal != terminal;
   }
 }
 
@@ -698,18 +1179,11 @@ class PitchTape extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       label: status,
-      value: cents == null ? '측정값 없음' : '${cents!.toStringAsFixed(1)} 센트',
+      value: cents == null ? '주파수 대기' : '현재 주파수 위치',
       child: RepaintBoundary(
-        child: Container(
-          height: 88,
-          decoration: BoxDecoration(
-            color: locked
-                ? context.terminal.accent.withValues(alpha: 0.08)
-                : context.terminal.sunken,
-            border: Border.all(
-              color: locked ? context.terminal.lockHold : context.terminal.line,
-            ),
-          ),
+        child: SizedBox(
+          height: 94,
+          width: double.infinity,
           child: CustomPaint(
             painter: _PitchTapePainter(
               cents: cents,
@@ -741,40 +1215,45 @@ class _PitchTapePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     const horizontalPadding = 20.0;
     final tapeWidth = size.width - horizontalPadding * 2;
+    const meterTop = 19.0;
+    final meterBottom = size.height - 27;
+    final meterCenter = (meterTop + meterBottom) / 2;
     double xForCents(double cents) =>
         horizontalPadding + tapeWidth * (cents.clamp(-50, 50) + 50) / 100;
-    final greenZone = Paint()..color = terminal.accent.withValues(alpha: 0.09);
+    final greenZone = Paint()
+      ..color = terminal.lockHold.withValues(alpha: locked ? 0.24 : 0.1);
     canvas.drawRect(
-      Rect.fromLTRB(xForCents(-5), 8, xForCents(5), size.height - 22),
+      Rect.fromLTRB(xForCents(-5), meterTop, xForCents(5), meterBottom),
       greenZone,
     );
     final minor = Paint()
       ..color = terminal.line
       ..strokeWidth = 1;
     final center = Paint()
-      ..color = terminal.muted
-      ..strokeWidth = 2;
+      ..color = terminal.accent
+      ..strokeWidth = 1;
     for (var index = 0; index <= 20; index++) {
       final x = horizontalPadding + tapeWidth * index / 20;
       final isMajor = index % 5 == 0;
-      final height = isMajor ? 40.0 : 22.0;
+      final height = isMajor ? 30.0 : 14.0;
       canvas.drawLine(
-        Offset(x, 40 - height / 2),
-        Offset(x, 40 + height / 2),
+        Offset(x, meterCenter - height / 2),
+        Offset(x, meterCenter + height / 2),
         index == 10 ? center : minor,
       );
     }
-    _paintLabel(canvas, '−50  ♭', Offset(horizontalPadding, 78));
+    _paintLabel(canvas, 'LOW', Offset(horizontalPadding, size.height - 18));
     _paintLabel(
       canvas,
-      '0',
-      Offset(size.width / 2, 78),
+      'TARGET',
+      Offset(size.width / 2, size.height - 18),
       alignment: TextAlign.center,
+      color: terminal.information,
     );
     _paintLabel(
       canvas,
-      '♯  +50',
-      Offset(size.width - horizontalPadding, 78),
+      'HIGH',
+      Offset(size.width - horizontalPadding, size.height - 18),
       alignment: TextAlign.right,
     );
     final measuredCents = cents;
@@ -789,12 +1268,16 @@ class _PitchTapePainter extends CustomPainter {
             : absoluteCents <= 15
             ? terminal.text
             : terminal.amber
-        ..strokeWidth = 3;
-      canvas.drawLine(Offset(x, 8), Offset(x, 69), marker);
+        ..strokeWidth = 2;
+      canvas.drawLine(
+        Offset(x, meterTop + 2),
+        Offset(x, meterBottom - 2),
+        marker,
+      );
       final triangle = Path()
-        ..moveTo(x - 6, 5)
-        ..lineTo(x + 6, 5)
-        ..lineTo(x, 13)
+        ..moveTo(x - 7, meterTop - 8)
+        ..lineTo(x + 7, meterTop - 8)
+        ..lineTo(x, meterTop + 1)
         ..close();
       canvas.drawPath(triangle, marker);
       if (absoluteCents > 50) {
@@ -802,14 +1285,14 @@ class _PitchTapePainter extends CustomPainter {
         final chevron = Path();
         if (pointsRight) {
           chevron
-            ..moveTo(size.width - 12, 32)
-            ..lineTo(size.width - 5, 40)
-            ..lineTo(size.width - 12, 48);
+            ..moveTo(size.width - 14, meterCenter - 10)
+            ..lineTo(size.width - 6, meterCenter)
+            ..lineTo(size.width - 14, meterCenter + 10);
         } else {
           chevron
-            ..moveTo(12, 32)
-            ..lineTo(5, 40)
-            ..lineTo(12, 48);
+            ..moveTo(14, meterCenter - 10)
+            ..lineTo(6, meterCenter)
+            ..lineTo(14, meterCenter + 10);
         }
         canvas.drawPath(
           chevron,
@@ -828,12 +1311,13 @@ class _PitchTapePainter extends CustomPainter {
     String label,
     Offset anchor, {
     TextAlign alignment = TextAlign.left,
+    Color? color,
   }) {
     final painter = TextPainter(
       text: TextSpan(
         text: label,
         style: type.status.copyWith(
-          color: terminal.muted,
+          color: color ?? terminal.muted,
           fontWeight: FontWeight.w600,
         ),
       ),

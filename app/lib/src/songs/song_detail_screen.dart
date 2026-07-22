@@ -34,7 +34,6 @@ class SongDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final song = match.song;
     final tuning = match.tuning;
-    final cents = _formatCents(song.centsOffset);
     return Scaffold(
       appBar: const InstrumentHeaderBar(section: '곡 상세', showBack: true),
       body: SafeArea(
@@ -77,19 +76,6 @@ class SongDetailScreen extends StatelessWidget {
               value: 'A4 ${tuning.referenceA4Hz.toStringAsFixed(2)} Hz',
               valueStyle: context.instrumentType.measurement,
             ),
-            DefinitionRow(
-              label: '녹음 오프셋',
-              value: cents,
-              valueColor: song.centsOffset == 0
-                  ? context.terminal.text
-                  : context.terminal.accent,
-              valueStyle: context.instrumentType.measurement,
-            ),
-            if (includeUnverifiedSongs)
-              DefinitionRow(
-                label: 'DEV·버전',
-                value: '${tuning.id}@${tuning.version}',
-              ),
             const SizedBox(height: 22),
             InstrumentSectionLabel('개방현 · 저음 → 고음'),
             const SizedBox(height: 10),
@@ -166,7 +152,8 @@ class SongDetailScreen extends StatelessWidget {
           ),
           InstrumentStatusBar(
             state: '곡 설정 준비됨',
-            detail: '${tuning.strings.length}현 │ $cents',
+            detail:
+                '${tuning.strings.length}현 │ A4 ${tuning.referenceA4Hz.toStringAsFixed(0)} Hz',
           ),
         ],
       ),
@@ -287,7 +274,7 @@ class _VerificationNotice extends StatelessWidget {
               verified
                   ? '검증됨 ✓'
                   : showDevelopmentStatus
-                  ? 'DEV·출처 확인 전 후보 데이터'
+                  ? '출처 검토 중'
                   : '튜닝 확인 중',
               style: context.instrumentType.caption.copyWith(
                 color: verified
@@ -301,7 +288,7 @@ class _VerificationNotice extends StatelessWidget {
               verified
                   ? '출처 ${song.sources.length}개 확인'
                   : showDevelopmentStatus
-                  ? 'DEV·독립 출처와 사람 검증 전에는 출시 곡에 포함되지 않습니다.'
+                  ? '출처를 검토 중입니다. 확인되면 곡 정보가 업데이트됩니다.'
                   : '확인이 끝난 곡만 검색 결과에 표시됩니다.',
               style: context.instrumentType.status.copyWith(
                 color: context.terminal.muted,
@@ -312,12 +299,4 @@ class _VerificationNotice extends StatelessWidget {
       ),
     );
   }
-}
-
-String _formatCents(double value) {
-  if (value == 0) {
-    return '0 cents';
-  }
-  final sign = value > 0 ? '+' : '';
-  return '$sign${value.toStringAsFixed(value == value.roundToDouble() ? 0 : 1)} cents';
 }

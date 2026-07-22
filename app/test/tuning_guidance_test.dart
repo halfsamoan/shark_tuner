@@ -11,7 +11,7 @@ void main() {
 
     expect(guidance.direction, TuningDirection.lower);
     expect(guidance.headline, '음이 높아요');
-    expect(guidance.instruction, contains('6번 줄 페그를 풀어 낮추세요'));
+    expect(guidance.instruction, contains('6번 줄을 조금 풀어 낮추세요'));
     expect(guidance.turnEstimate, '약 1/8바퀴');
   });
 
@@ -23,7 +23,7 @@ void main() {
     );
 
     expect(guidance.direction, TuningDirection.raise);
-    expect(guidance.instruction, contains('1번 줄 페그를 조여 올리세요'));
+    expect(guidance.instruction, contains('1번 줄을 조금 조여 올리세요'));
     expect(guidance.turnEstimate, '약 1/4바퀴');
   });
 
@@ -117,7 +117,7 @@ void main() {
         cents: 132,
         guidance: guidance,
       ),
-      '6번 줄, E플랫2, 132센트 높음, 낮추세요',
+      '6번 줄, E플랫2, 음이 높음, 낮추세요',
     );
   });
 }

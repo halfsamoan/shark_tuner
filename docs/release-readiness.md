@@ -22,13 +22,18 @@ The default command writes `reports/release/release-readiness.json` and exits su
 
 `tool/check.ps1` runs the gate's isolated self-test. It does not run strict release validation because signing credentials and store documents are intentionally incomplete during development.
 
-## Current release blockers
+## Current release gates
 
-As of 2026-07-14:
+As of 2026-07-19, the repository policy and packaging gates are ready: the
+privacy policy is public at
+`https://sharktune-support.kimkyungmun.chatgpt.site`, Data Safety is reviewed
+against the signed `1.0.0+1` AAB, and the strict local readiness command must
+remain green for the exact upload artifact.
 
-- Android 릴리스는 디버그 키를 더 이상 사용하지 않으며, 비밀 `key.properties`가 없으면 릴리스 빌드를 즉시 거부한다. 프로젝트 소유자가 업로드 키를 생성하고 로컬 설정을 채우는 단계가 남았다.
-- `docs/privacy-policy.md` is drafted but needs the final developer name, contact, effective date, and public HTTPS URL.
-- `docs/play-data-safety.md` is drafted but must be reviewed against the exact upload build.
+The following are still external release gates and cannot be inferred from the
+repository: an unused Play Console `versionCode`, Play App Signing enrolment and
+upload-certificate comparison, the 12 opted-in tester / 14-day closed test,
+pre-launch report review, and production-access approval.
 
 `tool/license_audit.ps1` scans the resolved package graph, records license-file SHA-256 values, and fails on GPL, AGPL, LGPL, or a missing top-level license file. Workspace-owned packages and the pinned Flutter SDK are outside this package-level scan; Flutter SDK provenance is covered by its pinned distribution and bundled notices.
 

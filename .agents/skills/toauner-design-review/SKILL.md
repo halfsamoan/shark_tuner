@@ -35,6 +35,34 @@ direction, string rail, confidence/status, then warnings. For the home screen,
 starting free tuning outranks song discovery. For settings and search, use calm
 grouped rows and a text-forward hierarchy.
 
+## Calibration Spine contract
+
+For the main tuner, make the `CalibrationSpine` the sole visual focal point.
+It must combine the cent reading, neutral target, target note/string, measured
+and target Hz, and the calibrated pitch tape. Keep the note/string identifiable
+but subordinate to cents. Do not reimplement detector thresholds in the widget;
+receive an explicit presentation state and status sentence from the UI adapter.
+
+- Show `––.–¢` while no valid measurement is available; hide the marker.
+- Show `+50¢ 이상` or `−50¢ 이상` in coarse mode; preserve the endpoint cue.
+- Use text and marker position, not colour alone, for adjusting, near, locked,
+  no-signal, noisy, clipping, and reference-tone states.
+- Keep the six-string rail fully visible at 360dp without a horizontal scroll.
+  Each hit target is at least 48dp and must remain legible at 2.0× text.
+- Keep normal tuning guidance as a quiet text slot, not a card or icon-only
+  rail. Escalate only permission, no-signal, quiet, noisy, wrong-string, and
+  clipping states to a state panel.
+- Show physical peg rotation only after an instrument profile is configured;
+  otherwise offer a text action to set it up. Never invent a peg direction.
+- Make the spine a single TalkBack sentence: string/note, measured Hz, target
+  Hz, cent error, then the next action. Throttle live updates to meaningful
+  transitions or at most once a second.
+
+Before accepting a tuner golden, inspect 360×780 Abyss, Paper, and Clipping,
+plus a 2.0× text-scale render. Treat overflow, hidden sixth string, duplicate
+wordmark/section navigation, `REF` shorthand, a horizontal rail, or a normal
+state icon without action text as a blocking defect.
+
 ## Review rubric — 100 points
 
 Start every category at full points and subtract only for evidence in code,

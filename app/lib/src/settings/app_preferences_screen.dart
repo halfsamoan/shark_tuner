@@ -90,8 +90,8 @@ class AppPreferencesScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               preferences.toleranceMode == TunerToleranceMode.beginner
-                  ? '빠른 ±2¢ 잠금 후 ±5¢ 범위를 유지합니다.'
-                  : '빠른 ±2¢ 잠금 후 ±2¢ 범위를 유지합니다.',
+                  ? '빠르게 잠근 뒤, 조금 넓은 안정 범위를 유지합니다.'
+                  : '정밀하게 잠근 뒤, 좁은 안정 범위를 유지합니다.',
               style: context.instrumentType.caption.copyWith(
                 color: context.terminal.textSecondary,
               ),

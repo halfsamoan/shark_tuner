@@ -43,9 +43,9 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(find.text('G3'), findsOneWidget);
-      expect(find.text('+18¢'), findsOneWidget);
+      expect(find.text('196.00 Hz'), findsOneWidget);
       expect(find.text('▼ 낮추세요'), findsOneWidget);
-      expect(find.bySemanticsLabel('3번 줄 G3, 18센트 높음, 낮추세요'), findsOneWidget);
+      expect(find.bySemanticsLabel('3번 줄 G3, 음이 높음, 낮추세요'), findsOneWidget);
 
       engine.emit(
         LiveTunerState(

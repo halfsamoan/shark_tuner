@@ -34,5 +34,12 @@ key.properties
 *.sqlite3
 reports/
 
+# Local reference collections, generated test artifacts, and release uploads.
+# Android packages are published through GitHub Releases instead of Git history.
+_design_refs/
+app/test/failures/
+dist/
+support-site/
+
 # The Pub workspace has one shared application lockfile at the repository root.
 !/pubspec.lock
