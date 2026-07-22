@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toauner.local/schemas/public-corpus-manifest.v1.json",
+  "title": "toauner public guitar corpus provenance manifest",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "profile",
+    "generatedBy",
+    "toolVersion",
+    "groundTruthPolicy",
+    "datasets",
+    "fixtureCount",
+    "fixtures"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "profile": { "enum": ["ci", "full"] },
+    "generatedBy": { "const": "tool/prepare_corpus.dart" },
+    "toolVersion": { "type": "string", "minLength": 1 },
+    "groundTruthPolicy": { "type": "object" },
+    "datasets": { "type": "array", "minItems": 3 },
+    "fixtureCount": { "type": "integer", "minimum": 1 },
+    "fixtures": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "file",
+          "corpusClass",
+          "dataset",
+          "license",
+          "sourceFile",
+          "sourceSha256",
+          "sourceSampleRateHz",
+          "sourceBitsPerSample",
+          "sourceChannelCount",
+          "selectedChannel",
+          "nominalMidi",
+          "nominalFrequencyHz",
+          "velocity",
+          "referenceKind",
+          "outputSampleRateHz",
+          "outputBitsPerSample",
+          "stableStartMs",
+          "stableEndMs",
+          "windowSamples",
+          "transforms",
+          "outputSha256"
+        ],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "file": { "type": "string", "pattern": "\\.wav$" },
+          "corpusClass": {
+            "enum": [
+              "guitartechs-di",
+              "guitartechs-amp",
+              "nsynth-low-16k",
+              "nsynth-low-48k",
+              "user-guitar"
+            ]
+          },
+          "dataset": {
+            "enum": [
+              "guitartechs-v1",
+              "nsynth-test",
+              "user-guitar-samsung-sm-s926n-20260713-v1"
+            ]
+          },
+          "license": { "enum": ["CC BY 4.0", "project-provided"] },
+          "rights": { "enum": ["project_provided_user_recording"] },
+          "sourceUrl": { "type": "string", "format": "uri" },
+          "sourceFile": { "type": "string", "minLength": 1 },
+          "sourceSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "sourceSampleRateHz": { "enum": [16000, 44100, 48000] },
+          "sourceBitsPerSample": { "enum": [16, 24] },
+          "sourceChannelCount": { "enum": [1, 2] },
+          "selectedChannel": { "const": 0 },
+          "nominalMidi": { "type": "integer", "minimum": 0, "maximum": 127 },
+          "nominalFrequencyHz": { "type": "number", "minimum": 43 },
+          "velocity": { "type": "integer", "minimum": 1, "maximum": 127 },
+          "referenceKind": {
+            "enum": [
+              "nominal_midi_note_not_subcent_ground_truth",
+              "uncalibrated_mobile_tuner_nominal_center"
+            ]
+          },
+          "outputSampleRateHz": { "enum": [16000, 48000] },
+          "outputBitsPerSample": { "const": 16 },
+          "stableStartMs": { "type": "integer", "minimum": 0 },
+          "stableEndMs": { "type": "integer", "minimum": 1 },
+          "windowSamples": { "enum": [4096, 8192] },
+          "transforms": { "type": "array", "items": { "type": "string" } },
+          "outputSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "sourceExtension": { "type": "string" },
+          "detectedSourceContainer": { "type": "string" },
+          "sourceExtensionMatchesContainer": { "type": "boolean" },
+          "deviceModel": { "type": "string" },
+          "recordingApp": { "type": "string" },
+          "recordingAppPackage": { "type": "string" },
+          "recordingAppVersion": { "type": "string" },
+          "recordingAppUrl": { "type": "string", "format": "uri" },
+          "referenceTuner": { "type": "string" },
+          "referenceTunerPackage": { "type": "string" },
+          "referenceTunerVersion": { "type": "string" },
+          "referenceTunerUrl": { "type": "string", "format": "uri" },
+          "a4ReferenceHz": { "const": 440 },
+          "stringNumber": { "type": "integer", "minimum": 1, "maximum": 6 },
+          "noteName": { "type": "string" },
+          "pickStrength": { "enum": ["soft", "medium", "hard"] },
+          "offTuning": { "type": "boolean" },
+          "annotatedFrequencyHz": { "type": "number", "minimum": 43 },
+          "sourcePeakDbfs": { "type": "number", "maximum": 0 },
+          "sourceClippedSampleCount": { "type": "integer", "minimum": 0 },
+          "sourceClippedSampleRate": { "type": "number", "minimum": 0, "maximum": 1 },
+          "clippingDetected": { "type": "boolean" },
+          "resampledPeakDbfsBeforeAttenuation": { "type": "number" },
+          "resampledClippedSampleCountBeforeAttenuation": { "type": "integer", "minimum": 0 },
+          "fixedGainDb": { "const": -3.0 },
+          "fixedGainLinear": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+          "outputPeakDbfsBeforeEncoding": { "type": "number", "maximum": 0 },
+          "outputClippedSampleCountBeforeEncoding": { "const": 0 },
+          "sourceAttackSeconds": { "type": "number", "minimum": 0 },
+          "outputAttackMs": { "type": "number", "minimum": 0 }
+        },
+        "additionalProperties": true,
+        "allOf": [
+          {
+            "if": {
+              "properties": { "corpusClass": { "const": "user-guitar" } }
+            },
+            "then": {
+              "required": [
+                "rights",
+                "sourceExtension",
+                "detectedSourceContainer",
+                "sourceExtensionMatchesContainer",
+                "deviceModel",
+                "recordingApp",
+                "recordingAppPackage",
+                "recordingAppVersion",
+                "recordingAppUrl",
+                "referenceTuner",
+                "referenceTunerPackage",
+                "referenceTunerVersion",
+                "referenceTunerUrl",
+                "a4ReferenceHz",
+                "stringNumber",
+                "noteName",
+                "pickStrength",
+                "offTuning",
+                "sourcePeakDbfs",
+                "sourceClippedSampleCount",
+                "sourceClippedSampleRate",
+                "clippingDetected",
+                "resampledPeakDbfsBeforeAttenuation",
+                "resampledClippedSampleCountBeforeAttenuation",
+                "fixedGainDb",
+                "fixedGainLinear",
+                "outputPeakDbfsBeforeEncoding",
+                "outputClippedSampleCountBeforeEncoding",
+                "sourceAttackSeconds",
+                "outputAttackMs"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "additionalProperties": false
+}

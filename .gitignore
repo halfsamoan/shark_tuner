@@ -1,0 +1,45 @@
+# Dart / Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+build/
+coverage/
+doc/api/
+pubspec.lock
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local third-party audio corpora and reference downloads
+datasets/
+guitar-techs/
+guitar_tab_*.pdf
+
+# Local SDKs and machine-specific files
+.tools/
+local.properties
+*.jks
+*.keystore
+key.properties
+
+# Generated databases and reports
+*.sqlite
+*.sqlite3
+reports/
+
+# Local reference collections, generated test artifacts, and release uploads.
+# Android packages are published through GitHub Releases instead of Git history.
+_design_refs/
+app/test/failures/
+dist/
+support-site/
+
+# The Pub workspace has one shared application lockfile at the repository root.
+!/pubspec.lock

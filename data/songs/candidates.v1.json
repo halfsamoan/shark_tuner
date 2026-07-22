@@ -1,0 +1,517 @@
+{
+  "schemaVersion": 1,
+  "generatedFrom": "independent-web-audit-through-2026-07-14",
+  "shippingEligible": false,
+  "songs": [
+    {
+      "id": "acdc-back-in-black",
+      "artist": "AC/DC",
+      "searchAliases": ["에이씨디씨"],
+      "title": "Back in Black",
+      "tuningId": "guitar-6-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Jon MacLennan lesson — E standard", "url": "https://www.jonmaclennan.com/blog/back-in-black-chords", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Line 6 song setup — standard tuning", "url": "https://line6.com/data/6/0a0643891075c57b6438b9832f/application/pdf", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Independent sources agree on E standard; no capo or recording offset asserted."
+    },
+    {
+      "id": "acdc-highway-to-hell",
+      "artist": "AC/DC",
+      "searchAliases": ["에이씨디씨"],
+      "title": "Highway to Hell",
+      "tuningId": "guitar-6-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Jon MacLennan lesson — E standard", "url": "https://www.jonmaclennan.com/blog/highway-to-hell-chords", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "CSG Academy chart — standard tuning", "url": "https://csgacademy.com/wp-content/uploads/2015/10/Highway-To-Hell.pdf", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Independent sources agree on E standard; no capo or recording offset asserted."
+    },
+    {
+      "id": "metallica-enter-sandman",
+      "artist": "Metallica",
+      "searchAliases": ["메탈리카"],
+      "title": "Enter Sandman",
+      "tuningId": "guitar-6-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Yousician song guide — standard tuning", "url": "https://yousician.com/songs/guitar/enter-sandman/62a6f7f5249d8522467d1d28", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Chachi Guitar chart — standard tuning", "url": "https://chachiguitar.com/wp-content/uploads/2020/11/Enter-Sandman.pdf", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Independent sources agree on E standard; no capo or recording offset asserted."
+    },
+    {
+      "id": "metallica-master-of-puppets",
+      "artist": "Metallica",
+      "searchAliases": ["메탈리카"],
+      "title": "Master of Puppets",
+      "tuningId": "guitar-6-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Guitar World lesson — standard tuning", "url": "https://www.guitarworld.com/lessons/how-to-play-master-of-puppets-on-guitar", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Riffhard tuning guide — E standard", "url": "https://www.riffhard.com/how-to-tune-your-guitar-for-master-of-puppets/", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Independent sources agree on E standard; no capo or recording offset asserted."
+    },
+    {
+      "id": "nirvana-smells-like-teen-spirit",
+      "artist": "Nirvana",
+      "searchAliases": ["너바나"],
+      "title": "Smells Like Teen Spirit",
+      "tuningId": "guitar-6-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Mr Tabs lesson — standard tuning", "url": "https://www.mrtabs.com/guitar-tab/nirvana-smells-like-teen-spirit/", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "CSG Academy chart — standard tuning", "url": "https://csgacademy.com/wp-content/uploads/2016/04/Smells-Like-Teen-Spirit.pdf", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Sources support the open-string setup; no recording-specific cents correction is asserted."
+    },
+    {
+      "id": "guns-n-roses-sweet-child-o-mine",
+      "artist": "Guns N' Roses",
+      "searchAliases": ["건즈 앤 로지스", "건스 앤 로지스"],
+      "title": "Sweet Child O' Mine",
+      "tuningId": "guitar-6-eb-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "JustinGuitar lesson — E-flat standard", "url": "https://www.justinguitar.com/songs/guns-n-roses-sweet-child-o-mine-intro-chords-tabs-guitar-lesson-st-376", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "MusicRadar lesson — original in E-flat standard", "url": "https://www.musicradar.com/tuition/guitars/weekend-riff-guns-n-roses-sweet-child-o-mine-intro-riff-601537", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Independent sources agree on E-flat standard for the original recording."
+    },
+    {
+      "id": "foo-fighters-everlong",
+      "artist": "Foo Fighters",
+      "searchAliases": ["푸 파이터스"],
+      "title": "Everlong",
+      "tuningId": "guitar-6-drop-d",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "JustinGuitar lesson — Drop D", "url": "https://www.justinguitar.com/songs/foo-fighters-everlong-chords-tabs-guitar-lesson-st-417", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Guitar Lessons 365 lesson — Drop D", "url": "https://guitarlessons365.com/everlong-guitar-lesson-foo-fighters/", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Independent sources agree on Drop D."
+    },
+    {
+      "id": "rage-against-the-machine-killing-in-the-name",
+      "artist": "Rage Against the Machine",
+      "searchAliases": ["레이지 어게인스트 더 머신"],
+      "title": "Killing in the Name",
+      "tuningId": "guitar-6-drop-d",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Tom Morello MasterClass case study — Drop D", "url": "https://www.masterclass.com/classes/tom-morello-teaches-electric-guitar/chapters/case-study-killing-in-the-name", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "JustinGuitar lesson — Drop D", "url": "https://www.justinguitar.com/songs/rage-against-the-machine-killing-in-the-name-chords-tabs-guitar-lesson-sb-314", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Artist-led lesson and independent lesson agree on Drop D."
+    },
+    {
+      "id": "foo-fighters-my-hero",
+      "artist": "Foo Fighters",
+      "searchAliases": ["푸 파이터스"],
+      "title": "My Hero",
+      "tuningId": "guitar-6-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Guitar Lessons 365 lesson — E standard", "url": "https://guitarlessons365.com/my-hero-guitar-lesson-foo-fighters/", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "CSG Academy chart — standard tuning", "url": "https://csgacademy.com/wp-content/uploads/2019/05/My-Hero.pdf", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Song-specific sources agree on E standard; artist-level tuning summaries were rejected where they conflicted."
+    },
+    {
+      "id": "tool-schism",
+      "artist": "Tool",
+      "searchAliases": ["툴"],
+      "title": "Schism",
+      "tuningId": "guitar-6-drop-d",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Guitar Lessons 365 lesson — Drop D", "url": "https://guitarlessons365.com/schism-guitar-lesson-tool/", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "MusicRadar Adam Jones lesson — Schism in Drop D", "url": "https://www.musicradar.com/how-to/tool-guitar-lesson-adam-jones", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Independent sources agree on Drop D."
+    },
+    {
+      "id": "nirvana-come-as-you-are",
+      "artist": "Nirvana",
+      "searchAliases": ["너바나"],
+      "title": "Come as You Are",
+      "tuningId": "guitar-6-d-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Guitar World lesson — D standard", "url": "https://www.guitarworld.com/lessons/how-to-play-come-as-you-are-on-guitar", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Guitar Lessons 365 lesson — D standard", "url": "https://guitarlessons365.com/come-as-you-are-guitar-lesson-nirvana/", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Independent sources agree on D standard."
+    },
+    {
+      "id": "deftones-my-own-summer",
+      "artist": "Deftones",
+      "searchAliases": ["데프톤즈"],
+      "title": "My Own Summer (Shove It)",
+      "tuningId": "guitar-6-drop-c-sharp",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Guitar Lessons 365 lesson — Drop C-sharp", "url": "https://guitarlessons365.com/my-own-summer-shove-it-guitar-lesson-deftones/", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Line 6 song setup — Drop D-flat", "url": "https://line6.com/data/6/0a0643893d0257b75d905276e/application/pdf", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Drop C-sharp and Drop D-flat are enharmonic names for the same six-string setup."
+    },
+    {
+      "id": "system-of-a-down-chop-suey",
+      "artist": "System of a Down",
+      "searchAliases": ["시스템 오브 어 다운", "소아드"],
+      "title": "Chop Suey!",
+      "tuningId": "guitar-6-drop-c",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Guitar Lessons 365 lesson — Drop C", "url": "https://guitarlessons365.com/chop-suey-guitar-lesson-system-of-a-down/", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Line 6 song setup — Drop C", "url": "https://line6.com/data/6/0a06438910b8257b650be743b6/application/pdf", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Independent sources agree on C-G-C-F-A-D."
+    },
+    {
+      "id": "system-of-a-down-toxicity",
+      "artist": "System of a Down",
+      "searchAliases": ["시스템 오브 어 다운", "소아드"],
+      "title": "Toxicity",
+      "tuningId": "guitar-6-drop-c",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Guitar Lessons 365 lesson — Drop C", "url": "https://guitarlessons365.com/toxicity-guitar-lesson-system-of-a-down/", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Ry Naylor lesson chart — dropped C", "url": "https://static1.squarespace.com/static/535140c0e4b0ae193f882ca8/t/5942fe2d3a04119be58f343a/1497562672285/Toxicity%2BPDF.pdf", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Independent sources agree on C-G-C-F-A-D."
+    },
+    {
+      "id": "slipknot-duality",
+      "artist": "Slipknot",
+      "searchAliases": ["슬립낫"],
+      "title": "Duality",
+      "tuningId": "guitar-6-drop-b",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "LickLibrary lesson — dropped B", "url": "https://www.licklibrary.com/learn/backing-tracks/slipknot/duality-guitar-backing-track", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Duality song reference — drop B", "url": "https://en.wikipedia.org/wiki/Duality_(song)", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Independent sources agree on B-F-sharp-B-E-G-sharp-C-sharp."
+    },
+    {
+      "id": "korn-blind",
+      "artist": "Korn",
+      "searchAliases": ["코른"],
+      "title": "Blind",
+      "tuningId": "guitar-7-a-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "LickLibrary Blind lesson — seven-string A tuning", "url": "https://www.licklibrary.com/learn/lessons/korn/blind", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Guitar Gear Finder seven-string guide — Korn A standard", "url": "https://guitargearfinder.com/guides/seven-string-guitar-songs-worth-learning-with-tab/", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Sources agree on seven-string A-D-G-C-F-A-D."
+    },
+    {
+      "id": "meshuggah-bleed",
+      "artist": "Meshuggah",
+      "searchAliases": ["메슈가"],
+      "title": "Bleed",
+      "tuningId": "guitar-8-f-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Premier Guitar Mårten Hagström interview — eight-string half-step down", "url": "https://www.premierguitar.com/artists/interview-meshuggahs-marten-hagstrom-on-koloss?page=3", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "TalkBass Bleed discussion — explicit F standard map", "url": "https://www.talkbass.com/threads/meshuggah-tab.757646/", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Sources support eight-string F-B-flat-E-flat-A-flat-D-flat-G-flat-B-flat-E-flat; the 43.65 Hz low F exercises the detector floor."
+    },
+    {
+      "id": "oasis-wonderwall",
+      "artist": "Oasis",
+      "searchAliases": ["오아시스"],
+      "title": "Wonderwall",
+      "tuningId": "guitar-6-standard",
+      "tuningVersion": 1,
+      "capoFret": 2,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Guitar Lessons 365 lesson — standard, capo 2", "url": "https://guitarlessons365.com/wonderwall-guitar-lesson-oasis/", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "MusicRadar analysis — capo 2", "url": "https://www.musicradar.com/artists/just-because-some-of-your-university-friends-defaulted-to-it-at-karaoke-doesnt-act-as-a-strike-against-it-a-music-professor-breaks-down-the-theory-behind-oasiss-wonderwall", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Tune open strings in E standard before placing the capo at fret 2."
+    },
+    {
+      "id": "led-zeppelin-kashmir",
+      "artist": "Led Zeppelin",
+      "searchAliases": ["레드 제플린"],
+      "title": "Kashmir",
+      "tuningId": "guitar-6-dadgad",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Jon MacLennan lesson — DADGAD", "url": "https://www.jonmaclennan.com/blog/kashmir-guitar-lesson", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Guitar Pro lesson — DADGAD", "url": "https://www.guitar-pro.com/blog/p/10291-riff-lesson-kashmir-led-zeppelin", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Independent sources agree on D-A-D-G-A-D."
+    },
+    {
+      "id": "the-beatles-here-comes-the-sun",
+      "artist": "The Beatles",
+      "searchAliases": ["비틀즈", "더 비틀즈"],
+      "title": "Here Comes the Sun",
+      "tuningId": "guitar-6-standard",
+      "tuningVersion": 1,
+      "capoFret": 7,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Guitar Lessons 365 lesson — standard, capo 7", "url": "https://guitarlessons365.com/the-beatles-here-comes-the-sun-video-guitar-lessons/", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Recording reference — Harrison capo 7", "url": "https://en.wikipedia.org/wiki/Here_Comes_the_Sun", "checkedAt": "2026-07-13", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Tune open strings in E standard before placing the capo at fret 7; the recording was varispeeded, so no exact cents correction is asserted."
+    },
+    {
+      "id": "ozzy-osbourne-crazy-train",
+      "artist": "Ozzy Osbourne",
+      "searchAliases": ["오지 오스본"],
+      "title": "Crazy Train",
+      "tuningId": "guitar-6-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Marty Schwartz lesson — standard EADGBE", "url": "https://www.martyschwartzguitar.com/crazy-train-guitar-lesson-ozzy-osbourne-opening-riff-how-to-play-on-guitar/", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Cifra Club reviewed chart — standard EADGBE", "url": "https://www.cifraclub.com/ozzy-osbourne/crazy-train/kmhmg.html", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Independent lesson sources agree on E standard; no capo or recording offset asserted."
+    },
+    {
+      "id": "lynyrd-skynyrd-sweet-home-alabama",
+      "artist": "Lynyrd Skynyrd",
+      "searchAliases": ["레너드 스키너드"],
+      "title": "Sweet Home Alabama",
+      "tuningId": "guitar-6-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Marty Schwartz lesson — standard EADGBE", "url": "https://www.martyschwartzguitar.com/sweet-home-alabama-lynyrd-skynyrd-guitar-lesson-tutorial/", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Zager Guitar lesson — standard EADGBE", "url": "https://blog.zagerguitar.com/how-to-play-sweet-home-alabama-on-guitar/", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Independent lesson sources agree on E standard; no capo or recording offset asserted."
+    },
+    {
+      "id": "pink-floyd-wish-you-were-here",
+      "artist": "Pink Floyd",
+      "searchAliases": ["핑크 플로이드"],
+      "title": "Wish You Were Here",
+      "tuningId": "guitar-6-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Jon MacLennan lesson — recorded version in standard tuning", "url": "https://www.jonmaclennan.com/blog/wish-you-were-here-chords", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Marty Schwartz lesson — standard tuning, no capo", "url": "https://www.martyschwartzguitar.com/how-to-play-wish-you-were-here-by-pink-floyd/", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Both sources agree on E standard with no capo for the playable guitar path."
+    },
+    {
+      "id": "black-sabbath-paranoid",
+      "artist": "Black Sabbath",
+      "searchAliases": ["블랙 사바스"],
+      "title": "Paranoid",
+      "tuningId": "guitar-6-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Jon MacLennan lesson — standard EADGBE", "url": "https://www.jonmaclennan.com/blog/paranoid-chords", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Mr Tabs lesson — standard tuning", "url": "https://www.mrtabs.com/guitar-tab/black-sabbath-paranoid/", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Independent lesson sources agree on E standard; tiny analog-recording pitch variance is not asserted as a tuning offset."
+    },
+    {
+      "id": "led-zeppelin-stairway-to-heaven",
+      "artist": "Led Zeppelin",
+      "searchAliases": ["레드 제플린"],
+      "title": "Stairway to Heaven",
+      "tuningId": "guitar-6-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Jon MacLennan lesson — recorded version in standard EADGBE", "url": "https://www.jonmaclennan.com/blog/stairway-to-heaven-chords", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Scott's Guitar Lessons chart — standard tuning", "url": "https://www.scottsguitarlessons.co.uk/lesson_resources/PDFs/Tunes/stairway%20to%20heaven.pdf", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Independent lesson sources agree on E standard with no capo."
+    },
+    {
+      "id": "green-day-basket-case",
+      "artist": "Green Day",
+      "searchAliases": ["그린 데이", "그린데이"],
+      "title": "Basket Case",
+      "tuningId": "guitar-6-eb-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "JustinGuitar lesson — original in E-flat tuning", "url": "https://www.justinguitar.com/songs/green-day-basket-case-chords-tabs-guitar-lesson-st-311", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Andy Guitar lesson — E-flat standard map", "url": "https://www.andyguitar.co.uk/videos/green-day-basket-case", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Both sources specify E-flat standard for playing with the original recording."
+    },
+    {
+      "id": "stevie-ray-vaughan-pride-and-joy",
+      "artist": "Stevie Ray Vaughan",
+      "searchAliases": ["스티비 레이 본", "SRV"],
+      "title": "Pride and Joy",
+      "tuningId": "guitar-6-eb-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Guitar World SRV lesson — E-flat standard map", "url": "https://www.guitarworld.com/features/stevie-ray-vaughan-soul-soul", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Jon MacLennan SRV lesson — Pride and Joy in E-flat", "url": "https://www.jonmaclennan.com/blog/stevie-ray-vaughans-first-guitar-lesson", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Sources agree on E-flat standard; no exact recording cents offset is asserted."
+    },
+    {
+      "id": "metallica-sad-but-true",
+      "artist": "Metallica",
+      "searchAliases": ["메탈리카"],
+      "title": "Sad but True",
+      "tuningId": "guitar-6-d-standard",
+      "tuningVersion": 1,
+      "capoFret": 0,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Guitar Lessons 365 lesson — D standard", "url": "https://guitarlessons365.com/sad-but-true-guitar-lesson-with-onscreen-tab-metallica/", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "MusicRadar lesson — D standard DGCFAD", "url": "https://www.musicradar.com/tuition/guitars/weekend-riff-metallica-sad-but-true-603034", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Independent sources agree on D standard for the released recording."
+    },
+    {
+      "id": "tracy-chapman-fast-car",
+      "artist": "Tracy Chapman",
+      "searchAliases": ["트레이시 채프먼"],
+      "title": "Fast Car",
+      "tuningId": "guitar-6-standard",
+      "tuningVersion": 1,
+      "capoFret": 2,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Great Scott Music lesson — standard tuning, capo 2", "url": "https://greatscottmusic.com.au/wp-content/uploads/2025/01/fast-car-by-tracy-chapman-song-lesson.pdf", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Guitar Alliance chart — standard tuning, capo 2", "url": "https://www.guitaralliance.com/riff-o-matic/private/private/riff-a-day/november_05/fast_car/chapman_tracy-fast_car.pdf", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Tune open strings in E standard before placing the capo at fret 2."
+    },
+    {
+      "id": "ed-sheeran-perfect",
+      "artist": "Ed Sheeran",
+      "searchAliases": ["에드 시런", "에드 시어런"],
+      "title": "Perfect",
+      "tuningId": "guitar-6-standard",
+      "tuningVersion": 1,
+      "capoFret": 1,
+      "centsOffset": 0,
+      "researchConfidence": "web_verified",
+      "verificationStatus": "needs_human_review",
+      "sources": [
+        { "label": "Guitar Lessons 365 lesson — standard tuning, capo 1", "url": "https://guitarlessons365.com/ed-sheeran-perfect-guitar-lesson/", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" },
+        { "label": "Guitar Lobby lesson — EADGBE, capo 1", "url": "https://www.guitarlobby.com/capo-songs/", "checkedAt": "2026-07-14", "checkedBy": "Codex source audit; human review pending" }
+      ],
+      "notes": "Tune open strings in E standard before placing the capo at fret 1."
+    }
+  ]
+}

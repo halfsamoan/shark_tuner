@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toauner.app/schema/song-catalog.v1.json",
+  "title": "toauner release song catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "generatedFrom", "shippingEligible", "approval", "songs"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "generatedFrom": { "const": "candidates.v1.json" },
+    "shippingEligible": { "const": true },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approvedBy", "approvedAt", "scope", "approvedSongCount", "statement"],
+      "properties": {
+        "approvedBy": { "type": "string", "minLength": 1 },
+        "approvedAt": { "type": "string", "format": "date" },
+        "scope": { "const": "all_songs" },
+        "approvedSongCount": { "type": "integer", "minimum": 20 },
+        "statement": { "type": "string", "minLength": 1 }
+      }
+    },
+    "songs": {
+      "type": "array",
+      "minItems": 20,
+      "items": { "$ref": "#/$defs/song" }
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "url", "checkedAt", "checkedBy"],
+      "properties": {
+        "label": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "format": "uri" },
+        "checkedAt": { "type": "string", "format": "date" },
+        "checkedBy": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["independent_reference", "curation_oracle"] },
+        "supports": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["tuning", "capo_fret", "cents_offset"] }
+        }
+      }
+    },
+    "song": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "artist", "searchAliases", "title", "tuningId", "tuningVersion", "capoFret", "centsOffset", "researchConfidence", "verificationStatus", "sources", "notes"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "artist": { "type": "string", "minLength": 1 },
+        "searchAliases": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "musicBrainzRecordingMbid": { "type": "string", "format": "uuid" },
+        "tuningId": { "type": "string", "minLength": 1 },
+        "tuningVersion": { "type": "integer", "minimum": 1 },
+        "capoFret": { "type": "integer", "minimum": 0, "maximum": 24 },
+        "centsOffset": { "type": "number", "minimum": -100, "maximum": 100 },
+        "researchConfidence": { "enum": ["web_verified", "high", "medium"] },
+        "verificationStatus": { "const": "verified" },
+        "sources": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/source" }
+        },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

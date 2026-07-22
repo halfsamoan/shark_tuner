@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toauner.app/schema/song-backbone-targets.v1.json",
+  "title": "toauner song backbone targets",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "targets"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "targets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["recordingMbid"],
+        "properties": {
+          "recordingMbid": { "type": "string", "format": "uuid" },
+          "genre": { "type": "string", "minLength": 1 },
+          "genreSourceUrl": { "type": "string", "format": "uri" }
+        },
+        "dependentRequired": {
+          "genre": ["genreSourceUrl"],
+          "genreSourceUrl": ["genre"]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,220 @@
+{
+  "schemaVersion": 1,
+  "id": "user-guitar-samsung-sm-s926n-20260713-v1",
+  "deviceModel": "Samsung SM-S926N",
+  "sourceDirectory": "datasets/user_guitar",
+  "sourceContainer": "RIFF/WAVE",
+  "sourceSampleFormat": "pcm_s16le",
+  "sourceSampleRateHz": 44100,
+  "sourceChannelCount": 1,
+  "recordingApp": "Voice Recorder - XVoice",
+  "recordingAppPackage": "recorderpro.voicememos.audio",
+  "recordingAppVersion": "unknown",
+  "recordingAppUrl": "https://play.google.com/store/apps/details?id=recorderpro.voicememos.audio",
+  "referenceTuner": "Guitar Tuner by TarrySoft",
+  "referenceTunerPackage": "lior.hai.soundanalyzertest",
+  "referenceTunerVersion": "unknown",
+  "referenceTunerUrl": "https://play.google.com/store/apps/details?id=lior.hai.soundanalyzertest",
+  "referenceKind": "uncalibrated_mobile_tuner_nominal_center",
+  "a4ReferenceHz": 440,
+  "rights": "project_provided_user_recording",
+  "recordings": [
+    {
+      "id": "user-s5-a2-hard",
+      "sourceFile": "drive-download-20260713T132839Z-2-001/ 5 A 강.mp3",
+      "outputFile": "user-s5-a2-hard.wav",
+      "stringNumber": 5,
+      "midiNote": 45,
+      "noteName": "A2",
+      "pickStrength": "hard",
+      "offTuning": false
+    },
+    {
+      "id": "user-s1-e4-soft",
+      "sourceFile": "drive-download-20260713T132839Z-2-001/1 E 약.mp3",
+      "outputFile": "user-s1-e4-soft.wav",
+      "stringNumber": 1,
+      "midiNote": 64,
+      "noteName": "E4",
+      "pickStrength": "soft",
+      "offTuning": false
+    },
+    {
+      "id": "user-s1-e4-medium",
+      "sourceFile": "drive-download-20260713T132839Z-2-001/1 E 중간.mp3",
+      "outputFile": "user-s1-e4-medium.wav",
+      "stringNumber": 1,
+      "midiNote": 64,
+      "noteName": "E4",
+      "pickStrength": "medium",
+      "offTuning": false
+    },
+    {
+      "id": "user-s2-b3-hard",
+      "sourceFile": "drive-download-20260713T132839Z-2-001/2 B 강.mp3",
+      "outputFile": "user-s2-b3-hard.wav",
+      "stringNumber": 2,
+      "midiNote": 59,
+      "noteName": "B3",
+      "pickStrength": "hard",
+      "offTuning": false
+    },
+    {
+      "id": "user-s3-g3-hard",
+      "sourceFile": "drive-download-20260713T132839Z-2-001/3 G 강.mp3",
+      "outputFile": "user-s3-g3-hard.wav",
+      "stringNumber": 3,
+      "midiNote": 55,
+      "noteName": "G3",
+      "pickStrength": "hard",
+      "offTuning": false
+    },
+    {
+      "id": "user-s1-eb4-hard",
+      "sourceFile": "drive-download-20260713T132839Z-2-001/310hz Eb1번줄 강하게.mp3",
+      "outputFile": "user-s1-eb4-hard.wav",
+      "stringNumber": 1,
+      "midiNote": 63,
+      "noteName": "E-flat 4",
+      "pickStrength": "hard",
+      "offTuning": true,
+      "annotatedFrequencyHz": 310
+    },
+    {
+      "id": "user-s4-d3-hard",
+      "sourceFile": "drive-download-20260713T132839Z-2-001/4 D 강.mp3",
+      "outputFile": "user-s4-d3-hard.wav",
+      "stringNumber": 4,
+      "midiNote": 50,
+      "noteName": "D3",
+      "pickStrength": "hard",
+      "offTuning": false
+    },
+    {
+      "id": "user-s6-e2-hard",
+      "sourceFile": "drive-download-20260713T132839Z-2-001/6 E 굵은 강하게.mp3",
+      "outputFile": "user-s6-e2-hard.wav",
+      "stringNumber": 6,
+      "midiNote": 40,
+      "noteName": "E2",
+      "pickStrength": "hard",
+      "offTuning": false
+    },
+    {
+      "id": "user-s5-a2-medium",
+      "sourceFile": "drive-download-20260713T132839Z-2-001/A 5번줄 중간세기.mp3",
+      "outputFile": "user-s5-a2-medium.wav",
+      "stringNumber": 5,
+      "midiNote": 45,
+      "noteName": "A2",
+      "pickStrength": "medium",
+      "offTuning": false
+    },
+    {
+      "id": "user-s2-bb3-hard",
+      "sourceFile": "drive-download-20260713T132839Z-2-001/Bb 232hz 강 2번.mp3",
+      "outputFile": "user-s2-bb3-hard.wav",
+      "stringNumber": 2,
+      "midiNote": 58,
+      "noteName": "B-flat 3",
+      "pickStrength": "hard",
+      "offTuning": true,
+      "annotatedFrequencyHz": 232
+    },
+    {
+      "id": "user-s2-b3-medium",
+      "sourceFile": "drive-download-20260713T132839Z-2-001/B중간 2번줄.mp3",
+      "outputFile": "user-s2-b3-medium.wav",
+      "stringNumber": 2,
+      "midiNote": 59,
+      "noteName": "B3",
+      "pickStrength": "medium",
+      "offTuning": false
+    },
+    {
+      "id": "user-s4-d3-medium",
+      "sourceFile": "drive-download-20260713T132839Z-2-001/D 4번줄 중간.mp3",
+      "outputFile": "user-s4-d3-medium.wav",
+      "stringNumber": 4,
+      "midiNote": 50,
+      "noteName": "D3",
+      "pickStrength": "medium",
+      "offTuning": false
+    },
+    {
+      "id": "user-s1-e4-hard",
+      "sourceFile": "drive-download-20260713T132839Z-2-001/E 1 강.mp3",
+      "outputFile": "user-s1-e4-hard.wav",
+      "stringNumber": 1,
+      "midiNote": 64,
+      "noteName": "E4",
+      "pickStrength": "hard",
+      "offTuning": false
+    },
+    {
+      "id": "user-s6-e2-medium",
+      "sourceFile": "drive-download-20260713T132839Z-2-001/E 굵은줄 중간세기.mp3",
+      "outputFile": "user-s6-e2-medium.wav",
+      "stringNumber": 6,
+      "midiNote": 40,
+      "noteName": "E2",
+      "pickStrength": "medium",
+      "offTuning": false
+    },
+    {
+      "id": "user-s6-eb2-hard",
+      "sourceFile": "drive-download-20260713T132839Z-2-001/E샵 82hz 강 6번줄.mp3",
+      "outputFile": "user-s6-eb2-hard.wav",
+      "stringNumber": 6,
+      "midiNote": 39,
+      "noteName": "E-flat 2",
+      "pickStrength": "hard",
+      "offTuning": true,
+      "annotatedFrequencyHz": 82,
+      "sourceLabelCorrection": "User confirmed E-flat 2/D-sharp 2; source filename says E-sharp 82 Hz."
+    },
+    {
+      "id": "user-s3-fs3-hard",
+      "sourceFile": "drive-download-20260713T132839Z-2-001/F샵 185hz 강 3번줄.mp3",
+      "outputFile": "user-s3-fs3-hard.wav",
+      "stringNumber": 3,
+      "midiNote": 54,
+      "noteName": "F-sharp 3",
+      "pickStrength": "hard",
+      "offTuning": true,
+      "annotatedFrequencyHz": 185
+    },
+    {
+      "id": "user-s3-g3-medium",
+      "sourceFile": "drive-download-20260713T132839Z-2-001/G 3번줄 중간.mp3",
+      "outputFile": "user-s3-g3-medium.wav",
+      "stringNumber": 3,
+      "midiNote": 55,
+      "noteName": "G3",
+      "pickStrength": "medium",
+      "offTuning": false
+    },
+    {
+      "id": "user-s5-gs2-hard",
+      "sourceFile": "drive-download-20260713T132839Z-2-001/g샵 5번줄 104hz 강.mp3",
+      "outputFile": "user-s5-gs2-hard.wav",
+      "stringNumber": 5,
+      "midiNote": 44,
+      "noteName": "G-sharp 2",
+      "pickStrength": "hard",
+      "offTuning": true,
+      "annotatedFrequencyHz": 104
+    },
+    {
+      "id": "user-s4-cs3-hard",
+      "sourceFile": "drive-download-20260713T132839Z-2-001/씨 샵 4번 138.5hz 강.mp3",
+      "outputFile": "user-s4-cs3-hard.wav",
+      "stringNumber": 4,
+      "midiNote": 49,
+      "noteName": "C-sharp 3",
+      "pickStrength": "hard",
+      "offTuning": true,
+      "annotatedFrequencyHz": 138.5
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+id,artist_credit_id,artist_mbids,artist_credit_name,release_mbid,release_name,recording_mbid,recording_name,combined_lookup,score
+1,1,aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa,"Example, Artist",bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb,Example Release,11111111-1111-4111-8111-111111111111,"Example, Song",example artist example song,77

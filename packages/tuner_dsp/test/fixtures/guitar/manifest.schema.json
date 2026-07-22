@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toauner.local/schemas/guitar-corpus-manifest.v1.json",
+  "title": "toauner G1 guitar WAV corpus manifest",
+  "type": "object",
+  "required": ["schemaVersion", "sampleFormat", "requiredSampleRateHz", "fixtures"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "sampleFormat": { "const": "pcm_s16le" },
+    "requiredSampleRateHz": { "const": 48000 },
+    "fixtures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id", "file", "group", "referenceFrequencyHz", "referenceMethod",
+          "stableStartMs", "stableEndMs", "windowSamples", "stringLabel",
+          "pickStrength", "stringAge", "pickup", "capturePath"
+        ],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "file": { "type": "string", "pattern": "\\.wav$" },
+          "group": { "enum": ["general", "low"] },
+          "referenceFrequencyHz": { "type": "number", "minimum": 43 },
+          "referenceMethod": { "type": "string", "minLength": 1 },
+          "stableStartMs": { "type": "integer", "minimum": 0 },
+          "stableEndMs": { "type": "integer", "exclusiveMinimum": 0 },
+          "windowSamples": { "enum": [4096, 8192] },
+          "stringLabel": { "type": "string", "minLength": 1 },
+          "pickStrength": { "enum": ["soft", "hard"] },
+          "stringAge": { "enum": ["new", "old"] },
+          "pickup": { "type": "string", "minLength": 1 },
+          "capturePath": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
