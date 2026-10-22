@@ -2,37 +2,33 @@
 
 # SharkTune
 
-기타 음정과 센트 편차를 측정하고 곡에 맞는 튜닝을 찾는 Android 튜너입니다.
+An Android guitar tuner with pitch tracking, song-specific tunings, and instrument setup guidance.
 
-마이크로 현을 맞추고, 곡별 튜닝·페그 방향·장력과 튜닝 안정성을 살펴볼 수 있습니다. 소스의 내부 프로젝트명은 `toauner`입니다.
+[Android release and checksums](https://github.com/halfsamoan/shark_tuner/releases/tag/v1.0.0)
 
-## Install
+## Implementation
 
-[Android 릴리스](https://github.com/halfsamoan/shark_tuner/releases/tag/v1.0.0)에서 APK와 체크섬을 내려받습니다.
+- **Pitch detection:** implements MPM in Dart with FFT autocorrelation, interpolation, a separate low-tuning analysis path, and octave-error handling.
+- **Audio capture:** checks the Android input path and PCM signal before accepting measurements, with an `UNPROCESSED` to `VOICE_RECOGNITION` fallback.
+- **Tracking and UI:** runs sustained DSP work outside the UI isolate and separates pitch smoothing, physical-string selection, and in-tune locking.
+- **Instrument logic:** models peg direction, string tension, and tuning stability separately from the detector.
 
-설치할 때 파일을 연 앱의 외부 앱 설치 권한을 허용하고, 첫 실행에서 마이크 권한을 승인합니다. iOS 배포 파일은 포함하지 않습니다.
+Song selection passes a versioned tuning definition into the session. Song metadata includes provenance; tabs and lyrics are not distributed. The internal workspace name is `toauner`.
 
-## Quickstart
+[MPM detector](packages/tuner_dsp/lib/src/detectors/mpm_detector.dart) · [Audio capture](packages/tuner_audio/lib/src/record_audio_capture.dart) · [Tuning session](packages/tuner_domain/lib/src/tuning_session.dart)
 
-기타의 한 줄을 튕기고 화면의 음정과 편차를 보며 조율합니다. 곡 검색에서 튜닝을 선택하면 그 곡의 목표음으로 이어집니다.
+## Install and use
 
-## 조율 도구
+Download the APK from the release page, allow installation from the app opening the file, and grant microphone access on first launch. Pluck one string and follow its pitch and cent deviation. Select a song to use its tuning targets.
 
-- **피치 측정:** MPM 기반 검출과 저튜닝 분석 경로로 주파수와 센트 편차를 구합니다.
-- **곡별 튜닝:** 곡명·아티스트로 튜닝과 카포 정보를 찾습니다.
-- **페그 안내:** 악기 구조에 맞춘 조정 방향을 표시합니다.
-- **셋업 점검:** 현 장력과 조율 안정성을 관측값에 따라 살펴봅니다.
+An iOS distribution package is not included in the Android release.
 
-안정성 진단은 가능한 원인을 제시합니다. 실제 악기의 문제를 확정하는 검사는 아닙니다.
+## Measurement scope
 
-## 측정 범위
+Synthetic signals, recorded guitar WAVs, and live device input are evaluated separately. Synthetic detector accuracy is not presented as accuracy across all guitars, microphones, or phones. Stability diagnostics describe possible causes rather than confirming a mechanical fault.
 
-합성 신호, 실제 기타 녹음, 모바일 라이브 입력의 검증을 구분합니다. 합성 신호에서 얻은 수치를 모든 기기의 정확도로 표현하지 않습니다.
-
-곡 데이터에는 출처를 기록하며 탭과 가사를 제공하지 않습니다. 오디오 처리는 기기에서 수행합니다.
-
-[정확도 규격](docs/accuracy-spec.md) · [DSP·개발 안내](CONTRIBUTING.md) · [배포 상태](docs/platform-readiness.md)
+[DSP, build, and validation guide](CONTRIBUTING.md)
 
 ## License
 
-[MIT](LICENSE). 의존성·폰트·곡 메타데이터에는 [각 고지와 출처 조건](docs/ATTRIBUTIONS.md)이 적용됩니다.
+[MIT](LICENSE). Dependencies, fonts, and song metadata retain their [individual notices](docs/ATTRIBUTIONS.md).

@@ -1,17 +1,11 @@
-# SharkTune
+# SharkTune application
 
-A new Flutter project.
+Flutter application package for SharkTune. The internal package name is `toauner_app`.
 
-## Getting Started
+The app assembles audio capture, DSP, song search, tuning sessions, instrument guidance, and settings from the workspace packages.
 
-This project is a starting point for a Flutter application.
+- [Project and Android release](../README.md)
+- [Build environment, DSP boundaries, and validation](../CONTRIBUTING.md)
+- [Workspace dependencies](pubspec.yaml)
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Run workspace setup and validation from the repository root. This directory is not an independent starter application.
